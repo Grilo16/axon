@@ -1,36 +1,45 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use log::info;
 use serde::Serialize;
-use std::collections::{HashMap, HashSet}; // Removed HashSet from here to avoid confusion
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-// Unified import
 use axon_core::{core::graph, engine::crawler::Crawler, paths};
-
-use petgraph::Graph;
-
 use axon_core::analysis::javascript::skeleton::SkeletonTarget;
 use axon_core::features::prompt;
 
-// 1. Define a struct to receive options from React
+// ------------------------------
+// Types from frontend
+// ------------------------------
+
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PromptOptions {
     pub show_line_numbers: bool,
     pub remove_comments: bool,
     pub redactions: Vec<String>,
-    // Skeleton mode: "all", "none", "keep_only", "strip_only"
     pub skeleton_mode: String,
     pub skeleton_targets: Vec<String>,
 }
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GroupRequest {
+    pub entry_point: String,
+    pub depth: u32,
+    pub flatten: bool,
+}
+
+// ------------------------------
+// UI wire types (ScanResponse)
+// ------------------------------
 
 #[derive(Serialize)]
 pub struct AxonNode {
     pub id: String,
     pub r#type: String,
-    #[serde(rename = "parentId")]
+    #[serde(rename = "parentId", skip_serializing_if = "Option::is_none")]
     pub parent_id: Option<String>,
     pub position: Position,
     pub data: NodeData,
@@ -55,6 +64,16 @@ pub struct AxonEdge {
     pub id: String,
     pub source: String,
     pub target: String,
+
+    // ReactFlow edge renderer id
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub edge_type: Option<String>,
+
+    #[serde(rename = "sourceHandle", skip_serializing_if = "Option::is_none")]
+    pub source_handle: Option<String>,
+
+    #[serde(rename = "targetHandle", skip_serializing_if = "Option::is_none")]
+    pub target_handle: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -63,157 +82,363 @@ pub struct ScanResponse {
     pub edges: Vec<AxonEdge>,
 }
 
-pub fn compute_layout(nodes: &mut Vec<AxonNode>, edges: &[AxonEdge]) {
-    if nodes.is_empty() {
+// ------------------------------
+// Layout: folder-tree + grid packing + wrapping blocks
+// ------------------------------
+//
+// Why you were getting a long rectangle:
+// - your previous layout placed folder spans in a single long horizontal strip.
+// Fix:
+// - treat each top-level folder as a "block" and pack blocks into rows (shelf packing).
+// - each block internally uses folder-tree grid packing.
+//
+// RESULT: more square/tall footprint.
+
+const X_SPACING: f32 = 330.0;   // column spacing
+const ROW_Y: f32 = 230.0;       // row spacing within a folder level
+const LEVEL_GAP: f32 = 120.0;   // gap between folder depths
+
+const MAX_FILE_COLS_HINT: usize = 10; // direct-file grid columns cap
+const GAP_COLS_BETWEEN_BLOCKS: usize = 2; // padding between packed blocks (in columns)
+const ROW_GAP_PX: f32 = 260.0;  // vertical gap between packed block rows
+
+// < 1.0 => wrap more => taller/more square
+const WRAP_FACTOR: f64 = 0.95;
+
+fn norm_slashes(s: &str) -> String {
+    s.replace('\\', "/")
+}
+
+fn ceil_div(a: usize, b: usize) -> usize {
+    if b == 0 { 0 } else { (a + b - 1) / b }
+}
+
+fn ceil_sqrt(n: usize) -> usize {
+    if n <= 1 { return n.max(1); }
+    (n as f64).sqrt().ceil() as usize
+}
+
+#[derive(Default)]
+struct FolderTree {
+    files: Vec<String>, // direct files in this folder (relative)
+    children: BTreeMap<String, FolderTree>,
+
+    // computed
+    span_cols: usize,
+    x_start: usize,
+    depth: usize,
+}
+
+impl FolderTree {
+    fn insert_file(&mut self, file_id: &str) {
+        let id = norm_slashes(file_id);
+        let mut parts: Vec<&str> = id.split('/').filter(|p| !p.is_empty()).collect();
+        if parts.is_empty() { return; }
+
+        // filename
+        parts.pop();
+
+        let mut cur = self;
+        for seg in parts {
+            cur = cur.children.entry(seg.to_string()).or_default();
+        }
+        cur.files.push(id);
+    }
+
+    fn compute_spans(&mut self) -> usize {
+        self.files.sort();
+
+        let mut child_sum = 0usize;
+        for (_name, child) in self.children.iter_mut() {
+            child_sum += child.compute_spans();
+        }
+
+        let n = self.files.len();
+        let direct_cols = if n == 0 {
+            0
+        } else {
+            ceil_sqrt(n).min(MAX_FILE_COLS_HINT).max(1)
+        };
+
+        let mut span = child_sum.max(direct_cols);
+        if span == 0 && (!self.children.is_empty() || !self.files.is_empty()) {
+            span = 1;
+        }
+
+        self.span_cols = span;
+        span
+    }
+
+    fn assign_x_and_depth(&mut self, depth: usize, start_col: usize) {
+        self.depth = depth;
+        self.x_start = start_col;
+
+        let mut cursor = start_col;
+        for (_name, child) in self.children.iter_mut() {
+            child.assign_x_and_depth(depth + 1, cursor);
+            cursor += child.span_cols;
+        }
+    }
+
+    fn collect_max_rows_by_depth(&self, max_rows: &mut Vec<usize>) {
+        if max_rows.len() <= self.depth {
+            max_rows.resize(self.depth + 1, 0);
+        }
+
+        let n = self.files.len();
+        if n > 0 {
+            let desired_cols = ceil_sqrt(n).min(MAX_FILE_COLS_HINT).max(1);
+            let use_cols = desired_cols.min(self.span_cols.max(1));
+            let rows = ceil_div(n, use_cols);
+            max_rows[self.depth] = max_rows[self.depth].max(rows);
+        }
+
+        for (_name, child) in self.children.iter() {
+            child.collect_max_rows_by_depth(max_rows);
+        }
+    }
+
+    fn assign_file_positions(
+        &self,
+        y_offsets: &[f32],
+        out: &mut HashMap<String, (f32, f32)>,
+    ) {
+        let n = self.files.len();
+        if n > 0 {
+            let desired_cols = ceil_sqrt(n).min(MAX_FILE_COLS_HINT).max(1);
+            let use_cols = desired_cols.min(self.span_cols.max(1));
+
+            // center the direct-file grid within the folder span
+            let slack = self.span_cols.saturating_sub(use_cols);
+            let x0 = self.x_start + slack / 2;
+
+            for (i, file_id) in self.files.iter().enumerate() {
+                let col = i % use_cols;
+                let row = i / use_cols;
+
+                let x = (x0 + col) as f32 * X_SPACING;
+                let y = y_offsets
+                    .get(self.depth)
+                    .copied()
+                    .unwrap_or(0.0)
+                    + (row as f32 * ROW_Y);
+
+                out.insert(file_id.clone(), (x, y));
+            }
+        }
+
+        for (_name, child) in self.children.iter() {
+            child.assign_file_positions(y_offsets, out);
+        }
+    }
+}
+
+fn build_y_offsets(max_rows: &[usize]) -> Vec<f32> {
+    let mut y_offsets = vec![0.0; max_rows.len()];
+    let mut y = 0.0;
+
+    for (d, rows) in max_rows.iter().enumerate() {
+        y_offsets[d] = y;
+
+        let level_height = if *rows == 0 { 0.0 } else { (*rows as f32) * ROW_Y };
+        y += level_height + LEVEL_GAP;
+    }
+
+    y_offsets
+}
+
+fn subtree_layout(sub: &mut FolderTree) -> (HashMap<String, (f32, f32)>, usize, f32) {
+    // subtree-local: depth starts at 0 and x starts at 0
+    sub.assign_x_and_depth(0, 0);
+
+    let mut max_rows: Vec<usize> = Vec::new();
+    sub.collect_max_rows_by_depth(&mut max_rows);
+    let y_offsets = build_y_offsets(&max_rows);
+
+    let mut pos: HashMap<String, (f32, f32)> = HashMap::new();
+    sub.assign_file_positions(&y_offsets, &mut pos);
+
+    // estimate subtree pixel height
+    let mut h = 0.0;
+    for (d, rows) in max_rows.iter().enumerate() {
+        let y = y_offsets[d] + (*rows as f32) * ROW_Y;
+        if y > h { h = y; }
+    }
+    h += LEVEL_GAP; // bottom padding
+
+    (pos, sub.span_cols.max(1), h)
+}
+
+#[derive(Clone)]
+struct Block {
+    name: String,
+    width_cols: usize,
+    height_px: f32,
+    positions: HashMap<String, (f32, f32)>,
+}
+
+fn compute_folder_grid_layout_wrapped(nodes: &mut [AxonNode]) {
+    let mut root = FolderTree::default();
+    for n in nodes.iter() {
+        root.insert_file(&n.id);
+    }
+
+    root.compute_spans();
+
+    // Build blocks: root-files block + each top-level folder subtree block
+    let mut blocks: Vec<Block> = Vec::new();
+
+    // Root files (no folder) as its own packed block, if any
+    if !root.files.is_empty() {
+        let mut root_files_block = FolderTree::default();
+        root_files_block.files = root.files.clone();
+        root_files_block.compute_spans();
+
+        let (pos, cols, h) = subtree_layout(&mut root_files_block);
+        blocks.push(Block {
+            name: "(root)".to_string(),
+            width_cols: cols,
+            height_px: h,
+            positions: pos,
+        });
+    }
+
+    for (name, child) in root.children.iter_mut() {
+        // layout child subtree
+        let (pos, cols, h) = subtree_layout(child);
+        blocks.push(Block {
+            name: name.clone(),
+            width_cols: cols,
+            height_px: h,
+            positions: pos,
+        });
+    }
+
+    if blocks.is_empty() {
         return;
     }
 
-    let mut g = Graph::<String, ()>::new();
-    let mut node_map = HashMap::new();
+    // Pick a target wrap width in columns (square-ish)
+    let total_cols: usize = blocks
+        .iter()
+        .map(|b| b.width_cols + GAP_COLS_BETWEEN_BLOCKS)
+        .sum();
 
-    // 1. Build the Graph
-    for node in nodes.iter() {
-        let idx = g.add_node(node.id.clone());
-        node_map.insert(node.id.clone(), idx);
+    let max_block = blocks.iter().map(|b| b.width_cols).max().unwrap_or(1);
+
+    let mut target_cols = ((total_cols as f64).sqrt() * WRAP_FACTOR).ceil() as usize;
+    target_cols = target_cols.max(max_block).max(8);
+
+    // Shelf pack blocks into rows
+    // We'll record per-row blocks then center each row.
+    #[derive(Clone)]
+    struct Placed {
+        idx: usize,
+        x_cols: usize,
+        y_px: f32,
     }
 
-    for edge in edges {
-        if let (Some(s), Some(t)) = (node_map.get(&edge.source), node_map.get(&edge.target)) {
-            g.add_edge(*s, *t, ());
+    let mut rows: Vec<Vec<Placed>> = Vec::new();
+    let mut cur_row: Vec<Placed> = Vec::new();
+
+    let mut cursor_cols = 0usize;
+    let mut row_height_px = 0.0f32;
+    let mut y_cursor_px = 0.0f32;
+
+    for (i, b) in blocks.iter().enumerate() {
+        let need = b.width_cols + if cursor_cols == 0 { 0 } else { GAP_COLS_BETWEEN_BLOCKS };
+
+        if cursor_cols > 0 && cursor_cols + need > target_cols {
+            // finish row
+            rows.push(cur_row.clone());
+            cur_row.clear();
+
+            y_cursor_px += row_height_px + ROW_GAP_PX;
+            cursor_cols = 0;
+            row_height_px = 0.0;
+        }
+
+        let x_cols = if cursor_cols == 0 { 0 } else { cursor_cols + GAP_COLS_BETWEEN_BLOCKS };
+        cur_row.push(Placed { idx: i, x_cols, y_px: y_cursor_px });
+
+        cursor_cols = x_cols + b.width_cols;
+        row_height_px = row_height_px.max(b.height_px);
+    }
+
+    if !cur_row.is_empty() {
+        rows.push(cur_row);
+    }
+
+    // Center each row within target_cols for nicer aesthetics
+    for row in rows.iter_mut() {
+        let mut used_cols = 0usize;
+        for p in row.iter() {
+            let b = &blocks[p.idx];
+            used_cols = used_cols.max(p.x_cols + b.width_cols);
+        }
+        let slack = target_cols.saturating_sub(used_cols);
+        let shift = slack / 2;
+        for p in row.iter_mut() {
+            p.x_cols += shift;
         }
     }
 
-    let mut ranks: HashMap<String, u32> = HashMap::new();
+    // Merge into global position map
+    let mut global_pos: HashMap<String, (f32, f32)> = HashMap::new();
+    for row in rows {
+        for p in row {
+            let b = &blocks[p.idx];
+            let x_off = p.x_cols as f32 * X_SPACING;
+            let y_off = p.y_px;
 
-    // 3. The "Shortest Path" Algorithm (BFS)
-    // This ensures nodes appear at the FIRST level they are needed.
-    let mut queue: std::collections::VecDeque<(String, u32)> = std::collections::VecDeque::new();
-
-    // Find roots (nodes with no incoming edges) to start BFS
-    let mut roots = Vec::new();
-    for node in nodes.iter() {
-        let node_idx = node_map[&node.id];
-        if g.neighbors_directed(node_idx, petgraph::Direction::Incoming)
-            .count()
-            == 0
-        {
-            roots.push(node.id.clone());
-        }
-    }
-
-    // If no roots found (circular graph?), pick the first node in the list
-    if roots.is_empty() && !nodes.is_empty() {
-        roots.push(nodes[0].id.clone());
-    }
-
-    // Initialize Queue
-    for root in roots {
-        ranks.insert(root.clone(), 0);
-        queue.push_back((root, 0));
-    }
-
-    // Run BFS
-    while let Some((current_id, current_rank)) = queue.pop_front() {
-        let current_idx = node_map[&current_id];
-
-        for neighbor_idx in g.neighbors(current_idx) {
-            let neighbor_id = &g[neighbor_idx];
-
-            // Only assign rank if we haven't seen this node yet!
-            // This is the key: We respect the "Shortest Path" to the node.
-            if !ranks.contains_key(neighbor_id) {
-                let new_rank = current_rank + 1;
-                ranks.insert(neighbor_id.clone(), new_rank);
-                queue.push_back((neighbor_id.clone(), new_rank));
+            for (id, (x, y)) in b.positions.iter() {
+                global_pos.insert(id.clone(), (x + x_off, y + y_off));
             }
         }
     }
 
-    // Fallback: If any nodes were unreachable (islands), assign them to Rank 0 or below main graph
-    for node in nodes.iter() {
-        ranks.entry(node.id.clone()).or_insert(0);
-    }
-
-    // 4. Assign Coordinates & Center Logic
-    let mut rank_counts: HashMap<u32, f32> = HashMap::new();
-    let mut rank_widths: HashMap<u32, f32> = HashMap::new();
-
-    // First pass: Count width of each rank
-    for node in nodes.iter() {
-        let rank = *ranks.get(&node.id).unwrap_or(&0);
-        let count = rank_widths.entry(rank).or_insert(0.0);
-        *count += 1.0;
-    }
-
-    // Second pass: Set positions with centering
-    let x_spacing = 350.0;
-    let y_spacing = 450.0;
-
-    // We sort nodes by rank just to be deterministic, though not strictly required
-    nodes.sort_by_key(|n| ranks.get(&n.id).cloned().unwrap_or(0));
-
-    for node in nodes.iter_mut() {
-        let rank = *ranks.get(&node.id).unwrap_or(&0);
-
-        // Get how many nodes are already placed on this rank
-        let current_index = rank_counts.entry(rank).or_insert(0.0);
-        let total_in_rank = *rank_widths.get(&rank).unwrap_or(&1.0);
-
-        // Calculate Centering Offset
-        // Logic: (TotalWidth * Spacing) / 2
-        let row_width = total_in_rank * x_spacing;
-        let x_start = -(row_width / 2.0);
-
-        node.position.x = x_start + (*current_index * x_spacing);
-        node.position.y = (rank as f32) * y_spacing;
-
-        *current_index += 1.0;
+    // Apply to nodes
+    for n in nodes.iter_mut() {
+        let id = norm_slashes(&n.id);
+        if let Some((x, y)) = global_pos.get(&id) {
+            n.position.x = *x;
+            n.position.y = *y;
+        }
     }
 }
-#[derive(serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GroupRequest {
-    pub entry_point: String,
-    pub depth: u32,
-    pub flatten: bool,
-}
+
+// ------------------------------
+// Commands
+// ------------------------------
 
 #[tauri::command]
 fn generate_combined_prompt(
     project_root: String,
-    groups: Vec<GroupRequest>, // 👈 Receive all active groups
-    options: PromptOptions,    // Global formatting options
+    groups: Vec<GroupRequest>,
+    options: PromptOptions,
 ) -> Result<String, String> {
     let root_path = PathBuf::from(&project_root);
-    // The Master List of all files to include
     let mut master_visited: HashSet<PathBuf> = HashSet::new();
-  
-println!("options: mode={}, targets={}, redactions={}", options.skeleton_mode, options.skeleton_targets.len(), options.redactions.len());
-    // 1. Run a crawl for EACH group
-    // We do this separately so Group A can have Depth 2 and Group B can have Depth 5
+
     for group in groups {
         let mut crawler = Crawler::new(root_path.clone());
         crawler.set_flattening(group.flatten);
         crawler.set_depth(group.depth);
 
         let entry_path = PathBuf::from(&group.entry_point);
-
-        // If crawl succeeds, merge the found files into the master list
-        if let Ok(_) = crawler.crawl(vec![entry_path]) {
+        if crawler.crawl(vec![entry_path]).is_ok() {
             master_visited.extend(crawler.visited);
         }
     }
-    let mode_norm = options.skeleton_mode.trim().to_ascii_lowercase();
-    // 2. Prepare the Skeleton Config
 
+    let mode_norm = options.skeleton_mode.trim().to_ascii_lowercase();
     let skeleton_config = match mode_norm.as_str() {
         "all" => Some(SkeletonTarget::All),
         "keeponly" => Some(SkeletonTarget::KeepOnly(options.skeleton_targets)),
         "striponly" => Some(SkeletonTarget::StripOnly(options.skeleton_targets)),
         _ => None,
     };
-    // 3. Build ONE unified context
-    // This function automatically deduplicates because master_visited is a HashSet
+
     let config = prompt::PromptConfig {
         files: master_visited,
         project_root: root_path,
@@ -223,15 +448,13 @@ println!("options: mode={}, targets={}, redactions={}", options.skeleton_mode, o
         skeleton_config,
     };
 
-    let content =
-        prompt::build_context(config).map_err(|e| format!("Prompt build failed: {}", e))?;
-
-    Ok(content)
+    prompt::build_context(config)
+        .map_err(|e| format!("Prompt build failed: {}", e))
 }
 
 #[tauri::command]
 fn scan_workspace_group(
-    group_id: String,
+    _group_id: String, // legacy; frontend groups by folder now
     project_root: String,
     entry_point: String,
     depth: u32,
@@ -246,7 +469,6 @@ fn scan_workspace_group(
 
     crawler.crawl(vec![entry_path]).map_err(|e| e.to_string())?;
 
-    // 🎯 USE THE CORE LOGIC
     let core_map = graph::generate_map(
         &root_path,
         &crawler.visited,
@@ -254,53 +476,49 @@ fn scan_workspace_group(
         &crawler.symbol_map,
     );
 
-    // 🎨 CONVERT CORE MAP TO UI-SPECIFIC ScanResponse
-    let mut depth_counts: HashMap<u32, f32> = HashMap::new();
-
+    // nodes: no parentId; frontend handles grouping
     let mut ui_nodes: Vec<AxonNode> = core_map
         .nodes
         .iter()
         .map(|node| {
-            // Simple heuristic: Y is based on directory nesting depth
-            let node_depth = node.id.split('/').count() as u32;
-            let x_idx = depth_counts.entry(node_depth).or_insert(0.0);
-            let pos = Position {
-                x: *x_idx * 300.0,
-                y: (node_depth as f32) * 250.0,
-            };
-            *x_idx += 1.0;
-
+            let id = norm_slashes(&node.id);
             AxonNode {
-                id: node.id.clone(),
+                id: id.clone(),
                 r#type: "fileNode".to_string(),
-                parent_id: Some(group_id.clone()),
-                position: pos,
+                parent_id: None,
+                position: Position { x: 0.0, y: 0.0 },
                 data: NodeData {
-                    label: Path::new(&node.id)
+                    label: Path::new(&id)
                         .file_name()
                         .unwrap_or_default()
                         .to_string_lossy()
                         .into(),
                     definitions: node.definitions.clone(),
                     calls: node.calls.clone(),
-                    path: node.id.clone(),
+                    path: id,
                 },
             }
         })
         .collect();
 
-    let ui_edges: Vec<AxonEdge> = core_map
-        .links
-        .iter()
-        .map(|link| AxonEdge {
-            id: format!("{}-{}", link.source, link.target),
-            source: link.source.clone(),
-            target: link.target.clone(),
-        })
-        .collect();
+    // edges: ONE per import
+    // BiColor edge renderer will show bottom->top colors
+    let mut ui_edges: Vec<AxonEdge> = Vec::new();
+    for link in core_map.links.iter() {
+        let src = norm_slashes(&link.source);
+        let tgt = norm_slashes(&link.target);
 
-    // Pass as a reference slice (&[AxonEdge])
-    compute_layout(&mut ui_nodes, &ui_edges);
+        ui_edges.push(AxonEdge {
+            id: format!("{}->{}", src, tgt),
+            source: src,
+            target: tgt,
+            edge_type: Some("axonBiColor".to_string()),
+            source_handle: Some("out".to_string()),
+            target_handle: Some("in".to_string()),
+        });
+    }
+
+    compute_folder_grid_layout_wrapped(&mut ui_nodes);
 
     Ok(ScanResponse {
         nodes: ui_nodes,

@@ -2,33 +2,24 @@ import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import {
   selectActiveRoot,
-  selectActiveGroups,
+  selectActiveScanConfig,
   selectActiveWorkspace,
-  addActiveGroup,
-  updateActiveGroup,
+  updateScanConfig,
   updateGlobalOptions,
   type WorkspaceData,
 } from "./workspacesSlice";
-import { type AxonGroup } from "@axon-types/workspaceTypes";
+import type { ScanConfig } from "@axon-types/workspaceTypes";
 
 export const useWorkspace = () => {
   const dispatch = useAppDispatch();
 
   const projectRoot = useAppSelector(selectActiveRoot);
-  const groups = useAppSelector(selectActiveGroups);
+  const scanConfig = useAppSelector(selectActiveScanConfig);
   const fullConfig = useAppSelector(selectActiveWorkspace);
 
-  // 2. Actions (Targeting the active workspace)
-  const createGroup = useCallback(
-    (group: AxonGroup) => {
-      dispatch(addActiveGroup(group));
-    },
-    [dispatch],
-  );
-
-  const modifyGroup = useCallback(
-    (id: string, changes: Partial<AxonGroup>) => {
-      dispatch(updateActiveGroup({ id, changes }));
+  const setScan = useCallback(
+    (patch: Partial<ScanConfig>) => {
+      dispatch(updateScanConfig(patch));
     },
     [dispatch],
   );
@@ -40,18 +31,18 @@ export const useWorkspace = () => {
     [dispatch],
   );
 
-  // If you need direct access to the ID
   const workspaceId = fullConfig?.id;
 
   return {
     isActive: !!projectRoot,
     workspaceId,
     projectRoot,
-    groups,
+
+    scanConfig,
+
     config: fullConfig?.globalOptions,
 
-    createGroup,
-    modifyGroup,
+    setScan,
     setOptions,
   };
 };

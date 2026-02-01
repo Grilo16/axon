@@ -1,27 +1,30 @@
-import { 
-  createSlice, 
-  createEntityAdapter, 
-  type PayloadAction, 
-  nanoid 
-} from '@reduxjs/toolkit';
-import { type RootState } from '@app/store';
-import { type AxonGroup} from '@axon-types/workspaceTypes';
-import type { PromptOptions } from '@axon-types/axonTypes';
+import {
+  createSlice,
+  createEntityAdapter,
+  type PayloadAction,
+  nanoid,
+} from "@reduxjs/toolkit";
+import { type RootState } from "@app/store";
+import type { PromptOptions } from "@axon-types/axonTypes";
+import type { ScanConfig } from "@axon-types/workspaceTypes";
 
-// --- Data Types ---
 export interface WorkspaceData {
   id: string;
   name: string;
   projectRoot: string;
-  lastOpened: string; 
-  groups: AxonGroup[];
+  lastOpened: string;
+
+  /** Single-scan settings for this workspace. */
+  scan: ScanConfig;
+
+  /** Prompt generation options (rules, stripping, skeletons, etc.). */
   globalOptions: PromptOptions;
+
+  /** Selected node id in the graph (file node only). */
   selectedNodeId: string | null;
 }
 
-// --- Adapter Setup ---
 const workspacesAdapter = createEntityAdapter<WorkspaceData>({
-  // Automatic sorting by "Recent" whenever we call selectAll!
   sortComparer: (a, b) => b.lastOpened.localeCompare(a.lastOpened),
 });
 
@@ -29,11 +32,24 @@ const initialState = workspacesAdapter.getInitialState({
   activeId: null as string | null,
 });
 
+const defaultPromptOptions: PromptOptions = {
+  skeletonMode: "stripOnly",
+  redactions: [],
+  removeComments: true,
+  showLineNumbers: true,
+  skeletonTargets: [],
+};
+
+const defaultScanConfig: ScanConfig = {
+  entryPoint: "",
+  depth: 3,
+  flatten: true,
+};
+
 const workspacesSlice = createSlice({
-  name: 'workspaces',
+  name: "workspaces",
   initialState,
   reducers: {
-    // --- Management Actions ---
     createWorkspace: {
       reducer: (state, action: PayloadAction<WorkspaceData>) => {
         workspacesAdapter.addOne(state, action.payload);
@@ -47,20 +63,20 @@ const workspacesSlice = createSlice({
             name,
             projectRoot: root,
             lastOpened: new Date().toISOString(),
-            groups: [],
-            globalOptions: { skeletonMode: 'stripOnly', redactions: [], removeComments: true, showLineNumbers: true, skeletonTargets: [] },
+            scan: { ...defaultScanConfig },
+            globalOptions: { ...defaultPromptOptions },
             selectedNodeId: null,
-          } as WorkspaceData
+          } as WorkspaceData,
         };
-      }
+      },
     },
 
     setSelectedNode: (state, action: PayloadAction<string | null>) => {
       if (state.activeId && state.entities[state.activeId]) {
-        state.entities[state.activeId].selectedNodeId = action.payload;
+        state.entities[state.activeId]!.selectedNodeId = action.payload;
       }
     },
-    
+
     deleteWorkspace: (state, action: PayloadAction<string>) => {
       workspacesAdapter.removeOne(state, action.payload);
       if (state.activeId === action.payload) {
@@ -69,74 +85,49 @@ const workspacesSlice = createSlice({
     },
 
     setActiveWorkspace: (state, action: PayloadAction<string>) => {
-      // Update the "Last Opened" time for sorting
       workspacesAdapter.updateOne(state, {
         id: action.payload,
-        changes: { lastOpened: new Date().toISOString() }
+        changes: { lastOpened: new Date().toISOString() },
       });
       state.activeId = action.payload;
     },
 
-    // --- Active Workspace Actions ---
-    // These actions modify the entity currently pointed to by activeId
-    
-    addActiveGroup: (state, action: PayloadAction<AxonGroup>) => {
-      if (state.activeId) {
-        const ws = state.entities[state.activeId];
-        if (ws) ws.groups.push(action.payload);
-      }
-    },
-
-
-    updateActiveGroup: (state, action: PayloadAction<{ id: string; changes: Partial<AxonGroup> }>) => {
-      // 1. Check if we have an active workspace
+    updateScanConfig: (state, action: PayloadAction<Partial<ScanConfig>>) => {
       if (!state.activeId) return;
-      
-      const workspace = state.entities[state.activeId];
-      if (!workspace) return;
+      const ws = state.entities[state.activeId];
+      if (!ws) return;
 
-      // 2. Find the group index
-      const groupIndex = workspace.groups.findIndex(g => g.id === action.payload.id);
-      
-      // 3. Apply changes immutably
-      if (groupIndex !== -1) {
-        workspace.groups[groupIndex] = {
-          ...workspace.groups[groupIndex],
-          ...action.payload.changes
-        };
-      }
+      ws.scan = { ...ws.scan, ...action.payload };
     },
 
-    updateGlobalOptions: (state, action: PayloadAction<Partial<WorkspaceData['globalOptions']>>) => {
+    updateGlobalOptions: (
+      state,
+      action: PayloadAction<Partial<WorkspaceData["globalOptions"]>>,
+    ) => {
       if (state.activeId && state.entities[state.activeId]) {
-        const ws = state.entities[state.activeId];
+        const ws = state.entities[state.activeId]!;
         ws.globalOptions = { ...ws.globalOptions, ...action.payload };
       }
     },
   },
 });
 
-export const { 
-  createWorkspace, 
-  deleteWorkspace, 
+export const {
+  createWorkspace,
+  deleteWorkspace,
   setActiveWorkspace,
-  addActiveGroup,
-  updateActiveGroup,
   setSelectedNode,
+  updateScanConfig,
   updateGlobalOptions,
 } = workspacesSlice.actions;
 
 export default workspacesSlice.reducer;
 
-// --- Selectors ---
-
-// 1. The Adapter Selectors (selectAll, selectById, selectIds)
 export const {
   selectAll: selectAllWorkspaces,
   selectById: selectWorkspaceById,
-} = workspacesAdapter.getSelectors<RootState>(state => state.workspaces);
+} = workspacesAdapter.getSelectors<RootState>((state) => state.workspaces);
 
-// 2. The Active Selectors
 export const selectActiveId = (state: RootState) => state.workspaces.activeId;
 
 export const selectActiveWorkspace = (state: RootState) => {
@@ -144,11 +135,11 @@ export const selectActiveWorkspace = (state: RootState) => {
   return id ? state.workspaces.entities[id] : null;
 };
 
-export const selectActiveGroups = (state: RootState) => 
-  selectActiveWorkspace(state)?.groups ?? [];
+export const selectActiveScanConfig = (state: RootState) =>
+  selectActiveWorkspace(state)?.scan ?? null;
 
-export const selectActiveRoot = (state: RootState) => 
+export const selectActiveRoot = (state: RootState) =>
   selectActiveWorkspace(state)?.projectRoot ?? null;
 
-export const selectSelectedNodeId = (state: RootState) => 
+export const selectSelectedNodeId = (state: RootState) =>
   selectActiveWorkspace(state)?.selectedNodeId ?? null;

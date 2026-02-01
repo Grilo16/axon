@@ -4,19 +4,20 @@
 - G:/Lesgo Coding Projects/axon/client-axon/src/app/hooks/useStore.ts
 - G:/Lesgo Coding Projects/axon/client-axon/src/app/layouts/MainLayout.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/app/store.ts
+- G:/Lesgo Coding Projects/axon/client-axon/src/index.css
+- G:/Lesgo Coding Projects/axon/client-axon/src/main.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/app/hooks/useStore.ts
 - G:/Lesgo Coding Projects/axon/client-axon/src/app/hooks/useToggle.ts
 - G:/Lesgo Coding Projects/axon/client-axon/src/app/store.ts
+- G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/BiColorEdge.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/FileNode.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/GraphCanvas.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/GraphToolbar.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/GroupNode.tsx
-- G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/NodeContextMenu.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/CreateWorkspaceCard/CreateWorkspaceCard.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/Explorer/FileTree.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/FileSelector/FileSelectorModal.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/FileViewer/FileViewer.tsx
-- G:/Lesgo Coding Projects/axon/client-axon/src/components/Inspector/GroupConfigView.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/Inspector/InspectorPanel.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/Inspector/PromptRuleEditor.tsx
 - G:/Lesgo Coding Projects/axon/client-axon/src/components/Inspector/RootConfigView.tsx
@@ -193,6 +194,97 @@
   36 | 
   37 | export type RootState = ReturnType<typeof store.getState>;
   38 | export type AppDispatch = typeof store.dispatch;
+</file>
+
+<file path="G:/Lesgo Coding Projects/axon/client-axon/src/index.css">
+   1 | :root {
+   2 |   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+   3 |   line-height: 1.5;
+   4 |   font-weight: 400;
+   5 | 
+   6 |   color-scheme: light dark;
+   7 |   color: rgba(255, 255, 255, 0.87);
+   8 |   background-color: #242424;
+   9 | 
+  10 |   font-synthesis: none;
+  11 |   text-rendering: optimizeLegibility;
+  12 |   -webkit-font-smoothing: antialiased;
+  13 |   -moz-osx-font-smoothing: grayscale;
+  14 | }
+  15 | 
+  16 | a {
+  17 |   font-weight: 500;
+  18 |   color: #646cff;
+  19 |   text-decoration: inherit;
+  20 | }
+  21 | a:hover {
+  22 |   color: #535bf2;
+  23 | }
+  24 | 
+  25 | body {
+  26 |   margin: 0;
+  27 |   display: flex;
+  28 |   place-items: center;
+  29 |   min-width: 320px;
+  30 |   min-height: 100vh;
+  31 | }
+  32 | 
+  33 | h1 {
+  34 |   font-size: 3.2em;
+  35 |   line-height: 1.1;
+  36 | }
+  37 | 
+  38 | button {
+  39 |   border-radius: 8px;
+  40 |   border: 1px solid transparent;
+  41 |   padding: 0.6em 1.2em;
+  42 |   font-size: 1em;
+  43 |   font-weight: 500;
+  44 |   font-family: inherit;
+  45 |   background-color: #1a1a1a;
+  46 |   cursor: pointer;
+  47 |   transition: border-color 0.25s;
+  48 | }
+  49 | button:hover {
+  50 |   border-color: #646cff;
+  51 | }
+  52 | button:focus,
+  53 | button:focus-visible {
+  54 |   outline: 4px auto -webkit-focus-ring-color;
+  55 | }
+  56 | 
+  57 | @media (prefers-color-scheme: light) {
+  58 |   :root {
+  59 |     color: #213547;
+  60 |     background-color: #ffffff;
+  61 |   }
+  62 |   a:hover {
+  63 |     color: #747bff;
+  64 |   }
+  65 |   button {
+  66 |     background-color: #f9f9f9;
+  67 |   }
+  68 | }
+</file>
+
+<file path="G:/Lesgo Coding Projects/axon/client-axon/src/main.tsx">
+   1 | import { StrictMode } from "react";
+   2 | import { createRoot } from "react-dom/client";
+   3 | import { Provider } from "react-redux";
+   4 | import { persistor, store } from "@app/store";
+   5 | import App from "./App";
+   6 | import "./index.css";
+   7 | import { PersistGate } from "redux-persist/integration/react";
+   8 | 
+   9 | createRoot(document.getElementById("root")!).render(
+  10 |   <StrictMode>
+  11 |     <Provider store={store}>
+  12 |       <PersistGate loading={null} persistor={persistor}>
+  13 |       <App />
+  14 |       </PersistGate>
+  15 |     </Provider>
+  16 |   </StrictMode>,
+  17 | );
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/app/hooks/useStore.ts">
@@ -391,6 +483,71 @@
   38 | export type AppDispatch = typeof store.dispatch;
 </file>
 
+<file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/BiColorEdge.tsx">
+   1 | import { memo } from "react";
+   2 | import { BaseEdge, getBezierPath, type EdgeProps } from "@xyflow/react";
+   3 | import { useTheme } from "styled-components";
+   4 | 
+   5 | export const BiColorEdge = memo((props: EdgeProps) => {
+   6 |   const theme = useTheme();
+   7 | 
+   8 |   const {
+   9 |     id,
+  10 |     sourceX,
+  11 |     sourceY,
+  12 |     targetX,
+  13 |     targetY,
+  14 |     sourcePosition,
+  15 |     targetPosition,
+  16 |     style,
+  17 |     markerEnd,
+  18 |     markerStart,
+  19 |   } = props;
+  20 | 
+  21 |   const [path] = getBezierPath({
+  22 |     sourceX,
+  23 |     sourceY,
+  24 |     targetX,
+  25 |     targetY,
+  26 |     sourcePosition,
+  27 |     targetPosition,
+  28 |   });
+  29 | 
+  30 |   const start = theme.colors.palette.primary;
+  31 |   const end = theme.colors.palette.success;
+  32 | 
+  33 |   const gradId = `axon-grad-${id}`;
+  34 | 
+  35 |   return (
+  36 |     <>
+  37 |       <defs>
+  38 |         <linearGradient
+  39 |           id={gradId}
+  40 |           gradientUnits="userSpaceOnUse"
+  41 |           x1={sourceX}
+  42 |           y1={sourceY}
+  43 |           x2={targetX}
+  44 |           y2={targetY}
+  45 |         >
+  46 |           <stop offset="0%" stopColor={start} stopOpacity={1} />
+  47 |           <stop offset="100%" stopColor={end} stopOpacity={1} />
+  48 |         </linearGradient>
+  49 |       </defs>
+  50 | 
+  51 |       <BaseEdge
+  52 |         path={path}
+  53 |         markerEnd={markerEnd}
+  54 |         markerStart={markerStart}
+  55 |         style={{
+  56 |           ...(style ?? {}),
+  57 |           stroke: `url(#${gradId})`,
+  58 |         }}
+  59 |       />
+  60 |     </>
+  61 |   );
+  62 | });
+</file>
+
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/FileNode.tsx">
    1 | import { memo, useMemo, useState } from "react";
    2 | import { Handle, Position, type NodeProps } from "@xyflow/react";
@@ -400,330 +557,377 @@
    6 | import { useWorkspace } from "@features/workspace/useWorkspace";
    7 | 
    8 | const NodeContainer = styled.div<{ $selected?: boolean }>`
-   9 |   background: #252526;
-  10 |   border: 1px solid ${(props) => (props.$selected ? "#007acc" : "#454545")};
-  11 |   border-radius: 4px;
-  12 |   padding: 12px;
-  13 |   color: #cccccc;
-  14 |   min-width: 230px;
-  15 |   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  16 |   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-  17 |   transition: border-color 0.2s ease;
-  18 | `;
-  19 | 
-  20 | const NodeHeader = styled.div`
-  21 |   display: flex;
-  22 |   align-items: center;
-  23 |   gap: 8px;
-  24 |   border-bottom: 1px solid #333;
-  25 |   padding-bottom: 8px;
-  26 |   margin-bottom: 8px;
-  27 |   font-weight: 600;
-  28 |   font-size: 13px;
-  29 |   color: #e1e1e1;
-  30 | `;
-  31 | 
-  32 | const RuleBadges = styled.div`
-  33 |   margin-left: auto;
-  34 |   display: flex;
-  35 |   gap: 6px;
-  36 |   align-items: center;
-  37 |   font-size: 10px;
-  38 |   opacity: 0.85;
-  39 | `;
-  40 | 
-  41 | const Badge = styled.div<{ $tone: "target" | "redact" }>`
-  42 |   padding: 2px 6px;
-  43 |   border-radius: 999px;
-  44 |   border: 1px solid ${({ $tone }) => ($tone === "redact" ? "#d13438" : "#b08800")};
-  45 |   color: ${({ $tone }) => ($tone === "redact" ? "#d13438" : "#b08800")};
-  46 | `;
-  47 | 
-  48 | const SymbolList = styled.div`
-  49 |   display: flex;
-  50 |   flex-direction: column;
-  51 |   gap: 4px;
-  52 | `;
-  53 | 
-  54 | const SectionLabel = styled.div`
-  55 |   font-size: 9px;
-  56 |   text-transform: uppercase;
-  57 |   color: #666;
-  58 |   margin: 4px 0;
-  59 |   font-weight: bold;
-  60 | `;
-  61 | 
-  62 | const SymbolRow = styled.div<{ $state: "normal" | "target" | "redact" }>`
-  63 |   display: flex;
-  64 |   align-items: center;
-  65 |   justify-content: space-between;
-  66 |   gap: 8px;
-  67 | 
-  68 |   background: #1e1e1e;
-  69 |   border: 1px solid #333;
-  70 |   padding: 2px 6px;
-  71 |   border-radius: 3px;
-  72 |   font-size: 11px;
-  73 | 
-  74 |   color: ${({ $state }) =>
-  75 |     $state === "redact" ? "#d13438" : $state === "target" ? "#d7ba7d" : "#4fc1ff"};
-  76 | 
-  77 |   ${({ $state }) =>
-  78 |     $state === "redact"
-  79 |       ? "border-color: #d13438;"
-  80 |       : $state === "target"
-  81 |         ? "border-color: #b08800;"
-  82 |         : ""}
-  83 | 
-  84 |   svg {
-  85 |     flex-shrink: 0;
-  86 |     color: #b4a7d6;
-  87 |   }
-  88 | `;
-  89 | 
-  90 | const RowLeft = styled.div`
-  91 |   display: inline-flex;
-  92 |   align-items: center;
-  93 |   gap: 6px;
-  94 |   min-width: 0;
-  95 | `;
-  96 | 
-  97 | const SymbolName = styled.span`
-  98 |   overflow: hidden;
-  99 |   text-overflow: ellipsis;
- 100 |   white-space: nowrap;
- 101 | `;
- 102 | 
- 103 | const Actions = styled.div`
- 104 |   display: inline-flex;
- 105 |   gap: 6px;
- 106 |   align-items: center;
- 107 |   flex-shrink: 0;
- 108 | `;
- 109 | 
- 110 | const MiniBtn = styled.button<{ $active?: boolean; $tone?: "target" | "redact" }>`
- 111 |   border-radius: 999px;
- 112 |   padding: 2px 8px;
- 113 |   font-size: 10px;
- 114 |   cursor: pointer;
- 115 | 
- 116 |   border: 1px solid
- 117 |     ${({ $tone, $active }) =>
- 118 |       $tone === "redact"
- 119 |         ? $active
- 120 |           ? "#d13438"
- 121 |           : "#5a2a2c"
- 122 |         : $active
- 123 |           ? "#b08800"
- 124 |           : "#4a3b16"};
- 125 | 
- 126 |   color: ${({ $tone, $active }) =>
- 127 |     $tone === "redact"
- 128 |       ? $active
- 129 |         ? "#d13438"
- 130 |         : "#c58f92"
- 131 |       : $active
- 132 |         ? "#d7ba7d"
- 133 |         : "#cbbf9b"};
- 134 | 
- 135 |   background: transparent;
- 136 | 
- 137 |   opacity: ${({ disabled }) => (disabled ? 0.45 : 1)};
- 138 |   pointer-events: ${({ disabled }) => (disabled ? "none" : "auto")};
- 139 | 
- 140 |   &:hover {
- 141 |     filter: brightness(1.15);
- 142 |   }
- 143 | `;
- 144 | 
- 145 | const MoreLink = styled.button`
- 146 |   background: transparent;
- 147 |   border: none;
- 148 |   padding: 2px 0;
- 149 |   text-align: left;
- 150 |   cursor: pointer;
- 151 |   font-size: 10px;
- 152 |   color: #9cdcfe;
- 153 |   opacity: 0.9;
- 154 | 
- 155 |   &:hover {
- 156 |     opacity: 1;
- 157 |     text-decoration: underline;
- 158 |   }
- 159 | `;
- 160 | 
- 161 | function toggle(list: string[], item: string) {
- 162 |   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item].sort();
- 163 | }
- 164 | 
- 165 | function basename(p: string) {
- 166 |   const parts = p.split(/[\\/]/g);
- 167 |   return parts[parts.length - 1] || p;
- 168 | }
- 169 | 
- 170 | export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
- 171 |   const { config, setOptions } = useWorkspace();
- 172 |   const [showAllDefs, setShowAllDefs] = useState(false);
- 173 |   const [showAllCalls, setShowAllCalls] = useState(false);
- 174 | 
- 175 |   const fileName = useMemo(() => {
- 176 |     const label = (data as any)?.label as string | undefined;
- 177 |     const path = (data as any)?.path as string | undefined;
- 178 |     return label?.trim() || (path ? basename(path) : "UnknownFile");
- 179 |   }, [data]);
- 180 | 
- 181 |   const redactions = config?.redactions ?? [];
- 182 |   const skeletonTargets = config?.skeletonTargets ?? [];
- 183 |   const skeletonMode = config?.skeletonMode ?? "stripOnly";
- 184 | 
- 185 |   const canTargetImpl = skeletonMode !== "all";
- 186 |   const implVerb = skeletonMode === "keepOnly" ? "Keep" : "Strip";
- 187 | 
- 188 |   const fileTargetCount = useMemo(
- 189 |     () => skeletonTargets.filter((t) => t.startsWith(`${fileName}:`)).length,
- 190 |     [skeletonTargets, fileName]
- 191 |   );
- 192 |   const fileRedactCount = useMemo(
- 193 |     () => redactions.filter((r) => r.startsWith(`${fileName}:`)).length,
- 194 |     [redactions, fileName]
- 195 |   );
+   9 |   position: relative;
+  10 |   background: #252526;
+  11 |   border: 1px solid ${(props) => (props.$selected ? "#007acc" : "#454545")};
+  12 |   border-radius: 4px;
+  13 |   padding: 12px;
+  14 |   color: #cccccc;
+  15 |   min-width: 230px;
+  16 |   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  17 |   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  18 |   transition: border-color 0.2s ease;
+  19 | `;
+  20 | 
+  21 | const NodeHeader = styled.div`
+  22 |   display: flex;
+  23 |   align-items: center;
+  24 |   gap: 8px;
+  25 |   border-bottom: 1px solid #333;
+  26 |   padding-bottom: 8px;
+  27 |   margin-bottom: 8px;
+  28 |   font-weight: 600;
+  29 |   font-size: 13px;
+  30 |   color: #e1e1e1;
+  31 | `;
+  32 | 
+  33 | const RuleBadges = styled.div`
+  34 |   margin-left: auto;
+  35 |   display: flex;
+  36 |   gap: 6px;
+  37 |   align-items: center;
+  38 |   font-size: 10px;
+  39 |   opacity: 0.85;
+  40 | `;
+  41 | 
+  42 | const Badge = styled.div<{ $tone: "target" | "redact" }>`
+  43 |   padding: 2px 6px;
+  44 |   border-radius: 999px;
+  45 |   border: 1px solid ${({ $tone }) => ($tone === "redact" ? "#d13438" : "#b08800")};
+  46 |   color: ${({ $tone }) => ($tone === "redact" ? "#d13438" : "#b08800")};
+  47 | `;
+  48 | 
+  49 | const SymbolList = styled.div`
+  50 |   display: flex;
+  51 |   flex-direction: column;
+  52 |   gap: 4px;
+  53 | `;
+  54 | 
+  55 | const SectionLabel = styled.div`
+  56 |   font-size: 9px;
+  57 |   text-transform: uppercase;
+  58 |   color: #666;
+  59 |   margin: 4px 0;
+  60 |   font-weight: bold;
+  61 | `;
+  62 | 
+  63 | const SymbolRow = styled.div<{ $state: "normal" | "target" | "redact" }>`
+  64 |   display: flex;
+  65 |   align-items: center;
+  66 |   justify-content: space-between;
+  67 |   gap: 8px;
+  68 | 
+  69 |   background: #1e1e1e;
+  70 |   border: 1px solid #333;
+  71 |   padding: 2px 6px;
+  72 |   border-radius: 3px;
+  73 |   font-size: 11px;
+  74 | 
+  75 |   color: ${({ $state }) =>
+  76 |     $state === "redact" ? "#d13438" : $state === "target" ? "#d7ba7d" : "#4fc1ff"};
+  77 | 
+  78 |   ${({ $state }) =>
+  79 |     $state === "redact"
+  80 |       ? "border-color: #d13438;"
+  81 |       : $state === "target"
+  82 |         ? "border-color: #b08800;"
+  83 |         : ""}
+  84 | 
+  85 |   svg {
+  86 |     flex-shrink: 0;
+  87 |     color: #b4a7d6;
+  88 |   }
+  89 | `;
+  90 | 
+  91 | const RowLeft = styled.div`
+  92 |   display: inline-flex;
+  93 |   align-items: center;
+  94 |   gap: 6px;
+  95 |   min-width: 0;
+  96 | `;
+  97 | 
+  98 | const SymbolName = styled.span`
+  99 |   overflow: hidden;
+ 100 |   text-overflow: ellipsis;
+ 101 |   white-space: nowrap;
+ 102 | `;
+ 103 | 
+ 104 | const Actions = styled.div`
+ 105 |   display: inline-flex;
+ 106 |   gap: 6px;
+ 107 |   align-items: center;
+ 108 |   flex-shrink: 0;
+ 109 | `;
+ 110 | 
+ 111 | const MiniBtn = styled.button<{ $active?: boolean; $tone?: "target" | "redact" }>`
+ 112 |   border-radius: 999px;
+ 113 |   padding: 2px 8px;
+ 114 |   font-size: 10px;
+ 115 |   cursor: pointer;
+ 116 | 
+ 117 |   border: 1px solid
+ 118 |     ${({ $tone, $active }) =>
+ 119 |       $tone === "redact"
+ 120 |         ? $active
+ 121 |           ? "#d13438"
+ 122 |           : "#5a2a2c"
+ 123 |         : $active
+ 124 |           ? "#b08800"
+ 125 |           : "#4a3b16"};
+ 126 | 
+ 127 |   color: ${({ $tone, $active }) =>
+ 128 |     $tone === "redact"
+ 129 |       ? $active
+ 130 |         ? "#d13438"
+ 131 |         : "#c58f92"
+ 132 |       : $active
+ 133 |         ? "#d7ba7d"
+ 134 |         : "#cbbf9b"};
+ 135 | 
+ 136 |   background: transparent;
+ 137 | 
+ 138 |   opacity: ${({ disabled }) => (disabled ? 0.45 : 1)};
+ 139 |   pointer-events: ${({ disabled }) => (disabled ? "none" : "auto")};
+ 140 | 
+ 141 |   &:hover {
+ 142 |     filter: brightness(1.15);
+ 143 |   }
+ 144 | `;
+ 145 | 
+ 146 | const MoreLink = styled.button`
+ 147 |   background: transparent;
+ 148 |   border: none;
+ 149 |   padding: 2px 0;
+ 150 |   text-align: left;
+ 151 |   cursor: pointer;
+ 152 |   font-size: 10px;
+ 153 |   color: #9cdcfe;
+ 154 |   opacity: 0.9;
+ 155 | 
+ 156 |   &:hover {
+ 157 |     opacity: 1;
+ 158 |     text-decoration: underline;
+ 159 |   }
+ 160 | `;
+ 161 | 
+ 162 | function toggle(list: string[], item: string) {
+ 163 |   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item].sort();
+ 164 | }
+ 165 | 
+ 166 | function basename(p: string) {
+ 167 |   const parts = p.split(/[\\/]/g);
+ 168 |   return parts[parts.length - 1] || p;
+ 169 | }
+ 170 | 
+ 171 | const handleCommonStyle: React.CSSProperties = {
+ 172 |   width: 10,
+ 173 |   height: 10,
+ 174 |   borderRadius: 3,
+ 175 |   background: "#2d2d2d",
+ 176 |   border: "1px solid #777",
+ 177 | };
+ 178 | 
+ 179 | export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
+ 180 |   const { config, setOptions } = useWorkspace();
+ 181 |   const [showAllDefs, setShowAllDefs] = useState(false);
+ 182 |   const [showAllCalls, setShowAllCalls] = useState(false);
+ 183 | 
+ 184 |   const fileName = useMemo(() => {
+ 185 |     const label = (data as any)?.label as string | undefined;
+ 186 |     const path = (data as any)?.path as string | undefined;
+ 187 |     return label?.trim() || (path ? basename(path) : "UnknownFile");
+ 188 |   }, [data]);
+ 189 | 
+ 190 |   const redactions = config?.redactions ?? [];
+ 191 |   const skeletonTargets = config?.skeletonTargets ?? [];
+ 192 |   const skeletonMode = config?.skeletonMode ?? "stripOnly";
+ 193 | 
+ 194 |   const canTargetImpl = skeletonMode !== "all";
+ 195 |   const implVerb = skeletonMode === "keepOnly" ? "Keep" : "Strip";
  196 | 
- 197 |   const makeToken = (symbol: string) => `${fileName}:${symbol}`;
- 198 | 
- 199 |   const toggleImpl = (token: string) => {
- 200 |     if (!config) return;
+ 197 |   const fileTargetCount = useMemo(
+ 198 |     () => skeletonTargets.filter((t) => t.startsWith(`${fileName}:`)).length,
+ 199 |     [skeletonTargets, fileName]
+ 200 |   );
  201 | 
- 202 |     const nextTargets = toggle(skeletonTargets, token);
- 203 |     const nextRedactions = redactions.includes(token) ? redactions.filter((r) => r !== token) : redactions;
- 204 | 
- 205 |     setOptions({ skeletonTargets: nextTargets, redactions: nextRedactions });
- 206 |   };
- 207 | 
- 208 |   const toggleRedact = (token: string) => {
- 209 |     if (!config) return;
- 210 | 
- 211 |     const nextRedactions = toggle(redactions, token);
- 212 |     const nextTargets = skeletonTargets.includes(token)
- 213 |       ? skeletonTargets.filter((t) => t !== token)
- 214 |       : skeletonTargets;
- 215 | 
- 216 |     setOptions({ redactions: nextRedactions, skeletonTargets: nextTargets });
- 217 |   };
- 218 | 
- 219 |   const defs = ((data as any)?.definitions as string[]) ?? [];
- 220 |   const calls = ((data as any)?.calls as string[]) ?? [];
- 221 | 
- 222 |   const defSlice = showAllDefs ? defs : defs.slice(0, 3);
- 223 |   const callSlice = showAllCalls ? calls : calls.slice(0, 2);
- 224 | 
- 225 |   const renderSymbol = (symbol: string, kind: "def" | "call") => {
- 226 |     const token = makeToken(symbol);
- 227 |     const isRedact = redactions.includes(token);
- 228 |     const isTarget = skeletonTargets.includes(token);
- 229 | 
- 230 |     const state: "normal" | "target" | "redact" = isRedact ? "redact" : isTarget ? "target" : "normal";
- 231 | 
- 232 |     return (
- 233 |       <SymbolRow key={`${kind}:${symbol}`} $state={state}>
- 234 |         <RowLeft>
- 235 |           {kind === "def" ? <VscSymbolMethod size={12} /> : <VscSymbolVariable size={12} />}
- 236 |           <SymbolName title={token}>{symbol}</SymbolName>
- 237 |         </RowLeft>
- 238 | 
- 239 |         <Actions>
- 240 |           <MiniBtn
- 241 |             $tone="target"
- 242 |             $active={isTarget}
- 243 |             disabled={!canTargetImpl}
- 244 |             onClick={(e) => {
- 245 |               e.stopPropagation();
- 246 |               toggleImpl(token);
- 247 |             }}
- 248 |             title={!canTargetImpl ? "Targets are ignored in “all” mode" : `${implVerb} implementation for ${token}`}
- 249 |           >
- 250 |             {implVerb}
- 251 |           </MiniBtn>
- 252 | 
- 253 |           <MiniBtn
- 254 |             $tone="redact"
- 255 |             $active={isRedact}
- 256 |             onClick={(e) => {
- 257 |               e.stopPropagation();
- 258 |               toggleRedact(token);
- 259 |             }}
- 260 |             title={`Redact ${token}`}
- 261 |           >
- 262 |             Redact
- 263 |           </MiniBtn>
- 264 |         </Actions>
- 265 |       </SymbolRow>
- 266 |     );
- 267 |   };
- 268 | 
- 269 |   return (
- 270 |     <NodeContainer $selected={selected}>
- 271 |       <Handle type="target" position={Position.Top} style={{ background: "#555" }} />
+ 202 |   const fileRedactCount = useMemo(
+ 203 |     () => redactions.filter((r) => r.startsWith(`${fileName}:`)).length,
+ 204 |     [redactions, fileName]
+ 205 |   );
+ 206 | 
+ 207 |   const makeToken = (symbol: string) => `${fileName}:${symbol}`;
+ 208 | 
+ 209 |   const toggleImpl = (token: string) => {
+ 210 |     if (!config) return;
+ 211 | 
+ 212 |     const nextTargets = toggle(skeletonTargets, token);
+ 213 |     const nextRedactions = redactions.includes(token)
+ 214 |       ? redactions.filter((r) => r !== token)
+ 215 |       : redactions;
+ 216 | 
+ 217 |     setOptions({ skeletonTargets: nextTargets, redactions: nextRedactions });
+ 218 |   };
+ 219 | 
+ 220 |   const toggleRedact = (token: string) => {
+ 221 |     if (!config) return;
+ 222 | 
+ 223 |     const nextRedactions = toggle(redactions, token);
+ 224 |     const nextTargets = skeletonTargets.includes(token)
+ 225 |       ? skeletonTargets.filter((t) => t !== token)
+ 226 |       : skeletonTargets;
+ 227 | 
+ 228 |     setOptions({ redactions: nextRedactions, skeletonTargets: nextTargets });
+ 229 |   };
+ 230 | 
+ 231 |   const defs = ((data as any)?.definitions as string[]) ?? [];
+ 232 |   const calls = ((data as any)?.calls as string[]) ?? [];
+ 233 | 
+ 234 |   const defSlice = showAllDefs ? defs : defs.slice(0, 3);
+ 235 |   const callSlice = showAllCalls ? calls : calls.slice(0, 2);
+ 236 | 
+ 237 |   const renderSymbol = (symbol: string, kind: "def" | "call") => {
+ 238 |     const token = makeToken(symbol);
+ 239 |     const isRedact = redactions.includes(token);
+ 240 |     const isTarget = skeletonTargets.includes(token);
+ 241 | 
+ 242 |     const state: "normal" | "target" | "redact" = isRedact
+ 243 |       ? "redact"
+ 244 |       : isTarget
+ 245 |         ? "target"
+ 246 |         : "normal";
+ 247 | 
+ 248 |     return (
+ 249 |       <SymbolRow key={`${kind}:${symbol}`} $state={state}>
+ 250 |         <RowLeft>
+ 251 |           {kind === "def" ? <VscSymbolMethod size={12} /> : <VscSymbolVariable size={12} />}
+ 252 |           <SymbolName title={token}>{symbol}</SymbolName>
+ 253 |         </RowLeft>
+ 254 | 
+ 255 |         <Actions>
+ 256 |           <MiniBtn
+ 257 |             $tone="target"
+ 258 |             $active={isTarget}
+ 259 |             disabled={!canTargetImpl}
+ 260 |             onClick={(e) => {
+ 261 |               e.stopPropagation();
+ 262 |               toggleImpl(token);
+ 263 |             }}
+ 264 |             title={
+ 265 |               !canTargetImpl
+ 266 |                 ? "Targets are ignored in “all” mode"
+ 267 |                 : `${implVerb} implementation for ${token}`
+ 268 |             }
+ 269 |           >
+ 270 |             {implVerb}
+ 271 |           </MiniBtn>
  272 | 
- 273 |       <NodeHeader>
- 274 |         <VscCode size={16} color="#519aba" />
- 275 |         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
- 276 |           {data.label as string}
- 277 |         </span>
- 278 | 
- 279 |         {(fileTargetCount > 0 || fileRedactCount > 0) && (
- 280 |           <RuleBadges>
- 281 |             {fileTargetCount > 0 && <Badge $tone="target">{fileTargetCount} impl</Badge>}
- 282 |             {fileRedactCount > 0 && <Badge $tone="redact">{fileRedactCount} red</Badge>}
- 283 |           </RuleBadges>
- 284 |         )}
- 285 |       </NodeHeader>
- 286 | 
- 287 |       {defs.length > 0 && (
- 288 |         <>
- 289 |           <SectionLabel>Exports/Definitions</SectionLabel>
- 290 |           <SymbolList>
- 291 |             {defSlice.map((d) => renderSymbol(d, "def"))}
- 292 |             {defs.length > 3 && (
- 293 |               <MoreLink
- 294 |                 onClick={(e) => {
- 295 |                   e.stopPropagation();
- 296 |                   setShowAllDefs((v) => !v);
- 297 |                 }}
- 298 |               >
- 299 |                 {showAllDefs ? "Show less" : `+ ${defs.length - 3} more`}
- 300 |               </MoreLink>
- 301 |             )}
- 302 |           </SymbolList>
- 303 |         </>
- 304 |       )}
- 305 | 
- 306 |       {calls.length > 0 && (
- 307 |         <>
- 308 |           <SectionLabel>Key Dependencies</SectionLabel>
- 309 |           <SymbolList>
- 310 |             {callSlice.map((c) => renderSymbol(c, "call"))}
- 311 |             {calls.length > 2 && (
- 312 |               <MoreLink
- 313 |                 onClick={(e) => {
- 314 |                   e.stopPropagation();
- 315 |                   setShowAllCalls((v) => !v);
- 316 |                 }}
- 317 |               >
- 318 |                 {showAllCalls ? "Show less" : `+ ${calls.length - 2} more`}
- 319 |               </MoreLink>
- 320 |             )}
- 321 |           </SymbolList>
- 322 |         </>
- 323 |       )}
- 324 | 
- 325 |       <Handle type="source" position={Position.Bottom} style={{ background: "#555" }} />
- 326 |     </NodeContainer>
- 327 |   );
- 328 | });
+ 273 |           <MiniBtn
+ 274 |             $tone="redact"
+ 275 |             $active={isRedact}
+ 276 |             onClick={(e) => {
+ 277 |               e.stopPropagation();
+ 278 |               toggleRedact(token);
+ 279 |             }}
+ 280 |             title={`Redact ${token}`}
+ 281 |           >
+ 282 |             Redact
+ 283 |           </MiniBtn>
+ 284 |         </Actions>
+ 285 |       </SymbolRow>
+ 286 |     );
+ 287 |   };
+ 288 | 
+ 289 |   return (
+ 290 |     <NodeContainer $selected={selected}>
+ 291 |       {/* incoming (top) */}
+ 292 |       <Handle
+ 293 |         id="in"
+ 294 |         type="target"
+ 295 |         position={Position.Top}
+ 296 |         isConnectable={false}
+ 297 |         style={{
+ 298 |           ...handleCommonStyle,
+ 299 |           top: -6,
+ 300 |         }}
+ 301 |       />
+ 302 | 
+ 303 |       <NodeHeader>
+ 304 |         <VscCode size={16} color="#519aba" />
+ 305 |         <span
+ 306 |           style={{
+ 307 |             overflow: "hidden",
+ 308 |             textOverflow: "ellipsis",
+ 309 |             whiteSpace: "nowrap",
+ 310 |           }}
+ 311 |           title={(data as any)?.path ?? fileName}
+ 312 |         >
+ 313 |           {fileName}
+ 314 |         </span>
+ 315 | 
+ 316 |         {(fileTargetCount > 0 || fileRedactCount > 0) && (
+ 317 |           <RuleBadges>
+ 318 |             {fileTargetCount > 0 && <Badge $tone="target">{fileTargetCount} impl</Badge>}
+ 319 |             {fileRedactCount > 0 && <Badge $tone="redact">{fileRedactCount} red</Badge>}
+ 320 |           </RuleBadges>
+ 321 |         )}
+ 322 |       </NodeHeader>
+ 323 | 
+ 324 |       {defs.length > 0 && (
+ 325 |         <>
+ 326 |           <SectionLabel>Exports/Definitions</SectionLabel>
+ 327 |           <SymbolList>
+ 328 |             {defSlice.map((d) => renderSymbol(d, "def"))}
+ 329 |             {defs.length > 3 && (
+ 330 |               <MoreLink
+ 331 |                 onClick={(e) => {
+ 332 |                   e.stopPropagation();
+ 333 |                   setShowAllDefs((v) => !v);
+ 334 |                 }}
+ 335 |               >
+ 336 |                 {showAllDefs ? "Show less" : `+ ${defs.length - 3} more`}
+ 337 |               </MoreLink>
+ 338 |             )}
+ 339 |           </SymbolList>
+ 340 |         </>
+ 341 |       )}
+ 342 | 
+ 343 |       {calls.length > 0 && (
+ 344 |         <>
+ 345 |           <SectionLabel>Key Dependencies</SectionLabel>
+ 346 |           <SymbolList>
+ 347 |             {callSlice.map((c) => renderSymbol(c, "call"))}
+ 348 |             {calls.length > 2 && (
+ 349 |               <MoreLink
+ 350 |                 onClick={(e) => {
+ 351 |                   e.stopPropagation();
+ 352 |                   setShowAllCalls((v) => !v);
+ 353 |                 }}
+ 354 |               >
+ 355 |                 {showAllCalls ? "Show less" : `+ ${calls.length - 2} more`}
+ 356 |               </MoreLink>
+ 357 |             )}
+ 358 |           </SymbolList>
+ 359 |         </>
+ 360 |       )}
+ 361 | 
+ 362 |       {/* outgoing (bottom) */}
+ 363 |       <Handle
+ 364 |         id="out"
+ 365 |         type="source"
+ 366 |         position={Position.Bottom}
+ 367 |         isConnectable={false}
+ 368 |         style={{
+ 369 |           ...handleCommonStyle,
+ 370 |           bottom: -6,
+ 371 |         }}
+ 372 |       />
+ 373 |     </NodeContainer>
+ 374 |   );
+ 375 | });
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/GraphCanvas.tsx">
-   1 | import { useCallback, useMemo, useState } from 'react';
+   1 | import { useCallback, useMemo, useState, useEffect } from "react";
    2 | import {
    3 |   ReactFlow,
    4 |   MiniMap,
@@ -732,999 +936,860 @@
    7 |   BackgroundVariant,
    8 |   addEdge,
    9 |   type Connection,
-  10 |   type NodeMouseHandler,
-  11 |   useOnSelectionChange,
+  10 |   type Node,
+  11 |   type Edge,
   12 |   Panel,
-  13 | } from '@xyflow/react';
-  14 | import '@xyflow/react/dist/style.css';
-  15 | import styled, { useTheme } from 'styled-components';
+  13 | } from "@xyflow/react";
+  14 | import "@xyflow/react/dist/style.css";
+  15 | import styled, { useTheme } from "styled-components";
   16 | 
-  17 | import { FileNode } from './FileNode';
-  18 | import { GroupNode } from './GroupNode';
-  19 | import { NodeContextMenu } from './NodeContextMenu';
-  20 | import { GraphToolbar } from './GraphToolbar';
+  17 | import { FileNode } from "./FileNode";
+  18 | import { GroupNode } from "./GroupNode";
+  19 | import { GraphToolbar } from "./GraphToolbar";
+  20 | import { BiColorEdge } from "./BiColorEdge";
   21 | 
-  22 | import { useWorkspace } from '@features/workspace/useWorkspace';
-  23 | import { nanoid } from '@reduxjs/toolkit';
-  24 | import { useGraphLayout } from '@features/visualizer/useGraphLayout';
-  25 | import { useAppDispatch } from '@app/hooks';
-  26 | import { setSelectedNode } from '@features/workspace/workspacesSlice';
-  27 | import { Surface } from '@components/ui/Surface';
-  28 | import { Subtext } from '@components/ui/Typography';
-  29 | import { VscClose, VscFolderOpened } from 'react-icons/vsc';
-  30 | 
-  31 | const CanvasContainer = styled.div`
-  32 |   width: 100%;
-  33 |   height: 100%;
-  34 |   background-color: ${({ theme }) => theme.colors.bg.main};
-  35 | 
-  36 |   /* Force React Flow to inherit theme fonts */
-  37 |   .react-flow__node {
-  38 |     font-family: ${({ theme }) => theme.typography.fontFamily};
-  39 |     transition: opacity 140ms ease, filter 140ms ease;
-  40 |   }
-  41 | 
-  42 |   .react-flow__edge-path {
-  43 |     transition: opacity 140ms ease, stroke 140ms ease, stroke-width 140ms ease;
-  44 |   }
-  45 | 
-  46 |   /* Focus classes (we set node.className dynamically) */
-  47 |   .react-flow__node.axon-dim {
-  48 |     opacity: 0.12;
-  49 |     filter: grayscale(0.15);
-  50 |   }
-  51 | 
-  52 |   .react-flow__node.axon-highlight {
-  53 |     opacity: 1;
-  54 |   }
-  55 | 
-  56 |   .react-flow__node.axon-focus {
-  57 |     opacity: 1;
-  58 |     filter: drop-shadow(0 0 10px rgba(0, 122, 204, 0.35));
-  59 |   }
-  60 | `;
-  61 | 
-  62 | const FocusCard = styled(Surface)`
-  63 |   width: 280px;
-  64 |   display: flex;
-  65 |   flex-direction: column;
-  66 |   gap: ${({ theme }) => theme.spacing(1.5)};
-  67 | `;
-  68 | 
-  69 | const FocusTitleRow = styled.div`
-  70 |   display: flex;
-  71 |   justify-content: space-between;
-  72 |   align-items: flex-start;
-  73 |   gap: ${({ theme }) => theme.spacing(1)};
+  22 | import { useWorkspace } from "@features/workspace/useWorkspace";
+  23 | import { useGraphLayout } from "@features/visualizer/useGraphLayout";
+  24 | import { useAppDispatch } from "@app/hooks";
+  25 | import { setSelectedNode } from "@features/workspace/workspacesSlice";
+  26 | 
+  27 | import { Surface } from "@components/ui/Surface";
+  28 | import { Subtext } from "@components/ui/Typography";
+  29 | import { FileSelectorModal } from "@components/FileSelector/FileSelectorModal";
+  30 | import { useFileSystem } from "@features/axon/useFileSystem";
+  31 | import { useToggle } from "@app/hooks";
+  32 | import { VscFolderOpened, VscPlay } from "react-icons/vsc";
+  33 | 
+  34 | const CanvasContainer = styled.div`
+  35 |   width: 100%;
+  36 |   height: 100%;
+  37 |   background-color: ${({ theme }) => theme.colors.bg.main};
+  38 | 
+  39 |   .react-flow__node {
+  40 |     font-family: ${({ theme }) => theme.typography.fontFamily};
+  41 |     transition: opacity 140ms ease, filter 140ms ease;
+  42 |   }
+  43 | 
+  44 |   .react-flow__edge-path {
+  45 |     transition: opacity 140ms ease, stroke-width 140ms ease;
+  46 |   }
+  47 | 
+  48 |   .react-flow__node.axon-dim {
+  49 |     opacity: 0.12;
+  50 |     filter: grayscale(0.15);
+  51 |   }
+  52 | 
+  53 |   .react-flow__node.axon-highlight {
+  54 |     opacity: 1;
+  55 |   }
+  56 | 
+  57 |   .react-flow__node.axon-focus {
+  58 |     opacity: 1;
+  59 |     filter: drop-shadow(0 0 10px rgba(0, 122, 204, 0.35));
+  60 |   }
+  61 | `;
+  62 | 
+  63 | const FocusCard = styled(Surface)`
+  64 |   width: 310px;
+  65 |   display: flex;
+  66 |   flex-direction: column;
+  67 |   gap: ${({ theme }) => theme.spacing(1.5)};
+  68 | `;
+  69 | 
+  70 | const Row = styled.div`
+  71 |   display: flex;
+  72 |   gap: 10px;
+  73 |   align-items: center;
   74 | `;
   75 | 
-  76 | const FocusTitle = styled.div`
-  77 |   font-size: 13px;
-  78 |   font-weight: 800;
-  79 |   color: ${({ theme }) => theme.colors.text.primary};
-  80 | `;
-  81 | 
-  82 | const FocusPath = styled(Subtext)`
-  83 |   margin-top: 6px;
-  84 |   font-size: 12px;
-  85 |   word-break: break-all;
-  86 | `;
-  87 | 
-  88 | const Row = styled.div`
-  89 |   display: flex;
-  90 |   gap: 10px;
-  91 |   align-items: center;
-  92 | `;
-  93 | 
-  94 | const Slider = styled.input`
-  95 |   width: 100%;
-  96 |   accent-color: ${({ theme }) => theme.colors.palette.primary};
+  76 | const Slider = styled.input`
+  77 |   width: 100%;
+  78 |   accent-color: ${({ theme }) => theme.colors.palette.primary};
+  79 | `;
+  80 | 
+  81 | const Pill = styled.div`
+  82 |   border: 1px solid ${({ theme }) => theme.colors.border};
+  83 |   background: ${({ theme }) => theme.colors.bg.overlay};
+  84 |   color: ${({ theme }) => theme.colors.text.secondary};
+  85 |   border-radius: 999px;
+  86 |   padding: 4px 8px;
+  87 |   font-size: 12px;
+  88 | `;
+  89 | 
+  90 | const SetupOverlay = styled.div`
+  91 |   position: absolute;
+  92 |   inset: 0;
+  93 |   display: grid;
+  94 |   place-items: center;
+  95 |   pointer-events: none;
+  96 |   z-index: 5;
   97 | `;
   98 | 
-  99 | const Pill = styled.div`
- 100 |   border: 1px solid ${({ theme }) => theme.colors.border};
- 101 |   background: ${({ theme }) => theme.colors.bg.overlay};
- 102 |   color: ${({ theme }) => theme.colors.text.secondary};
- 103 |   border-radius: 999px;
- 104 |   padding: 4px 8px;
- 105 |   font-size: 12px;
- 106 | `;
- 107 | 
- 108 | const BtnRow = styled.div`
- 109 |   display: grid;
- 110 |   grid-template-columns: 1fr auto;
- 111 |   gap: ${({ theme }) => theme.spacing(1)};
- 112 | `;
- 113 | 
- 114 | const PrimaryBtn = styled.button`
- 115 |   background: ${({ theme }) => theme.colors.palette.primary};
- 116 |   color: #fff;
- 117 |   border: none;
- 118 |   border-radius: 6px;
- 119 |   padding: 8px 10px;
- 120 |   cursor: pointer;
- 121 |   font-size: 12px;
- 122 |   font-weight: 700;
- 123 |   display: inline-flex;
- 124 |   align-items: center;
- 125 |   justify-content: center;
- 126 |   gap: 8px;
- 127 | 
- 128 |   &:disabled {
- 129 |     opacity: 0.5;
- 130 |     cursor: not-allowed;
- 131 |   }
- 132 | 
- 133 |   &:hover:enabled {
- 134 |     filter: brightness(1.06);
- 135 |   }
- 136 | `;
- 137 | 
- 138 | const GhostBtn = styled.button`
- 139 |   background: transparent;
- 140 |   color: ${({ theme }) => theme.colors.text.secondary};
- 141 |   border: 1px solid ${({ theme }) => theme.colors.border};
- 142 |   border-radius: 6px;
- 143 |   padding: 8px 10px;
- 144 |   cursor: pointer;
- 145 |   display: inline-flex;
- 146 |   align-items: center;
- 147 |   justify-content: center;
- 148 | 
- 149 |   &:hover {
- 150 |     background: ${({ theme }) => theme.colors.bg.overlay};
- 151 |     color: ${({ theme }) => theme.colors.text.primary};
- 152 |   }
- 153 | `;
- 154 | 
- 155 | /** Selection listener that also updates local focus id */
- 156 | const SelectionListener = ({ onSelected }: { onSelected: (id: string | null) => void }) => {
- 157 |   const dispatch = useAppDispatch();
- 158 | 
- 159 |   useOnSelectionChange({
- 160 |     onChange: ({ nodes }) => {
- 161 |       const selectedId = nodes.length > 0 ? nodes[0].id : null;
- 162 |       dispatch(setSelectedNode(selectedId));
- 163 |       onSelected(selectedId);
- 164 |     },
- 165 |   });
- 166 | 
- 167 |   return null;
- 168 | };
- 169 | 
- 170 | function computeHighlight(
- 171 |   focusId: string,
- 172 |   nodes: any[],
- 173 |   edges: any[],
- 174 |   depth: number
- 175 | ) {
- 176 |   const focus = nodes.find((n) => n.id === focusId);
- 177 |   if (!focus) return null;
- 178 | 
- 179 |   const highlightedNodeIds = new Set<string>();
- 180 |   const highlightedEdgeIds = new Set<string>();
- 181 |   const distances = new Map<string, number>();
- 182 |   const relatedGroupIds = new Set<string>();
- 183 | 
- 184 |   if (focus.type === 'groupNode') {
- 185 |     highlightedNodeIds.add(focusId);
- 186 |     distances.set(focusId, 0);
- 187 | 
- 188 |     const children = nodes.filter((n) => n.parentId === focusId);
- 189 |     for (const c of children) {
- 190 |       highlightedNodeIds.add(c.id);
- 191 |       distances.set(c.id, 1);
- 192 |     }
- 193 | 
- 194 |     for (const e of edges) {
- 195 |       if (highlightedNodeIds.has(e.source) && highlightedNodeIds.has(e.target)) {
- 196 |         highlightedEdgeIds.add(e.id);
- 197 |       }
- 198 |     }
+  99 | const SetupCard = styled(Surface)`
+ 100 |   width: min(720px, calc(100vw - 80px));
+ 101 |   pointer-events: auto;
+ 102 | `;
+ 103 | 
+ 104 | const SetupTitle = styled.div`
+ 105 |   font-size: 16px;
+ 106 |   font-weight: 900;
+ 107 |   color: ${({ theme }) => theme.colors.text.primary};
+ 108 |   margin-bottom: 6px;
+ 109 | `;
+ 110 | 
+ 111 | const SetupGrid = styled.div`
+ 112 |   display: grid;
+ 113 |   grid-template-columns: 1fr 120px;
+ 114 |   gap: 10px;
+ 115 |   margin-top: 12px;
+ 116 | 
+ 117 |   @media (max-width: 720px) {
+ 118 |     grid-template-columns: 1fr;
+ 119 |   }
+ 120 | `;
+ 121 | 
+ 122 | const Input = styled.input`
+ 123 |   width: 100%;
+ 124 |   border: 1px solid ${({ theme }) => theme.colors.border};
+ 125 |   border-radius: 6px;
+ 126 |   padding: 10px 10px;
+ 127 |   background: ${({ theme }) => theme.colors.bg.main};
+ 128 |   color: ${({ theme }) => theme.colors.text.primary};
+ 129 | `;
+ 130 | 
+ 131 | const Button = styled.button<{ $primary?: boolean }>`
+ 132 |   border: 1px solid ${({ theme, $primary }) =>
+ 133 |     $primary ? "transparent" : theme.colors.border};
+ 134 |   background: ${({ theme, $primary }) =>
+ 135 |     $primary ? theme.colors.palette.primary : "transparent"};
+ 136 |   color: ${({ theme, $primary }) => ($primary ? "#fff" : theme.colors.text.primary)};
+ 137 |   border-radius: 6px;
+ 138 |   padding: 10px 12px;
+ 139 |   cursor: pointer;
+ 140 |   display: inline-flex;
+ 141 |   gap: 8px;
+ 142 |   align-items: center;
+ 143 |   justify-content: center;
+ 144 |   font-weight: 800;
+ 145 | 
+ 146 |   &:disabled {
+ 147 |     opacity: 0.6;
+ 148 |     cursor: not-allowed;
+ 149 |   }
+ 150 | 
+ 151 |   &:hover:enabled {
+ 152 |     filter: brightness(1.06);
+ 153 |   }
+ 154 | `;
+ 155 | 
+ 156 | const Inline = styled.div`
+ 157 |   display: flex;
+ 158 |   gap: 10px;
+ 159 |   align-items: center;
+ 160 | `;
+ 161 | 
+ 162 | const Label = styled.div`
+ 163 |   font-size: 12px;
+ 164 |   color: ${({ theme }) => theme.colors.text.muted};
+ 165 |   font-weight: 700;
+ 166 |   text-transform: uppercase;
+ 167 | `;
+ 168 | 
+ 169 | function collectAncestors(startId: string, parentById: Map<string, string | undefined>) {
+ 170 |   const out = new Set<string>();
+ 171 |   let cur: string | undefined = startId;
+ 172 |   while (cur) {
+ 173 |     const p = parentById.get(cur);
+ 174 |     if (!p) break;
+ 175 |     out.add(p);
+ 176 |     cur = p;
+ 177 |   }
+ 178 |   return out;
+ 179 | }
+ 180 | 
+ 181 | function computeHighlight(
+ 182 |   focusId: string,
+ 183 |   nodes: Node[],
+ 184 |   edges: Edge[],
+ 185 |   depth: number
+ 186 | ) {
+ 187 |   const byId = new Map<string, any>();
+ 188 |   const parentById = new Map<string, string | undefined>();
+ 189 |   const childrenByParent = new Map<string, string[]>();
+ 190 | 
+ 191 |   for (const n of nodes as any[]) {
+ 192 |     byId.set(n.id, n);
+ 193 |     parentById.set(n.id, n.parentId);
+ 194 |     if (n.parentId) {
+ 195 |       if (!childrenByParent.has(n.parentId)) childrenByParent.set(n.parentId, []);
+ 196 |       childrenByParent.get(n.parentId)!.push(n.id);
+ 197 |     }
+ 198 |   }
  199 | 
- 200 |     relatedGroupIds.add(focusId);
- 201 |     return { highlightedNodeIds, highlightedEdgeIds, distances, relatedGroupIds };
- 202 |   }
- 203 | 
- 204 |   const adj = new Map<string, string[]>();
- 205 |   const add = (a: string, b: string) => {
- 206 |     if (!adj.has(a)) adj.set(a, []);
- 207 |     adj.get(a)!.push(b);
- 208 |   };
- 209 | 
- 210 |   for (const e of edges) {
- 211 |     add(e.source, e.target);
- 212 |     add(e.target, e.source);
- 213 |   }
- 214 | 
- 215 |   const q: string[] = [focusId];
- 216 |   highlightedNodeIds.add(focusId);
- 217 |   distances.set(focusId, 0);
- 218 | 
- 219 |   while (q.length) {
- 220 |     const cur = q.shift()!;
- 221 |     const d = distances.get(cur)!;
- 222 |     if (d >= depth) continue;
- 223 | 
- 224 |     for (const n of adj.get(cur) ?? []) {
- 225 |       if (!distances.has(n)) {
- 226 |         distances.set(n, d + 1);
- 227 |         highlightedNodeIds.add(n);
- 228 |         q.push(n);
- 229 |       }
- 230 |     }
- 231 |   }
- 232 | 
- 233 |   for (const e of edges) {
- 234 |     if (highlightedNodeIds.has(e.source) && highlightedNodeIds.has(e.target)) {
- 235 |       highlightedEdgeIds.add(e.id);
- 236 |     }
- 237 |   }
- 238 | 
- 239 |   for (const n of nodes) {
- 240 |     if (highlightedNodeIds.has(n.id) && n.parentId) {
- 241 |       relatedGroupIds.add(n.parentId);
- 242 |     }
- 243 |   }
- 244 | 
- 245 |   return { highlightedNodeIds, highlightedEdgeIds, distances, relatedGroupIds };
- 246 | }
+ 200 |   const focus = byId.get(focusId);
+ 201 |   if (!focus) return null;
+ 202 | 
+ 203 |   const highlightedNodeIds = new Set<string>();
+ 204 |   const highlightedEdgeIds = new Set<string>();
+ 205 |   const relatedGroupIds = new Set<string>();
+ 206 | 
+ 207 |   if (focus.type === "groupNode") {
+ 208 |     const q: string[] = [focusId];
+ 209 |     highlightedNodeIds.add(focusId);
+ 210 |     relatedGroupIds.add(focusId);
+ 211 | 
+ 212 |     while (q.length) {
+ 213 |       const cur = q.shift()!;
+ 214 |       const kids = childrenByParent.get(cur) ?? [];
+ 215 |       for (const k of kids) {
+ 216 |         highlightedNodeIds.add(k);
+ 217 |         q.push(k);
+ 218 |       }
+ 219 |     }
+ 220 | 
+ 221 |     for (const a of collectAncestors(focusId, parentById)) relatedGroupIds.add(a);
+ 222 | 
+ 223 |     for (const e of edges as any[]) {
+ 224 |       if (highlightedNodeIds.has(e.source) && highlightedNodeIds.has(e.target)) {
+ 225 |         highlightedEdgeIds.add(e.id);
+ 226 |       }
+ 227 |     }
+ 228 | 
+ 229 |     return { highlightedNodeIds, highlightedEdgeIds, relatedGroupIds };
+ 230 |   }
+ 231 | 
+ 232 |   const adj = new Map<string, string[]>();
+ 233 |   const add = (a: string, b: string) => {
+ 234 |     if (!adj.has(a)) adj.set(a, []);
+ 235 |     adj.get(a)!.push(b);
+ 236 |   };
+ 237 | 
+ 238 |   for (const e of edges as any[]) {
+ 239 |     if (!byId.has(e.source) || !byId.has(e.target)) continue;
+ 240 |     const s = byId.get(e.source);
+ 241 |     const t = byId.get(e.target);
+ 242 |     if (s?.type === "groupNode" || t?.type === "groupNode") continue;
+ 243 | 
+ 244 |     add(e.source, e.target);
+ 245 |     add(e.target, e.source);
+ 246 |   }
  247 | 
- 248 | export const GraphCanvas = () => {
- 249 |   const theme = useTheme();
- 250 |   const { createGroup } = useWorkspace();
- 251 | 
- 252 |   const { nodes, edges, onNodesChange, onEdgesChange, setEdges } = useGraphLayout();
- 253 | 
- 254 |   const [menu, setMenu] = useState<{ x: number; y: number; node: any } | null>(null);
- 255 |   const [focusId, setFocusId] = useState<string | null>(null);
- 256 |   const [highlightDepth, setHighlightDepth] = useState<number>(2);
+ 248 |   const dist = new Map<string, number>();
+ 249 |   const q: string[] = [focusId];
+ 250 |   dist.set(focusId, 0);
+ 251 |   highlightedNodeIds.add(focusId);
+ 252 | 
+ 253 |   while (q.length) {
+ 254 |     const cur = q.shift()!;
+ 255 |     const d = dist.get(cur)!;
+ 256 |     if (d >= depth) continue;
  257 | 
- 258 |   const nodeTypes = useMemo(
- 259 |     () => ({
- 260 |       fileNode: FileNode,
- 261 |       groupNode: GroupNode,
- 262 |     }),
- 263 |     []
- 264 |   );
+ 258 |     for (const nxt of adj.get(cur) ?? []) {
+ 259 |       if (dist.has(nxt)) continue;
+ 260 |       dist.set(nxt, d + 1);
+ 261 |       highlightedNodeIds.add(nxt);
+ 262 |       q.push(nxt);
+ 263 |     }
+ 264 |   }
  265 | 
- 266 |   const onConnect = useCallback(
- 267 |     (params: Connection) => {
- 268 |       setEdges((eds) => addEdge(params, eds));
- 269 |     },
- 270 |     [setEdges]
- 271 |   );
- 272 | 
- 273 |   const onNodeContextMenu: NodeMouseHandler = useCallback((event, node) => {
- 274 |     event.preventDefault();
- 275 |     if (node.type === 'fileNode') {
- 276 |       setMenu({ x: event.clientX, y: event.clientY, node });
- 277 |     }
- 278 |   }, []);
- 279 | 
- 280 |   const onPaneClick = useCallback(() => {
- 281 |     setMenu(null);
- 282 |   }, []);
- 283 | 
- 284 |   const handleExtractGroup = (node: any) => {
- 285 |     const path = node.data.path;
- 286 |     if (path) {
- 287 |       createGroup({
- 288 |         id: nanoid(),
- 289 |         name: `${node.data.label} Scope`,
- 290 |         entryPoint: path,
- 291 |         depth: 2,
- 292 |         isActive: true,
- 293 |         flatten: true,
- 294 |       });
- 295 |     }
- 296 |     setMenu(null);
- 297 |   };
- 298 | 
- 299 |   const highlight = useMemo(() => {
- 300 |     if (!focusId) return null;
- 301 |     return computeHighlight(focusId, nodes as any[], edges as any[], highlightDepth);
- 302 |   }, [focusId, nodes, edges, highlightDepth]);
- 303 | 
- 304 |   const focusNode = useMemo(() => {
- 305 |     if (!focusId) return null;
- 306 |     return (nodes as any[]).find((n) => n.id === focusId) ?? null;
- 307 |   }, [nodes, focusId]);
- 308 | 
- 309 |   const focusLabel = (focusNode?.data as any)?.label as string | undefined;
- 310 |   const focusPath = (focusNode?.data as any)?.path as string | undefined;
- 311 | 
- 312 |   const displayNodes = useMemo(() => {
- 313 |     if (!highlight) return nodes;
- 314 | 
- 315 |     const { highlightedNodeIds, relatedGroupIds } = highlight;
- 316 | 
- 317 |     return (nodes as any[]).map((n) => {
- 318 |       const base = n.className ? `${n.className} ` : '';
- 319 | 
- 320 |       const isFocus = n.id === focusId;
- 321 |       const isGroup = n.type === 'groupNode';
- 322 |       const isHighlighted = highlightedNodeIds.has(n.id);
- 323 |       const isRelatedGroup = isGroup && relatedGroupIds.has(n.id);
+ 266 |   for (const e of edges as any[]) {
+ 267 |     if (highlightedNodeIds.has(e.source) && highlightedNodeIds.has(e.target)) {
+ 268 |       highlightedEdgeIds.add(e.id);
+ 269 |     }
+ 270 |   }
+ 271 | 
+ 272 |   for (const nId of highlightedNodeIds) {
+ 273 |     for (const a of collectAncestors(nId, parentById)) relatedGroupIds.add(a);
+ 274 |     const p = parentById.get(nId);
+ 275 |     if (p) relatedGroupIds.add(p);
+ 276 |   }
+ 277 | 
+ 278 |   return { highlightedNodeIds, highlightedEdgeIds, relatedGroupIds };
+ 279 | }
+ 280 | 
+ 281 | export const GraphCanvas = () => {
+ 282 |   const theme = useTheme();
+ 283 |   const dispatch = useAppDispatch();
+ 284 | 
+ 285 |   const { projectRoot, scanConfig, setScan } = useWorkspace();
+ 286 |   const { nodes, edges, onNodesChange, onEdgesChange, setEdges, isScanning, refreshGraph } =
+ 287 |     useGraphLayout();
+ 288 | 
+ 289 |   const [focusId, setFocusId] = useState<string | null>(null);
+ 290 |   const [highlightDepth, setHighlightDepth] = useState<number>(2);
+ 291 | 
+ 292 |   const [entryDraft, setEntryDraft] = useState(scanConfig?.entryPoint ?? "");
+ 293 |   const [depthDraft, setDepthDraft] = useState<number>(scanConfig?.depth ?? 3);
+ 294 |   const [flattenDraft, setFlattenDraft] = useState<boolean>(!!scanConfig?.flatten);
+ 295 | 
+ 296 |   useEffect(() => {
+ 297 |     setEntryDraft(scanConfig?.entryPoint ?? "");
+ 298 |     setDepthDraft(scanConfig?.depth ?? 3);
+ 299 |     setFlattenDraft(!!scanConfig?.flatten);
+ 300 |   }, [scanConfig?.entryPoint, scanConfig?.depth, scanConfig?.flatten]);
+ 301 | 
+ 302 |   const filePicker = useToggle();
+ 303 |   const fs = useFileSystem(projectRoot ?? null);
+ 304 | 
+ 305 |   const openPicker = useCallback(() => {
+ 306 |     if (projectRoot) fs.cd(projectRoot);
+ 307 |     filePicker.open();
+ 308 |   }, [projectRoot, fs, filePicker]);
+ 309 | 
+ 310 |   const nodeTypes = useMemo(
+ 311 |     () => ({
+ 312 |       fileNode: FileNode,
+ 313 |       groupNode: GroupNode,
+ 314 |     }),
+ 315 |     []
+ 316 |   );
+ 317 | 
+ 318 |   const edgeTypes = useMemo(
+ 319 |     () => ({
+ 320 |       axonBiColor: BiColorEdge,
+ 321 |     }),
+ 322 |     []
+ 323 |   );
  324 | 
- 325 |       const shouldDim = isGroup ? !isRelatedGroup && !isHighlighted : !isHighlighted;
- 326 | 
- 327 |       const className = isFocus
- 328 |         ? `${base}axon-focus`
- 329 |         : shouldDim
- 330 |           ? `${base}axon-dim`
- 331 |           : `${base}axon-highlight`;
- 332 | 
- 333 |       return { ...n, className };
- 334 |     });
- 335 |   }, [nodes, highlight, focusId]);
- 336 | 
- 337 |   const displayEdges = useMemo(() => {
- 338 |     const neutral = theme.colors.border;
- 339 |     const importColor = theme.colors.palette.primary; // outgoing from focus
- 340 |     const exportColor = theme.colors.palette.accent;  // incoming to focus
- 341 | 
- 342 |     if (!highlight || !focusId) {
- 343 |       return (edges as any[]).map((e) => ({
- 344 |         ...e,
- 345 |         animated: false,
- 346 |         style: {
- 347 |           ...(e.style ?? {}),
- 348 |           stroke: neutral,
- 349 |           strokeWidth: 1.3,
- 350 |           opacity: 0.55,
- 351 |         },
- 352 |       }));
- 353 |     }
+ 325 |   const onConnect = useCallback(
+ 326 |     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+ 327 |     [setEdges]
+ 328 |   );
+ 329 | 
+ 330 |   const handleNodeClick = useCallback(
+ 331 |     (_: any, node: any) => {
+ 332 |       setFocusId(node?.id ?? null);
+ 333 | 
+ 334 |       const fileId = node?.type === "fileNode" ? node.id : null;
+ 335 |       dispatch(setSelectedNode(fileId));
+ 336 |     },
+ 337 |     [dispatch]
+ 338 |   );
+ 339 | 
+ 340 |   const clearFocus = useCallback(() => {
+ 341 |     setFocusId(null);
+ 342 |     dispatch(setSelectedNode(null));
+ 343 |   }, [dispatch]);
+ 344 | 
+ 345 |   const highlight = useMemo(() => {
+ 346 |     if (!focusId) return null;
+ 347 |     return computeHighlight(focusId, nodes as any, edges as any, highlightDepth);
+ 348 |   }, [focusId, nodes, edges, highlightDepth]);
+ 349 | 
+ 350 |   const displayNodes = useMemo(() => {
+ 351 |     if (!highlight || !focusId) return nodes;
+ 352 | 
+ 353 |     const { highlightedNodeIds, relatedGroupIds } = highlight;
  354 | 
- 355 |     const { highlightedEdgeIds, distances } = highlight;
- 356 | 
- 357 |     return (edges as any[]).map((e) => {
- 358 |       const hot = highlightedEdgeIds.has(e.id);
- 359 | 
- 360 |       const ds = distances.get(e.source);
- 361 |       const dt = distances.get(e.target);
- 362 | 
- 363 |       let stroke = neutral;
- 364 | 
- 365 |       if (hot) {
- 366 |         if (e.source === focusId) stroke = importColor;
- 367 |         else if (e.target === focusId) stroke = exportColor;
- 368 |         else if (ds !== undefined && dt !== undefined) {
- 369 |           if (ds < dt) stroke = importColor;
- 370 |           else if (ds > dt) stroke = exportColor;
- 371 |           else stroke = theme.colors.text.muted;
- 372 |         }
- 373 |       }
- 374 | 
- 375 |       return {
- 376 |         ...e,
- 377 |         animated: hot,
- 378 |         style: {
- 379 |           ...(e.style ?? {}),
- 380 |           stroke,
- 381 |           strokeWidth: hot ? 2.2 : 1.1,
- 382 |           opacity: hot ? 0.95 : 0.06,
- 383 |         },
- 384 |       };
- 385 |     });
- 386 |   }, [edges, highlight, theme, focusId]);
- 387 | 
- 388 |   const clearFocus = useCallback(() => setFocusId(null), []);
- 389 | 
- 390 |   const extractHighlightedToGroup = useCallback(() => {
- 391 |     if (!focusNode || focusNode.type !== 'fileNode') return;
- 392 |     const path = (focusNode.data as any)?.path;
- 393 |     const label = (focusNode.data as any)?.label ?? 'Selection';
- 394 |     if (!path) return;
- 395 | 
- 396 |     createGroup({
- 397 |       id: nanoid(),
- 398 |       name: `${label} (depth ${highlightDepth})`,
- 399 |       entryPoint: path,
- 400 |       depth: highlightDepth,
- 401 |       isActive: true,
- 402 |       flatten: true,
- 403 |     });
- 404 |   }, [focusNode, createGroup, highlightDepth]);
- 405 | 
- 406 |   return (
- 407 |     <CanvasContainer>
- 408 |       <ReactFlow
- 409 |         nodes={displayNodes as any}
- 410 |         edges={displayEdges as any}
- 411 |         onNodesChange={onNodesChange}
- 412 |         onEdgesChange={onEdgesChange}
- 413 |         onConnect={onConnect}
- 414 |         onNodeContextMenu={onNodeContextMenu}
- 415 |         onPaneClick={onPaneClick}
- 416 |         nodeTypes={nodeTypes}
- 417 |         fitView
- 418 |         minZoom={0.1}
- 419 |         proOptions={{ hideAttribution: true }}
- 420 |       >
- 421 |         <SelectionListener onSelected={setFocusId} />
- 422 |         <GraphToolbar />
- 423 | 
- 424 |         {/* Focus control panel */}
- 425 |         <Panel position="top-left">
- 426 |           <FocusCard $variant="overlay" $padding={2} $radius="md" $border>
- 427 |             <FocusTitleRow>
- 428 |               <div>
- 429 |                 <FocusTitle>{focusId ? (focusLabel ?? 'Focus') : 'Focus'}</FocusTitle>
- 430 |                 <Subtext style={{ marginTop: 4 }}>
- 431 |                   {focusId
- 432 |                     ? `Highlight depth: ${highlightDepth}`
- 433 |                     : 'Click a node to highlight connected files'}
- 434 |                 </Subtext>
- 435 |                 {focusId && focusPath ? <FocusPath>{focusPath}</FocusPath> : null}
+ 355 |     return (nodes as any[]).map((n) => {
+ 356 |       const isFocus = n.id === focusId;
+ 357 |       const isGroup = n.type === "groupNode";
+ 358 | 
+ 359 |       const isHot =
+ 360 |         highlightedNodeIds.has(n.id) || (isGroup && relatedGroupIds.has(n.id));
+ 361 | 
+ 362 |       let className = "";
+ 363 |       if (!isHot) className = "axon-dim";
+ 364 |       else className = "axon-highlight";
+ 365 |       if (isFocus) className = "axon-focus";
+ 366 | 
+ 367 |       return { ...n, className };
+ 368 |     });
+ 369 |   }, [nodes, highlight, focusId]);
+ 370 | 
+ 371 |   const displayEdges = useMemo(() => {
+ 372 |     if (!highlight || !focusId) {
+ 373 |       return (edges as any[]).map((e) => ({
+ 374 |         ...e,
+ 375 |         animated: false,
+ 376 |         style: {
+ 377 |           ...(e.style ?? {}),
+ 378 |           strokeWidth: 1.2,
+ 379 |           opacity: 0.55,
+ 380 |         },
+ 381 |       }));
+ 382 |     }
+ 383 | 
+ 384 |     const hotIds = highlight.highlightedEdgeIds;
+ 385 | 
+ 386 |     return (edges as any[]).map((e) => {
+ 387 |       const hot = hotIds.has(e.id);
+ 388 |       return {
+ 389 |         ...e,
+ 390 |         animated: hot,
+ 391 |         style: {
+ 392 |           ...(e.style ?? {}),
+ 393 |           strokeWidth: hot ? 2.4 : 1.1,
+ 394 |           opacity: hot ? 0.95 : 0.06,
+ 395 |         },
+ 396 |       };
+ 397 |     });
+ 398 |   }, [edges, highlight, focusId]);
+ 399 | 
+ 400 |   const runFirstScan = useCallback(async () => {
+ 401 |     if (!projectRoot) return;
+ 402 |     if (!entryDraft.trim()) return;
+ 403 | 
+ 404 |     setScan({
+ 405 |       entryPoint: entryDraft.trim(),
+ 406 |       depth: depthDraft,
+ 407 |       flatten: flattenDraft,
+ 408 |     });
+ 409 | 
+ 410 |     await refreshGraph({
+ 411 |       entryPoint: entryDraft.trim(),
+ 412 |       depth: depthDraft,
+ 413 |       flatten: flattenDraft,
+ 414 |     } as any);
+ 415 |   }, [projectRoot, entryDraft, depthDraft, flattenDraft, setScan, refreshGraph]);
+ 416 | 
+ 417 |   return (
+ 418 |     <CanvasContainer>
+ 419 |       {/* First scan overlay if entrypoint not set */}
+ 420 |       {projectRoot && !scanConfig?.entryPoint ? (
+ 421 |         <SetupOverlay>
+ 422 |           <SetupCard $variant="overlay" $padding={3} $radius="md" $border>
+ 423 |             <SetupTitle>Run your first scan</SetupTitle>
+ 424 |             <Subtext>
+ 425 |               Choose an entrypoint file + depth. The graph will populate and folders will group automatically.
+ 426 |             </Subtext>
+ 427 | 
+ 428 |             <SetupGrid>
+ 429 |               <div>
+ 430 |                 <Label style={{ marginBottom: 6 }}>Entrypoint</Label>
+ 431 |                 <Input
+ 432 |                   value={entryDraft}
+ 433 |                   onChange={(e) => setEntryDraft(e.target.value)}
+ 434 |                   placeholder="src/main.ts"
+ 435 |                 />
  436 |               </div>
  437 | 
- 438 |               <GhostBtn onClick={clearFocus} title="Clear focus" disabled={!focusId}>
- 439 |                 <VscClose />
- 440 |               </GhostBtn>
- 441 |             </FocusTitleRow>
- 442 | 
- 443 |             <div>
- 444 |               <Subtext>Depth</Subtext>
- 445 |               <Row style={{ marginTop: 6 }}>
- 446 |                 <Slider
- 447 |                   type="range"
- 448 |                   min={1}
- 449 |                   max={5}
- 450 |                   value={highlightDepth}
- 451 |                   disabled={!focusId}
- 452 |                   onChange={(e) => setHighlightDepth(Number(e.target.value))}
- 453 |                 />
- 454 |                 <Pill>{highlightDepth}</Pill>
- 455 |               </Row>
- 456 |             </div>
- 457 | 
- 458 |             <BtnRow>
- 459 |               <PrimaryBtn
- 460 |                 onClick={extractHighlightedToGroup}
- 461 |                 disabled={!focusId || !focusPath}
- 462 |                 title="Create a new Scope group from this focus + depth"
- 463 |               >
- 464 |                 <VscFolderOpened />
- 465 |                 Extract as Group
- 466 |               </PrimaryBtn>
- 467 | 
- 468 |               <GhostBtn onClick={clearFocus} disabled={!focusId} title="Clear focus">
- 469 |                 <VscClose />
- 470 |               </GhostBtn>
- 471 |             </BtnRow>
- 472 | 
- 473 |             {highlight ? (
- 474 |               <Subtext>
- 475 |                 {highlight.highlightedNodeIds.size} nodes · {highlight.highlightedEdgeIds.size} edges
- 476 |               </Subtext>
- 477 |             ) : null}
- 478 |           </FocusCard>
- 479 |         </Panel>
- 480 | 
- 481 |         {menu && (
- 482 |           <NodeContextMenu
- 483 |             top={menu.y}
- 484 |             left={menu.x}
- 485 |             node={menu.node}
- 486 |             onClose={() => setMenu(null)}
- 487 |             onExtractGroup={handleExtractGroup}
+ 438 |               <div>
+ 439 |                 <Label style={{ marginBottom: 6 }}>Browse</Label>
+ 440 |                 <Button onClick={openPicker}>
+ 441 |                   <VscFolderOpened />
+ 442 |                   Choose
+ 443 |                 </Button>
+ 444 |               </div>
+ 445 | 
+ 446 |               <div>
+ 447 |                 <Label style={{ marginBottom: 6 }}>Depth</Label>
+ 448 |                 <Input
+ 449 |                   type="number"
+ 450 |                   min={1}
+ 451 |                   max={25}
+ 452 |                   value={depthDraft}
+ 453 |                   onChange={(e) => setDepthDraft(Math.max(1, Number(e.target.value) || 1))}
+ 454 |                 />
+ 455 |               </div>
+ 456 | 
+ 457 |               <div>
+ 458 |                 <Label style={{ marginBottom: 6 }}>Flatten</Label>
+ 459 |                 <Inline style={{ height: 42 }}>
+ 460 |                   <input
+ 461 |                     type="checkbox"
+ 462 |                     checked={flattenDraft}
+ 463 |                     onChange={(e) => setFlattenDraft(e.target.checked)}
+ 464 |                   />
+ 465 |                   <Subtext>Optional</Subtext>
+ 466 |                 </Inline>
+ 467 |               </div>
+ 468 |             </SetupGrid>
+ 469 | 
+ 470 |             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+ 471 |               <Button
+ 472 |                 $primary
+ 473 |                 onClick={runFirstScan}
+ 474 |                 disabled={!entryDraft.trim() || isScanning}
+ 475 |               >
+ 476 |                 <VscPlay />
+ 477 |                 {isScanning ? "Scanning…" : "Scan"}
+ 478 |               </Button>
+ 479 |             </div>
+ 480 |           </SetupCard>
+ 481 | 
+ 482 |           <FileSelectorModal
+ 483 |             isOpen={filePicker.isOpen}
+ 484 |             toggle={filePicker.toggle}
+ 485 |             fs={fs}
+ 486 |             mode="file"
+ 487 |             onSelect={(path) => setEntryDraft(path)}
  488 |           />
- 489 |         )}
- 490 | 
- 491 |         <Controls style={{ background: '#2d2d2d', fill: '#fff', border: 'none' }} />
- 492 |         <MiniMap
- 493 |           zoomable
- 494 |           pannable
- 495 |           style={{ background: '#252526', border: '1px solid #454545' }}
- 496 |           nodeColor={(n) => (n.type === 'groupNode' ? '#2d2d2d' : '#007acc')}
- 497 |         />
- 498 |         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#444" />
- 499 |       </ReactFlow>
- 500 |     </CanvasContainer>
- 501 |   );
- 502 | };
+ 489 |         </SetupOverlay>
+ 490 |       ) : null}
+ 491 | 
+ 492 |       <ReactFlow
+ 493 |         nodes={displayNodes as any}
+ 494 |         edges={displayEdges as any}
+ 495 |         onNodesChange={onNodesChange}
+ 496 |         onEdgesChange={onEdgesChange}
+ 497 |         onConnect={onConnect}
+ 498 |         onNodeClick={handleNodeClick}
+ 499 |         onPaneClick={clearFocus}
+ 500 |         nodeTypes={nodeTypes}
+ 501 |         edgeTypes={edgeTypes}
+ 502 |         fitView
+ 503 |         minZoom={0.1}
+ 504 |         proOptions={{ hideAttribution: true }}
+ 505 |       >
+ 506 |         <GraphToolbar onRescan={() => refreshGraph()} isScanning={isScanning} />
+ 507 | 
+ 508 |         <Panel position="top-left">
+ 509 |           <FocusCard $variant="overlay" $padding={2} $radius="md" $border>
+ 510 |             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+ 511 |               <div
+ 512 |                 style={{
+ 513 |                   fontSize: 13,
+ 514 |                   fontWeight: 900,
+ 515 |                   color: theme.colors.text.primary,
+ 516 |                 }}
+ 517 |               >
+ 518 |                 Focus
+ 519 |               </div>
+ 520 |               <Subtext>
+ 521 |                 Click a file or folder to highlight. Click empty space to clear.
+ 522 |               </Subtext>
+ 523 |               {focusId ? (
+ 524 |                 <Subtext style={{ margin: 0, opacity: 0.85 }}>
+ 525 |                   Focused: <span style={{ fontFamily: "monospace" }}>{focusId}</span>
+ 526 |                 </Subtext>
+ 527 |               ) : null}
+ 528 |             </div>
+ 529 | 
+ 530 |             <div>
+ 531 |               <Subtext>Highlight depth</Subtext>
+ 532 |               <Row style={{ marginTop: 6 }}>
+ 533 |                 <Slider
+ 534 |                   type="range"
+ 535 |                   min={1}
+ 536 |                   max={6}
+ 537 |                   value={highlightDepth}
+ 538 |                   onChange={(e) => setHighlightDepth(Number(e.target.value))}
+ 539 |                   disabled={!focusId}
+ 540 |                 />
+ 541 |                 <Pill>{highlightDepth}</Pill>
+ 542 |               </Row>
+ 543 |             </div>
+ 544 | 
+ 545 |             <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 2 }}>
+ 546 |               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+ 547 |                 <div
+ 548 |                   style={{
+ 549 |                     width: 18,
+ 550 |                     height: 3,
+ 551 |                     background: theme.colors.palette.primary,
+ 552 |                     borderRadius: 2,
+ 553 |                   }}
+ 554 |                 />
+ 555 |                 <Subtext>bottom (outgoing)</Subtext>
+ 556 |               </div>
+ 557 |               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+ 558 |                 <div
+ 559 |                   style={{
+ 560 |                     width: 18,
+ 561 |                     height: 3,
+ 562 |                     background: theme.colors.palette.success,
+ 563 |                     borderRadius: 2,
+ 564 |                   }}
+ 565 |                 />
+ 566 |                 <Subtext>top (incoming)</Subtext>
+ 567 |               </div>
+ 568 |             </div>
+ 569 |           </FocusCard>
+ 570 |         </Panel>
+ 571 | 
+ 572 |         <Controls style={{ background: "#2d2d2d", fill: "#fff", border: "none" }} />
+ 573 |         <MiniMap
+ 574 |           zoomable
+ 575 |           pannable
+ 576 |           style={{ background: "#252526", border: "1px solid #454545" }}
+ 577 |           nodeColor={(n) => (n.type === "groupNode" ? "#2d2d2d" : "#007acc")}
+ 578 |         />
+ 579 |         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#444" />
+ 580 |       </ReactFlow>
+ 581 |     </CanvasContainer>
+ 582 |   );
+ 583 | };
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/GraphToolbar.tsx">
    1 | import { useState } from "react";
    2 | import styled from "styled-components";
    3 | import { Panel } from "@xyflow/react";
-   4 | import { VscAdd, VscCopy, VscExport, VscLoading } from "react-icons/vsc";
+   4 | import { VscExport, VscLoading, VscSync } from "react-icons/vsc";
    5 | import { useWorkspace } from "@features/workspace/useWorkspace";
    6 | import { useAxonCore } from "@features/axon/useAxonCore";
-   7 | import { nanoid } from "@reduxjs/toolkit";
-   8 | import { useToast } from "@components/ui/Toast";
-   9 | import { Modal } from "@components/ui/Modal";
-  10 | 
-  11 | const ToolbarContainer = styled.div`
-  12 |   display: flex;
-  13 |   gap: 8px;
-  14 | `;
-  15 | 
-  16 | const ToolButton = styled.button<{ $primary?: boolean }>`
-  17 |   background: ${({ theme, $primary }) =>
-  18 |     $primary ? theme.colors.palette.primary : theme.colors.bg.surface};
-  19 |   color: ${({ theme, $primary }) => ($primary ? "#fff" : theme.colors.text.primary)};
-  20 |   border: 1px solid
-  21 |     ${({ theme, $primary }) => ($primary ? "transparent" : theme.colors.border)};
-  22 |   padding: 8px 12px;
-  23 |   border-radius: 4px;
-  24 |   cursor: pointer;
-  25 |   display: flex;
-  26 |   align-items: center;
-  27 |   gap: 8px;
-  28 |   font-size: 13px;
-  29 |   font-weight: 500;
-  30 |   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  31 |   transition: all 0.2s;
-  32 | 
-  33 |   &:hover {
-  34 |     transform: translateY(-1px);
-  35 |     filter: brightness(1.1);
-  36 |   }
-  37 | 
-  38 |   &:disabled {
-  39 |     opacity: 0.65;
-  40 |     cursor: not-allowed;
-  41 |     transform: none;
-  42 |     filter: none;
-  43 |   }
-  44 | `;
-  45 | 
-  46 | const PreviewActions = styled.div`
-  47 |   display: flex;
-  48 |   justify-content: space-between;
-  49 |   align-items: center;
-  50 |   gap: 12px;
-  51 |   margin-bottom: 10px;
-  52 | `;
-  53 | 
-  54 | const CopyButton = styled.button`
-  55 |   background: ${({ theme }) => theme.colors.bg.overlay};
-  56 |   border: 1px solid ${({ theme }) => theme.colors.border};
-  57 |   color: ${({ theme }) => theme.colors.text.primary};
-  58 |   padding: 8px 10px;
-  59 |   border-radius: 4px;
-  60 |   cursor: pointer;
-  61 |   display: inline-flex;
-  62 |   align-items: center;
-  63 |   gap: 8px;
-  64 |   font-weight: 700;
-  65 |   font-size: 12px;
-  66 | 
-  67 |   &:hover {
-  68 |     filter: brightness(1.08);
-  69 |   }
-  70 | `;
-  71 | 
-  72 | const PreviewBox = styled.pre`
-  73 |   margin: 0;
-  74 |   background: ${({ theme }) => theme.colors.bg.main};
-  75 |   border: 1px solid ${({ theme }) => theme.colors.border};
-  76 |   border-radius: 6px;
-  77 |   padding: ${({ theme }) => theme.spacing(3)};
-  78 |   color: ${({ theme }) => theme.colors.text.primary};
-  79 |   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-  80 |     "Courier New", monospace;
-  81 |   font-size: 12px;
-  82 |   line-height: 1.45;
-  83 |   max-height: 55vh;
-  84 |   overflow: auto;
-  85 |   white-space: pre-wrap;
-  86 | `;
-  87 | 
-  88 | export const GraphToolbar = () => {
-  89 |   const { groups, projectRoot, config, createGroup } = useWorkspace();
-  90 |   const { generateCombinedPrompt } = useAxonCore();
-  91 |   const toast = useToast();
-  92 | 
-  93 |   const [isBundling, setIsBundling] = useState(false);
-  94 |   const [previewOpen, setPreviewOpen] = useState(false);
-  95 |   const [previewMarkdown, setPreviewMarkdown] = useState<string | null>(null);
+   7 | import { useToast } from "@components/ui/Toast";
+   8 | import { Modal } from "@components/ui/Modal";
+   9 | 
+  10 | const ToolbarContainer = styled.div`
+  11 |   display: flex;
+  12 |   gap: 8px;
+  13 | `;
+  14 | 
+  15 | const ToolButton = styled.button<{ $primary?: boolean }>`
+  16 |   background: ${({ theme, $primary }) =>
+  17 |     $primary ? theme.colors.palette.primary : theme.colors.bg.surface};
+  18 |   color: ${({ theme, $primary }) => ($primary ? "#fff" : theme.colors.text.primary)};
+  19 |   border: 1px solid ${({ theme, $primary }) => ($primary ? "transparent" : theme.colors.border)};
+  20 |   padding: 8px 12px;
+  21 |   border-radius: 4px;
+  22 |   cursor: pointer;
+  23 |   display: flex;
+  24 |   align-items: center;
+  25 |   gap: 8px;
+  26 |   font-size: 13px;
+  27 |   font-weight: 600;
+  28 |   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  29 |   transition: all 0.2s;
+  30 | 
+  31 |   &:hover:enabled {
+  32 |     transform: translateY(-1px);
+  33 |     filter: brightness(1.1);
+  34 |   }
+  35 | 
+  36 |   &:disabled {
+  37 |     opacity: 0.65;
+  38 |     cursor: not-allowed;
+  39 |     transform: none;
+  40 |     filter: none;
+  41 |   }
+  42 | `;
+  43 | 
+  44 | const PreviewActions = styled.div`
+  45 |   display: flex;
+  46 |   justify-content: space-between;
+  47 |   align-items: center;
+  48 |   gap: 12px;
+  49 |   margin-bottom: 10px;
+  50 | `;
+  51 | 
+  52 | const CopyButton = styled.button`
+  53 |   background: ${({ theme }) => theme.colors.bg.overlay};
+  54 |   border: 1px solid ${({ theme }) => theme.colors.border};
+  55 |   color: ${({ theme }) => theme.colors.text.primary};
+  56 |   padding: 8px 10px;
+  57 |   border-radius: 4px;
+  58 |   cursor: pointer;
+  59 |   display: inline-flex;
+  60 |   align-items: center;
+  61 |   gap: 8px;
+  62 |   font-weight: 800;
+  63 |   font-size: 12px;
+  64 | 
+  65 |   &:hover {
+  66 |     filter: brightness(1.08);
+  67 |   }
+  68 | `;
+  69 | 
+  70 | const PreviewBox = styled.pre`
+  71 |   margin: 0;
+  72 |   background: ${({ theme }) => theme.colors.bg.main};
+  73 |   border: 1px solid ${({ theme }) => theme.colors.border};
+  74 |   border-radius: 6px;
+  75 |   padding: ${({ theme }) => theme.spacing(3)};
+  76 |   color: ${({ theme }) => theme.colors.text.primary};
+  77 |   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+  78 |     "Courier New", monospace;
+  79 |   font-size: 12px;
+  80 |   line-height: 1.45;
+  81 |   max-height: 55vh;
+  82 |   overflow: auto;
+  83 |   white-space: pre-wrap;
+  84 | `;
+  85 | 
+  86 | export const GraphToolbar = ({
+  87 |   onRescan,
+  88 |   isScanning,
+  89 | }: {
+  90 |   onRescan: () => void;
+  91 |   isScanning: boolean;
+  92 | }) => {
+  93 |   const { projectRoot, config, scanConfig } = useWorkspace();
+  94 |   const { generateCombinedPrompt } = useAxonCore();
+  95 |   const toast = useToast();
   96 | 
-  97 |   const handleAddGroup = () => {
-  98 |     createGroup({
-  99 |       id: nanoid(),
- 100 |       name: "New Scope",
- 101 |       entryPoint: "",
- 102 |       depth: 3,
- 103 |       isActive: true,
- 104 |       flatten: true,
- 105 |     });
- 106 |   };
- 107 | 
- 108 |   const handleBundle = async () => {
- 109 |     if (!projectRoot) {
- 110 |       toast.warning("No workspace loaded", "Open or create a workspace first.");
+  97 |   const [isBundling, setIsBundling] = useState(false);
+  98 |   const [previewOpen, setPreviewOpen] = useState(false);
+  99 |   const [previewMarkdown, setPreviewMarkdown] = useState<string | null>(null);
+ 100 | 
+ 101 |   const canBundle =
+ 102 |     !!projectRoot && !!config && !!scanConfig?.entryPoint && (scanConfig?.depth ?? 0) > 0;
+ 103 | 
+ 104 |   const handleBundle = async () => {
+ 105 |     if (!projectRoot) {
+ 106 |       toast.warning("No workspace loaded", "Open or create a workspace first.");
+ 107 |       return;
+ 108 |     }
+ 109 |     if (!scanConfig?.entryPoint) {
+ 110 |       toast.warning("No entrypoint", "Choose an entry file to scan first.");
  111 |       return;
  112 |     }
- 113 | 
- 114 |     const activeGroups = groups.filter((g) => g.isActive && g.entryPoint);
- 115 |     if (activeGroups.length === 0) {
- 116 |       toast.warning("Nothing to bundle", "Activate a scope and choose an entry file.");
- 117 |       return;
- 118 |     }
- 119 | 
- 120 |     if (!config) {
- 121 |       toast.danger("Missing config", "Root config is unavailable; try reloading the app.");
- 122 |       return;
- 123 |     }
- 124 | 
- 125 |     setIsBundling(true);
- 126 |     const loadingId = toast.loading(
- 127 |       "Bundling prompt…",
- 128 |       `Reading ${activeGroups.length} scope(s) and generating markdown…`
- 129 |     );
- 130 | 
- 131 |     try {
- 132 |       const markdown = await generateCombinedPrompt({
- 133 |         projectRoot,
- 134 |         groups: activeGroups.map((g) => ({
- 135 |           entryPoint: g.entryPoint!,
- 136 |           depth: g.depth || 3,
- 137 |           flatten: g.flatten,
- 138 |         })),
- 139 |         options: config,
- 140 |       });
- 141 | 
- 142 |       await navigator.clipboard.writeText(markdown);
- 143 |       setPreviewMarkdown(markdown);
- 144 | 
- 145 |       toast.dismiss(loadingId);
- 146 |       toast.success("Copied to clipboard", `Bundled ${activeGroups.length} scope(s).`, {
- 147 |         actionLabel: "Preview",
- 148 |         onAction: () => setPreviewOpen(true),
- 149 |         duration: 4500,
- 150 |       });
- 151 |     } catch (err) {
- 152 |       console.error("Bundle failed", err);
- 153 |       toast.dismiss(loadingId);
- 154 |       toast.danger("Bundle failed", "Check the console for details and try again.", {
- 155 |         duration: 6500,
- 156 |       });
- 157 |     } finally {
- 158 |       setIsBundling(false);
- 159 |     }
- 160 |   };
- 161 | 
- 162 |   const handleCopyAgain = async () => {
- 163 |     if (!previewMarkdown) return;
- 164 |     await navigator.clipboard.writeText(previewMarkdown);
- 165 |     toast.success("Copied again", "Bundle text is back in your clipboard.");
- 166 |   };
- 167 | 
- 168 |   return (
- 169 |     <>
- 170 |       <Panel position="top-right">
- 171 |         <ToolbarContainer>
- 172 |           <ToolButton onClick={handleAddGroup}>
- 173 |             <VscAdd /> Add Group
- 174 |           </ToolButton>
- 175 | 
- 176 |           <ToolButton $primary onClick={handleBundle} disabled={isBundling}>
- 177 |             {isBundling ? <VscLoading className="spin" /> : <VscExport />}
- 178 |             {isBundling ? "Bundling…" : "Bundle & Copy"}
- 179 |           </ToolButton>
- 180 |         </ToolbarContainer>
- 181 |       </Panel>
- 182 | 
- 183 |       <Modal
- 184 |         isOpen={previewOpen}
- 185 |         onClose={() => setPreviewOpen(false)}
- 186 |         title="Bundled Prompt Preview"
- 187 |       >
- 188 |         <PreviewActions>
- 189 |           <CopyButton onClick={handleCopyAgain}>
- 190 |             <VscCopy /> Copy
- 191 |           </CopyButton>
- 192 |           <span style={{ opacity: 0.8, fontSize: 12 }}>
- 193 |             This is exactly what was copied to your clipboard.
- 194 |           </span>
- 195 |         </PreviewActions>
- 196 | 
- 197 |         <PreviewBox>{previewMarkdown ?? ""}</PreviewBox>
- 198 |       </Modal>
- 199 |     </>
- 200 |   );
- 201 | };
+ 113 |     if (!config) {
+ 114 |       toast.danger("Missing config", "Root config is unavailable; try reloading the app.");
+ 115 |       return;
+ 116 |     }
+ 117 | 
+ 118 |     setIsBundling(true);
+ 119 |     const loadingId = toast.loading(
+ 120 |       "Bundling prompt…",
+ 121 |       `Generating markdown from ${scanConfig.entryPoint} (depth ${scanConfig.depth ?? 3})…`
+ 122 |     );
+ 123 | 
+ 124 |     try {
+ 125 |       const markdown = await generateCombinedPrompt({
+ 126 |         projectRoot,
+ 127 |         groups: [
+ 128 |           {
+ 129 |             entryPoint: scanConfig.entryPoint,
+ 130 |             depth: scanConfig.depth ?? 3,
+ 131 |             flatten: !!scanConfig.flatten,
+ 132 |           },
+ 133 |         ],
+ 134 |         options: config,
+ 135 |       });
+ 136 | 
+ 137 |       await navigator.clipboard.writeText(markdown);
+ 138 |       setPreviewMarkdown(markdown);
+ 139 | 
+ 140 |       toast.dismiss(loadingId);
+ 141 |       toast.success("Copied to clipboard", "Your prompt markdown is ready.", {
+ 142 |         actionLabel: "Preview",
+ 143 |         onAction: () => setPreviewOpen(true),
+ 144 |         duration: 4500,
+ 145 |       });
+ 146 |     } catch (err) {
+ 147 |       console.error("Bundle failed", err);
+ 148 |       toast.dismiss(loadingId);
+ 149 |       toast.danger("Bundle failed", "Check the console for details and try again.", {
+ 150 |         duration: 6500,
+ 151 |       });
+ 152 |     } finally {
+ 153 |       setIsBundling(false);
+ 154 |     }
+ 155 |   };
+ 156 | 
+ 157 |   const handleCopyAgain = async () => {
+ 158 |     if (!previewMarkdown) return;
+ 159 |     await navigator.clipboard.writeText(previewMarkdown);
+ 160 |     toast.success("Copied again", "Bundle text is back in your clipboard.");
+ 161 |   };
+ 162 | 
+ 163 |   return (
+ 164 |     <>
+ 165 |       <Panel position="top-right">
+ 166 |         <ToolbarContainer>
+ 167 |           <ToolButton onClick={onRescan} disabled={isScanning || !scanConfig?.entryPoint}>
+ 168 |             <VscSync />
+ 169 |             {isScanning ? "Scanning…" : "Rescan"}
+ 170 |           </ToolButton>
+ 171 | 
+ 172 |           <ToolButton $primary onClick={handleBundle} disabled={isBundling || !canBundle}>
+ 173 |             {isBundling ? <VscLoading className="spin" /> : <VscExport />}
+ 174 |             {isBundling ? "Bundling…" : "Bundle & Copy"}
+ 175 |           </ToolButton>
+ 176 |         </ToolbarContainer>
+ 177 |       </Panel>
+ 178 | 
+ 179 |       <Modal isOpen={previewOpen} onClose={() => setPreviewOpen(false)} title="Bundled Prompt Preview">
+ 180 |         <PreviewActions>
+ 181 |           <CopyButton onClick={handleCopyAgain}>Copy</CopyButton>
+ 182 |           <span style={{ opacity: 0.8, fontSize: 12 }}>
+ 183 |             This is exactly what was copied to your clipboard.
+ 184 |           </span>
+ 185 |         </PreviewActions>
+ 186 | 
+ 187 |         <PreviewBox>{previewMarkdown ?? ""}</PreviewBox>
+ 188 |       </Modal>
+ 189 |     </>
+ 190 |   );
+ 191 | };
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/GroupNode.tsx">
-   1 | import { memo, useState, useCallback } from 'react';
-   2 | import { Handle, Position, type NodeProps } from '@xyflow/react';
-   3 | import styled from 'styled-components';
-   4 | import { VscFolderOpened, VscPlay, VscSearch, VscSettings } from 'react-icons/vsc';
-   5 | import type { AxonNode } from '@axon-types/axonTypes';
-   6 | import { useFileSystem } from '@features/axon/useFileSystem';
-   7 | import { useToggle } from '@app/hooks';
-   8 | import { useWorkspace } from '@features/workspace/useWorkspace';
-   9 | import { FileSelectorModal } from '@components/FileSelector/FileSelectorModal';
-  10 | 
-  11 | const NodeContainer = styled.div<{ $isConfig?: boolean; $selected?: boolean }>`
-  12 |   /* Base Glassmorphism */
-  13 |   background: ${props => props.$isConfig 
-  14 |     ? props.theme.colors.bg.surface 
-  15 |     : 'rgba(30, 30, 30, 0.4)'};
-  16 |   
-  17 |   /* Borders: Dashed for View Mode, Solid for Config Mode */
-  18 |   border: ${props => props.$isConfig 
-  19 |     ? `1px solid ${props.theme.colors.border}` 
-  20 |     : `2px dashed ${props.$selected ? props.theme.colors.palette.primary : '#444'}`};
-  21 |   
-  22 |   /* Selection Glow */
-  23 |   box-shadow: ${props => props.$selected 
-  24 |     ? `0 0 0 2px ${props.theme.colors.palette.primary}40` 
-  25 |     : 'none'};
+   1 | import { memo } from "react";
+   2 | import { NodeResizer, type NodeProps } from "@xyflow/react";
+   3 | import styled from "styled-components";
+   4 | import { VscFolderOpened } from "react-icons/vsc";
+   5 | import type { AxonNode } from "@axon-types/axonTypes";
+   6 | 
+   7 | const Container = styled.div<{ $selected?: boolean }>`
+   8 |   width: 100%;
+   9 |   height: 100%;
+  10 |   box-sizing: border-box;
+  11 | 
+  12 |   background: rgba(30, 30, 30, 0.28);
+  13 |   border: 1px solid ${({ theme }) => theme.colors.border};
+  14 |   border-radius: 10px;
+  15 | 
+  16 |   ${({ $selected, theme }) =>
+  17 |     $selected
+  18 |       ? `
+  19 |     border-color: ${theme.colors.palette.primary};
+  20 |     box-shadow: 0 0 0 2px ${theme.colors.palette.primary}33;
+  21 |   `
+  22 |       : ""}
+  23 | 
+  24 |   overflow: hidden;
+  25 | `;
   26 | 
-  27 |   border-radius: 8px;
-  28 |   padding: 12px;
-  29 |   min-width: ${props => props.$isConfig ? '280px' : '100%'};
-  30 |   min-height: ${props => props.$isConfig ? 'auto' : '100%'};
-  31 |   color: ${props => props.theme.colors.text.secondary};
-  32 |   transition: all 0.2s ease;
-  33 |   
-  34 |   /* Prevent dragging when interacting with inputs */
-  35 |   .nodrag {
-  36 |     cursor: default;
-  37 |   }
-  38 | `;
-  39 | 
-  40 | const Header = styled.div`
-  41 |   display: flex;
-  42 |   align-items: center;
-  43 |   gap: 8px;
-  44 |   font-weight: 600;
-  45 |   font-size: 14px;
-  46 |   margin-bottom: 8px;
-  47 |   color: ${({ theme }) => theme.colors.text.primary};
-  48 | `;
-  49 | 
-  50 | const InputGroup = styled.div`
-  51 |   margin-bottom: 12px;
-  52 |   
-  53 |   label {
-  54 |     display: block;
-  55 |     font-size: 11px;
-  56 |     color: ${({ theme }) => theme.colors.text.muted};
-  57 |     margin-bottom: 6px;
-  58 |     text-transform: uppercase;
-  59 |     font-weight: 700;
-  60 |   }
-  61 | `;
-  62 | 
-  63 | const InputRow = styled.div`
-  64 |   display: flex; 
-  65 |   gap: 6px;
-  66 | `;
-  67 | 
-  68 | const StyledInput = styled.input`
-  69 |   width: 100%;
-  70 |   background: ${({ theme }) => theme.colors.bg.input};
-  71 |   border: 1px solid ${({ theme }) => theme.colors.border};
-  72 |   color: ${({ theme }) => theme.colors.text.primary};
-  73 |   padding: 8px;
-  74 |   border-radius: 4px;
-  75 |   font-size: 12px;
-  76 |   
-  77 |   &:focus {
-  78 |     outline: none;
-  79 |     border-color: ${({ theme }) => theme.colors.palette.primary};
-  80 |   }
-  81 | `;
-  82 | 
-  83 | const IconButton = styled.button`
-  84 |   background: ${({ theme }) => theme.colors.bg.overlay};
-  85 |   border: 1px solid ${({ theme }) => theme.colors.border};
-  86 |   color: ${({ theme }) => theme.colors.text.secondary};
-  87 |   border-radius: 4px;
-  88 |   padding: 0 10px;
-  89 |   cursor: pointer;
-  90 |   display: flex;
-  91 |   align-items: center;
-  92 |   justify-content: center;
-  93 | 
-  94 |   &:hover {
-  95 |     background: ${({ theme }) => theme.colors.bg.surface};
-  96 |     color: ${({ theme }) => theme.colors.text.primary};
-  97 |   }
-  98 | `;
-  99 | 
- 100 | const ActionButton = styled.button`
- 101 |   background: ${({ theme }) => theme.colors.palette.primary};
- 102 |   color: white;
- 103 |   border: none;
- 104 |   padding: 8px 12px;
- 105 |   border-radius: 4px;
- 106 |   font-size: 12px;
- 107 |   font-weight: 600;
- 108 |   cursor: pointer;
- 109 |   display: flex;
- 110 |   align-items: center;
- 111 |   justify-content: center;
- 112 |   gap: 6px;
- 113 |   width: 100%;
- 114 |   margin-top: 8px;
- 115 | 
- 116 |   &:hover {
- 117 |     filter: brightness(1.1);
- 118 |   }
- 119 | `;
- 120 | 
- 121 | 
- 122 | export const GroupNode = memo(({ id, data, selected }: NodeProps<AxonNode>) => {
- 123 |   const { projectRoot, modifyGroup } = useWorkspace();
- 124 |   
- 125 |   const { isOpen, open, close } = useToggle();
- 126 |   const fs = useFileSystem(projectRoot || null);
- 127 | 
- 128 |   const [entryPoint, setEntryPoint] = useState((data.entryPoint as string) || '');
- 129 |   const [depth, setDepth] = useState<number>(data.depth || 3);
- 130 |   
- 131 |   const isConfigMode = !data.entryPoint; 
- 132 | 
- 133 |   const handleScan = useCallback(() => {
- 134 |     if (!entryPoint) return;
- 135 | 
- 136 |     modifyGroup(id, {
- 137 |       name: entryPoint, // Use filename as default name
- 138 |       entryPoint,
- 139 |       depth,
- 140 |     });
- 141 |   }, [entryPoint, depth, id, modifyGroup]);
- 142 | 
- 143 |   const handleBrowse = () => {
- 144 |     fs.refresh();
- 145 |     open();
- 146 |   };
- 147 | 
- 148 |   return (
- 149 |     <NodeContainer $isConfig={isConfigMode} $selected={selected}>
- 150 |       {/* Invisible Target Handle for connections */}
- 151 |       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
- 152 | 
- 153 |       <Header>
- 154 |         {isConfigMode ? <VscFolderOpened color="#dcb67a" /> : <VscSettings size={12} />}
- 155 |         {/* If scanned, show label. If configuring, show "New Group" */}
- 156 |         <span>{isConfigMode ? "Configure Scope" : (data.label as string)}</span>
- 157 |       </Header>
- 158 | 
- 159 |       {isConfigMode ? (
- 160 |         <div className="nodrag">
- 161 |           <InputGroup>
- 162 |             <label>Entry Point</label>
- 163 |             <InputRow>
- 164 |               <StyledInput 
- 165 |                 type="text" 
- 166 |                 value={entryPoint}
- 167 |                 onChange={(e) => setEntryPoint(e.target.value)}
- 168 |                 placeholder="src/App.tsx"
- 169 |               />
- 170 |               <IconButton onClick={handleBrowse} title="Browse Files">
- 171 |                 <VscSearch />
- 172 |               </IconButton>
- 173 |             </InputRow>
- 174 |           </InputGroup>
- 175 |           
- 176 |           <InputGroup>
- 177 |             <label>Scan Depth</label>
- 178 |             <StyledInput 
- 179 |               type="number" 
- 180 |               value={depth}
- 181 |               onChange={(e) => setDepth(Number(e.target.value))}
- 182 |               min="1" 
- 183 |               max="10"
- 184 |             />
- 185 |           </InputGroup>
- 186 | 
- 187 |           <ActionButton onClick={handleScan}>
- 188 |             <VscPlay />
- 189 |             Scan Group
- 190 |           </ActionButton>
- 191 | 
- 192 |           {/* Reusable Modal */}
- 193 |           <FileSelectorModal 
- 194 |             isOpen={isOpen}
- 195 |             toggle={close}
- 196 |             fs={fs}
- 197 |             mode="file"
- 198 |             onSelect={(path) => setEntryPoint(path)}
- 199 |           />
- 200 |         </div>
- 201 |       ) : (
- 202 |         /* View Mode: Empty container that holds the children visually */
- 203 |         <div style={{ padding: '4px', fontSize: '10px', opacity: 0.5 }}>
- 204 |            {/* We can put metrics here later, e.g. "15 Files" */}
- 205 |         </div>
- 206 |       )}
- 207 | 
- 208 |       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
- 209 |     </NodeContainer>
- 210 |   );
- 211 | });
-</file>
-
-<file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/AxonGraph/NodeContextMenu.tsx">
-   1 | import  { memo } from 'react';
-   2 | import styled from 'styled-components';
-   3 | import { VscGitPullRequestCreate, VscSplitHorizontal } from 'react-icons/vsc';
-   4 | 
-   5 | const MenuContainer = styled.div`
-   6 |   position: fixed; /* Fixed to the viewport, not the canvas */
-   7 |   z-index: 10000;
-   8 |   width: 220px;
-   9 |   background: #252526;
-  10 |   border: 1px solid #454545;
-  11 |   box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-  12 |   border-radius: 6px;
-  13 |   padding: 4px 0;
-  14 |   display: flex;
-  15 |   flex-direction: column;
-  16 | `;
-  17 | 
-  18 | const MenuItem = styled.button`
-  19 |   background: transparent;
-  20 |   border: none;
-  21 |   color: #cccccc;
-  22 |   text-align: left;
-  23 |   padding: 8px 12px;
-  24 |   cursor: pointer;
-  25 |   display: flex;
-  26 |   align-items: center;
-  27 |   gap: 10px;
-  28 |   font-size: 13px;
-  29 |   font-family: 'Segoe UI', sans-serif;
-  30 | 
-  31 |   &:hover {
-  32 |     background: #094771; /* VS Code Highlight Blue */
-  33 |     color: white;
-  34 |   }
-  35 | 
-  36 |   svg {
-  37 |     font-size: 14px;
-  38 |     color: #a0a0a0;
-  39 |   }
+  27 | const Header = styled.div`
+  28 |   height: 46px;
+  29 |   display: flex;
+  30 |   align-items: center;
+  31 |   gap: 10px;
+  32 |   padding: 10px 12px;
+  33 | 
+  34 |   background: rgba(20, 20, 20, 0.35);
+  35 |   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  36 | 
+  37 |   color: ${({ theme }) => theme.colors.text.primary};
+  38 |   font-weight: 800;
+  39 |   font-size: 13px;
   40 | `;
   41 | 
-  42 | const Divider = styled.div`
-  43 |   height: 1px;
-  44 |   background: #3e3e42;
-  45 |   margin: 4px 0;
-  46 | `;
-  47 | 
-  48 | interface NodeContextMenuProps {
-  49 |   top: number;
-  50 |   left: number;
-  51 |   node: any;
-  52 |   onClose: () => void;
-  53 |   onExtractGroup: (node: any) => void;
-  54 | }
-  55 | 
-  56 | export const NodeContextMenu = memo(({ top, left, node, onClose, onExtractGroup }: NodeContextMenuProps) => {
-  57 |   return (
-  58 |     <>
-  59 |       {/* Invisible backdrop to close menu when clicking outside */}
-  60 |       <div 
-  61 |         style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }} 
-  62 |         onClick={onClose} 
-  63 |         onContextMenu={(e) => { e.preventDefault(); onClose(); }}
-  64 |       />
-  65 |       
-  66 |       <MenuContainer style={{ top, left }}>
-  67 |         <MenuItem onClick={() => onExtractGroup(node)}>
-  68 |           <VscGitPullRequestCreate /> Extract to New Group
-  69 |         </MenuItem>
-  70 |         
-  71 |         {/* You can add more options here later! */}
-  72 |         <Divider />
-  73 |         <MenuItem onClick={onClose}>
-  74 |           <VscSplitHorizontal /> Close Menu
-  75 |         </MenuItem>
-  76 |       </MenuContainer>
-  77 |     </>
-  78 |   );
-  79 | });
+  42 | const Path = styled.div`
+  43 |   padding: 10px 12px;
+  44 |   color: ${({ theme }) => theme.colors.text.muted};
+  45 |   font-size: 12px;
+  46 |   word-break: break-all;
+  47 | `;
+  48 | 
+  49 | const Badge = styled.div`
+  50 |   margin-left: auto;
+  51 |   border: 1px solid ${({ theme }) => theme.colors.border};
+  52 |   background: ${({ theme }) => theme.colors.bg.overlay};
+  53 |   color: ${({ theme }) => theme.colors.text.secondary};
+  54 |   border-radius: 999px;
+  55 |   padding: 3px 8px;
+  56 |   font-size: 11px;
+  57 |   font-weight: 700;
+  58 | `;
+  59 | 
+  60 | export const GroupNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
+  61 |   const label = (data as any)?.label ?? "Folder";
+  62 |   const folderPath = (data as any)?.folderPath ?? "";
+  63 |   const fileCount = (data as any)?.fileCount ?? 0;
+  64 | 
+  65 |   return (
+  66 |     <Container $selected={selected}>
+  67 |       {/* Resizable group */}
+  68 |       <NodeResizer
+  69 |         isVisible={!!selected}
+  70 |         minWidth={240}
+  71 |         minHeight={140}
+  72 |       />
+  73 | 
+  74 |       <Header>
+  75 |         <VscFolderOpened size={16} />
+  76 |         <span title={folderPath || label}>{label}</span>
+  77 |         <Badge title="Descendant file count">{fileCount}</Badge>
+  78 |       </Header>
+  79 | 
+  80 |       {folderPath ? <Path>{folderPath}</Path> : null}
+  81 |     </Container>
+  82 |   );
+  83 | });
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/CreateWorkspaceCard/CreateWorkspaceCard.tsx">
@@ -2111,210 +2176,58 @@
   95 | };
 </file>
 
-<file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/Inspector/GroupConfigView.tsx">
-   1 | import { useState, useEffect } from "react";
-   2 | import styled from "styled-components";
-   3 | import { useWorkspace } from "@features/workspace/useWorkspace";
-   4 | import { Heading, Subtext } from "@components/ui/Typography";
-   5 | import { type AxonGroup } from "@axon-types/workspaceTypes";
-   6 | import { VscFolderOpened } from "react-icons/vsc";
-   7 | import { PromptRuleEditor } from "./PromptRuleEditor";
-   8 | 
-   9 | const Container = styled.div`
-  10 |   padding: 20px;
-  11 |   display: flex;
-  12 |   flex-direction: column;
-  13 |   gap: 20px;
-  14 | `;
-  15 | 
-  16 | const FormGroup = styled.div`
-  17 |   display: flex;
-  18 |   flex-direction: column;
-  19 |   gap: 8px;
-  20 | `;
-  21 | 
-  22 | const Label = styled.label`
-  23 |   font-size: 11px;
-  24 |   font-weight: 700;
-  25 |   text-transform: uppercase;
-  26 |   color: ${({ theme }) => theme.colors.text.muted};
-  27 | `;
-  28 | 
-  29 | const Input = styled.input`
-  30 |   background: ${({ theme }) => theme.colors.bg.input};
-  31 |   border: 1px solid ${({ theme }) => theme.colors.border};
-  32 |   color: ${({ theme }) => theme.colors.text.primary};
-  33 |   padding: 8px;
-  34 |   border-radius: 4px;
-  35 | 
-  36 |   &:focus {
-  37 |     border-color: ${({ theme }) => theme.colors.palette.primary};
-  38 |     outline: none;
-  39 |   }
-  40 | `;
-  41 | 
-  42 | const CheckboxLabel = styled.label`
-  43 |   display: flex;
-  44 |   align-items: center;
-  45 |   gap: 10px;
-  46 |   cursor: pointer;
-  47 |   font-size: 13px;
-  48 |   user-select: none;
-  49 | `;
-  50 | 
-  51 | const Divider = styled.div`
-  52 |   height: 1px;
-  53 |   width: 100%;
-  54 |   background: ${({ theme }) => theme.colors.border};
-  55 |   margin: 6px 0 2px 0;
-  56 | `;
-  57 | 
-  58 | export const GroupConfigView = ({ group }: { group: AxonGroup }) => {
-  59 |   const { modifyGroup, config, setOptions } = useWorkspace();
-  60 | 
-  61 |   const [depth, setDepth] = useState(group.depth || 3);
-  62 |   const [entryPoint, setEntryPoint] = useState(group.entryPoint || "");
-  63 | 
-  64 |   useEffect(() => {
-  65 |     setDepth(group.depth || 3);
-  66 |     setEntryPoint(group.entryPoint || "");
-  67 |   }, [group.id]);
-  68 | 
-  69 |   const handleBlur = () => {
-  70 |     modifyGroup(group.id, {
-  71 |       depth,
-  72 |       entryPoint,
-  73 |     });
-  74 |   };
-  75 | 
-  76 |   return (
-  77 |     <Container>
-  78 |       <div>
-  79 |         <Heading>
-  80 |           <VscFolderOpened /> {group.name}
-  81 |         </Heading>
-  82 |         <Subtext>
-  83 |           Group scan settings + prompt rules for the whole bundle (click symbols in FileNodes to add).
-  84 |         </Subtext>
-  85 |       </div>
-  86 | 
-  87 |       <FormGroup>
-  88 |         <Label>Entry Point</Label>
-  89 |         <Input
-  90 |           value={entryPoint}
-  91 |           onChange={(e) => setEntryPoint(e.target.value)}
-  92 |           onBlur={handleBlur}
-  93 |           placeholder="src/main.rs"
-  94 |         />
-  95 |       </FormGroup>
-  96 | 
-  97 |       <FormGroup>
-  98 |         <Label>Scan Depth</Label>
-  99 |         <Input
- 100 |           type="number"
- 101 |           min="1"
- 102 |           max="10"
- 103 |           value={depth}
- 104 |           onChange={(e) => setDepth(Number(e.target.value))}
- 105 |           onBlur={handleBlur}
- 106 |         />
- 107 |       </FormGroup>
- 108 | 
- 109 |       <FormGroup>
- 110 |         <Label>Options</Label>
- 111 |         <CheckboxLabel>
- 112 |           <input
- 113 |             type="checkbox"
- 114 |             checked={group.flatten}
- 115 |             onChange={(e) => modifyGroup(group.id, { flatten: e.target.checked })}
- 116 |           />
- 117 |           Flatten Directory Structure
- 118 |         </CheckboxLabel>
- 119 | 
- 120 |         <CheckboxLabel>
- 121 |           <input
- 122 |             type="checkbox"
- 123 |             checked={group.isActive}
- 124 |             onChange={(e) => modifyGroup(group.id, { isActive: e.target.checked })}
- 125 |           />
- 126 |           Include in Bundle
- 127 |         </CheckboxLabel>
- 128 |       </FormGroup>
- 129 | 
- 130 |       <Divider />
- 131 | 
- 132 |       {config ? (
- 133 |         <PromptRuleEditor
- 134 |           options={config}
- 135 |           setOptions={(patch) => setOptions(patch)}
- 136 |           hint="Rule format: fileName:Target. You can also paste comma/newline lists into the inputs."
- 137 |         />
- 138 |       ) : null}
- 139 |     </Container>
- 140 |   );
- 141 | };
-</file>
-
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/Inspector/InspectorPanel.tsx">
-   1 | import styled from 'styled-components';
-   2 | import { useAppSelector } from '@app/hooks';
-   3 | import { selectSelectedNodeId, selectActiveGroups } from '@features/workspace/workspacesSlice';
-   4 | import { Surface } from '@components/ui/Surface';
+   1 | import styled from "styled-components";
+   2 | import { useAppSelector } from "@app/hooks";
+   3 | import { selectSelectedNodeId } from "@features/workspace/workspacesSlice";
+   4 | import { Surface } from "@components/ui/Surface";
    5 | 
-   6 | import { VscFileCode } from 'react-icons/vsc';
-   7 | import { Heading } from '@components/ui/Typography';
-   8 | import { RootConfigView } from './RootConfigView';
-   9 | import { GroupConfigView } from './GroupConfigView';
-  10 | import { FileViewer } from '@components/FileViewer';
-  11 | 
-  12 | const PanelContainer = styled(Surface)`
-  13 |   height: 100%;
-  14 |   border-left: 1px solid ${({ theme }) => theme.colors.border};
-  15 |   display: flex;
-  16 |   flex-direction: column;
-  17 |   z-index: 5;
-  18 | `;
-  19 | 
-  20 | const Header = styled.div`
-  21 |   padding: 12px 16px;
-  22 |   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  23 |   background: ${({ theme }) => theme.colors.bg.surface};
-  24 | `;
-  25 | 
-  26 | export const InspectorPanel = () => {
-  27 |   const selectedId = useAppSelector(selectSelectedNodeId);
-  28 |   const groups = useAppSelector(selectActiveGroups);
-  29 |   
-  30 |   const selectedGroup = groups.find(g => g.id === selectedId);
-  31 |   
-  32 |   const renderContent = () => {
-  33 |     if (!selectedId) {
-  34 |       return <RootConfigView />;
-  35 |     }
-  36 | 
-  37 |     if (selectedGroup) {
-  38 |       return <GroupConfigView group={selectedGroup} />;
-  39 |     }
-  40 | 
-  41 |     return (
-  42 |       <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
-  43 |         <Header>
-  44 |           <Heading style={{fontSize: '13px', marginBottom: 0}}>
-  45 |              <VscFileCode style={{marginRight: 8}}/> 
-  46 |              Source Viewer
-  47 |           </Heading>
-  48 |         </Header>
-  49 |         <FileViewer path={selectedId} />
-  50 |       </div>
-  51 |     );
-  52 |   };
-  53 | 
-  54 |   return (
-  55 |     <PanelContainer $padding={0} $radius="none" $variant="surface">
-  56 |       {renderContent()}
-  57 |     </PanelContainer>
-  58 |   );
-  59 | };
+   6 | import { VscFileCode } from "react-icons/vsc";
+   7 | import { Heading } from "@components/ui/Typography";
+   8 | import { RootConfigView } from "./RootConfigView";
+   9 | import { FileViewer } from "@components/FileViewer";
+  10 | 
+  11 | const PanelContainer = styled(Surface)`
+  12 |   height: 100%;
+  13 |   border-left: 1px solid ${({ theme }) => theme.colors.border};
+  14 |   display: flex;
+  15 |   flex-direction: column;
+  16 |   z-index: 5;
+  17 | `;
+  18 | 
+  19 | const Header = styled.div`
+  20 |   padding: 12px 16px;
+  21 |   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  22 |   background: ${({ theme }) => theme.colors.bg.surface};
+  23 | `;
+  24 | 
+  25 | export const InspectorPanel = () => {
+  26 |   const selectedId = useAppSelector(selectSelectedNodeId);
+  27 | 
+  28 |   const renderContent = () => {
+  29 |     if (!selectedId) {
+  30 |       return <RootConfigView />;
+  31 |     }
+  32 | 
+  33 |     return (
+  34 |       <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+  35 |         <Header>
+  36 |           <Heading style={{ fontSize: "13px", marginBottom: 0 }}>
+  37 |             <VscFileCode style={{ marginRight: 8 }} />
+  38 |             Source Viewer
+  39 |           </Heading>
+  40 |         </Header>
+  41 |         <FileViewer path={selectedId} />
+  42 |       </div>
+  43 |     );
+  44 |   };
+  45 | 
+  46 |   return (
+  47 |     <PanelContainer $padding={0} $radius="none" $variant="surface">
+  48 |       {renderContent()}
+  49 |     </PanelContainer>
+  50 |   );
+  51 | };
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/Inspector/PromptRuleEditor.tsx">
@@ -2674,68 +2587,216 @@
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/Inspector/RootConfigView.tsx">
-   1 | import styled from "styled-components";
-   2 | import { useWorkspace } from "@features/workspace/useWorkspace";
-   3 | import { Heading, Subtext } from "@components/ui/Typography";
-   4 | import { VscSettingsGear } from "react-icons/vsc";
-   5 | import { PromptRuleEditor } from "./PromptRuleEditor";
-   6 | 
-   7 | const Container = styled.div`
-   8 |   padding: 20px;
-   9 |   display: flex;
-  10 |   flex-direction: column;
-  11 |   gap: 24px;
-  12 | `;
-  13 | 
-  14 | const Section = styled.div`
-  15 |   display: flex;
-  16 |   flex-direction: column;
-  17 |   gap: 12px;
-  18 | `;
-  19 | 
-  20 | const Label = styled.label`
-  21 |   font-size: 11px;
-  22 |   font-weight: 700;
-  23 |   text-transform: uppercase;
-  24 |   color: ${({ theme }) => theme.colors.text.muted};
-  25 | `;
-  26 | 
-  27 | const InfoBox = styled.div`
-  28 |   padding: 12px;
-  29 |   background: ${({ theme }) => theme.colors.bg.overlay};
-  30 |   border-radius: 6px;
-  31 |   font-size: 12px;
-  32 |   color: ${({ theme }) => theme.colors.text.secondary};
-  33 |   line-height: 1.5;
-  34 | `;
-  35 | 
-  36 | export const RootConfigView = () => {
-  37 |   const { config, setOptions, projectRoot } = useWorkspace();
-  38 | 
-  39 |   if (!config) return null;
-  40 | 
-  41 |   return (
-  42 |     <Container>
-  43 |       <div>
-  44 |         <Heading>
-  45 |           <VscSettingsGear /> Global Settings
-  46 |         </Heading>
-  47 |         <Subtext>Configuration applied to all groups.</Subtext>
-  48 |       </div>
-  49 | 
-  50 |       <Section>
-  51 |         <Label>Project Root</Label>
-  52 |         <InfoBox style={{ fontFamily: "monospace", wordBreak: "break-all" }}>{projectRoot}</InfoBox>
-  53 |       </Section>
-  54 | 
-  55 |       <PromptRuleEditor
-  56 |         options={config}
-  57 |         setOptions={(patch) => setOptions(patch)}
-  58 |         hint="Pro tip: you can author rules directly from the graph by clicking symbols on FileNodes."
-  59 |       />
-  60 |     </Container>
-  61 |   );
-  62 | };
+   1 | import { useEffect, useMemo, useState } from "react";
+   2 | import styled from "styled-components";
+   3 | import { useWorkspace } from "@features/workspace/useWorkspace";
+   4 | import { Heading, Subtext } from "@components/ui/Typography";
+   5 | import { VscSearch, VscSettingsGear } from "react-icons/vsc";
+   6 | import { PromptRuleEditor } from "./PromptRuleEditor";
+   7 | import { useToggle } from "@app/hooks";
+   8 | import { useFileSystem } from "@features/axon/useFileSystem";
+   9 | import { FileSelectorModal } from "@components/FileSelector/FileSelectorModal";
+  10 | 
+  11 | const Container = styled.div`
+  12 |   padding: 20px;
+  13 |   display: flex;
+  14 |   flex-direction: column;
+  15 |   gap: 24px;
+  16 | `;
+  17 | 
+  18 | const Section = styled.div`
+  19 |   display: flex;
+  20 |   flex-direction: column;
+  21 |   gap: 12px;
+  22 | `;
+  23 | 
+  24 | const Label = styled.label`
+  25 |   font-size: 11px;
+  26 |   font-weight: 700;
+  27 |   text-transform: uppercase;
+  28 |   color: ${({ theme }) => theme.colors.text.muted};
+  29 | `;
+  30 | 
+  31 | const InfoBox = styled.div`
+  32 |   padding: 12px;
+  33 |   background: ${({ theme }) => theme.colors.bg.overlay};
+  34 |   border-radius: 6px;
+  35 |   font-size: 12px;
+  36 |   color: ${({ theme }) => theme.colors.text.secondary};
+  37 |   line-height: 1.5;
+  38 | `;
+  39 | 
+  40 | const InputRow = styled.div`
+  41 |   display: flex;
+  42 |   gap: 10px;
+  43 |   align-items: center;
+  44 | `;
+  45 | 
+  46 | const Input = styled.input`
+  47 |   flex: 1;
+  48 |   background: ${({ theme }) => theme.colors.bg.input};
+  49 |   border: 1px solid ${({ theme }) => theme.colors.border};
+  50 |   color: ${({ theme }) => theme.colors.text.primary};
+  51 |   padding: 8px 10px;
+  52 |   border-radius: 6px;
+  53 | 
+  54 |   &:focus {
+  55 |     border-color: ${({ theme }) => theme.colors.palette.primary};
+  56 |     outline: none;
+  57 |   }
+  58 | `;
+  59 | 
+  60 | const Button = styled.button`
+  61 |   background: ${({ theme }) => theme.colors.bg.surface};
+  62 |   border: 1px solid ${({ theme }) => theme.colors.border};
+  63 |   color: ${({ theme }) => theme.colors.text.primary};
+  64 |   padding: 8px 10px;
+  65 |   border-radius: 6px;
+  66 |   cursor: pointer;
+  67 |   display: inline-flex;
+  68 |   align-items: center;
+  69 |   gap: 8px;
+  70 |   font-size: 13px;
+  71 |   font-weight: 700;
+  72 | 
+  73 |   &:hover {
+  74 |     background: ${({ theme }) => theme.colors.bg.overlay};
+  75 |   }
+  76 | `;
+  77 | 
+  78 | const CheckboxLabel = styled.label`
+  79 |   display: flex;
+  80 |   align-items: center;
+  81 |   gap: 10px;
+  82 |   cursor: pointer;
+  83 |   font-size: 13px;
+  84 |   user-select: none;
+  85 |   color: ${({ theme }) => theme.colors.text.secondary};
+  86 | 
+  87 |   input {
+  88 |     transform: translateY(1px);
+  89 |   }
+  90 | `;
+  91 | 
+  92 | export const RootConfigView = () => {
+  93 |   const { config, setOptions, projectRoot, scanConfig, setScan } =
+  94 |     useWorkspace();
+  95 | 
+  96 |   const { isOpen, toggle, open } = useToggle();
+  97 |   const fs = useFileSystem(projectRoot || null);
+  98 | 
+  99 |   const [entryPoint, setEntryPoint] = useState(scanConfig?.entryPoint ?? "");
+ 100 |   const [depth, setDepth] = useState<number>(scanConfig?.depth ?? 3);
+ 101 |   const [flatten, setFlatten] = useState<boolean>(scanConfig?.flatten ?? true);
+ 102 | 
+ 103 |   useEffect(() => {
+ 104 |     setEntryPoint(scanConfig?.entryPoint ?? "");
+ 105 |     setDepth(scanConfig?.depth ?? 3);
+ 106 |     setFlatten(scanConfig?.flatten ?? true);
+ 107 |   }, [scanConfig?.entryPoint, scanConfig?.depth, scanConfig?.flatten]);
+ 108 | 
+ 109 |   const canBrowse = useMemo(() => Boolean(projectRoot), [projectRoot]);
+ 110 | 
+ 111 |   const commitScanSettings = () => {
+ 112 |     setScan({
+ 113 |       entryPoint: entryPoint.trim(),
+ 114 |       depth: Math.max(1, Number.isFinite(depth) ? depth : 3),
+ 115 |       flatten: !!flatten,
+ 116 |     });
+ 117 |   };
+ 118 | 
+ 119 |   if (!config) return null;
+ 120 | 
+ 121 |   return (
+ 122 |     <Container>
+ 123 |       <div>
+ 124 |         <Heading>
+ 125 |           <VscSettingsGear /> Global Settings
+ 126 |         </Heading>
+ 127 |         <Subtext>
+ 128 |           Single scan from an entrypoint. Groups in the graph are created
+ 129 |           automatically from folders.
+ 130 |         </Subtext>
+ 131 |       </div>
+ 132 | 
+ 133 |       <Section>
+ 134 |         <Label>Scan Settings</Label>
+ 135 | 
+ 136 |         <div>
+ 137 |           <Subtext style={{ marginBottom: 8 }}>Entry Point</Subtext>
+ 138 |           <InputRow>
+ 139 |             <Input
+ 140 |               value={entryPoint}
+ 141 |               onChange={(e) => setEntryPoint(e.target.value)}
+ 142 |               onBlur={commitScanSettings}
+ 143 |               placeholder="src/main.rs"
+ 144 |             />
+ 145 |             <Button
+ 146 |               onClick={() => {
+ 147 |                 if (!canBrowse) return;
+ 148 |                 fs.refresh();
+ 149 |                 open();
+ 150 |               }}
+ 151 |               disabled={!canBrowse}
+ 152 |               title={canBrowse ? "Browse files" : "Open a workspace first"}
+ 153 |             >
+ 154 |               <VscSearch />
+ 155 |               Browse
+ 156 |             </Button>
+ 157 |           </InputRow>
+ 158 |         </div>
+ 159 | 
+ 160 |         <div>
+ 161 |           <Subtext style={{ marginBottom: 8 }}>Depth</Subtext>
+ 162 |           <Input
+ 163 |             type="number"
+ 164 |             min={1}
+ 165 |             max={25}
+ 166 |             value={depth}
+ 167 |             onChange={(e) => setDepth(Number(e.target.value))}
+ 168 |             onBlur={commitScanSettings}
+ 169 |           />
+ 170 |         </div>
+ 171 | 
+ 172 |         <CheckboxLabel>
+ 173 |           <input
+ 174 |             type="checkbox"
+ 175 |             checked={flatten}
+ 176 |             onChange={(e) => {
+ 177 |               setFlatten(e.target.checked);
+ 178 |               setScan({ flatten: e.target.checked });
+ 179 |             }}
+ 180 |           />
+ 181 |           Flatten directory structure during scan
+ 182 |         </CheckboxLabel>
+ 183 |       </Section>
+ 184 | 
+ 185 |       <Section>
+ 186 |         <Label>Project Root</Label>
+ 187 |         <InfoBox style={{ fontFamily: "monospace", wordBreak: "break-all" }}>
+ 188 |           {projectRoot}
+ 189 |         </InfoBox>
+ 190 |       </Section>
+ 191 | 
+ 192 |       <PromptRuleEditor
+ 193 |         options={config}
+ 194 |         setOptions={(patch) => setOptions(patch)}
+ 195 |         hint="Pro tip: you can author rules directly from the graph by clicking symbols on FileNodes."
+ 196 |       />
+ 197 | 
+ 198 |       <FileSelectorModal
+ 199 |         isOpen={isOpen}
+ 200 |         toggle={toggle}
+ 201 |         fs={fs}
+ 202 |         mode="file"
+ 203 |         onSelect={(path) => {
+ 204 |           setEntryPoint(path);
+ 205 |           setScan({ entryPoint: path });
+ 206 |         }}
+ 207 |       />
+ 208 |     </Container>
+ 209 |   );
+ 210 | };
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/components/LibraryHub/WorkspaceCommandPalette.tsx">
@@ -3987,118 +4048,276 @@
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/features/visualizer/useGraphLayout.ts">
-   1 | import { useState, useCallback, useEffect } from 'react';
-   2 | import { useNodesState, useEdgesState } from '@xyflow/react';
-   3 | import { useWorkspace } from '@features/workspace/useWorkspace';
-   4 | import { useAxonCore } from '@features/axon/useAxonCore';
-   5 | import type { AxonNode, AxonEdge } from '@axon-types/axonTypes';
+   1 | import { useCallback, useEffect, useMemo, useState } from "react";
+   2 | import { useNodesState, useEdgesState } from "@xyflow/react";
+   3 | import type { AxonNode, AxonEdge } from "@axon-types/axonTypes";
+   4 | import { useWorkspace } from "@features/workspace/useWorkspace";
+   5 | import { useAxonCore } from "@features/axon/useAxonCore";
    6 | 
-   7 | export const useGraphLayout = () => {
-   8 |   const { groups, projectRoot, workspaceId } = useWorkspace();
-   9 |   const { scanGroup } = useAxonCore();
-  10 | 
-  11 |   const [nodes, setNodes, onNodesChange] = useNodesState<AxonNode>([]);
-  12 |   const [edges, setEdges, onEdgesChange] = useEdgesState<AxonEdge>([]);
-  13 |   const [isScanning, setIsScanning] = useState(false);
-  14 | 
-  15 |   useEffect(() => {
-  16 |     setNodes([]);
-  17 |     setEdges([]);
-  18 |   }, [workspaceId, setNodes, setEdges]);
+   7 | /**
+   8 |  * Folder group layout notes:
+   9 |  * - We preserve the backend's absolute node positions.
+  10 |  * - We compute a bounding box per folder (including descendants) and render folder "group nodes".
+  11 |  * - We then convert node positions into parent-relative coordinates for ReactFlow nesting.
+  12 |  */
+  13 | 
+  14 | const GROUP_PADDING = 28;
+  15 | const GROUP_HEADER_H = 46;
+  16 | 
+  17 | const FALLBACK_NODE_W = 280;
+  18 | const FALLBACK_NODE_H = 240;
   19 | 
-  20 |   const refreshGraph = useCallback(async () => {
-  21 |     if (!projectRoot || groups.length === 0) return;
-  22 |     
-  23 |     setIsScanning(true);
-  24 |     let newNodes: AxonNode[] = [];
-  25 |     let newEdges: AxonEdge[] = [];
-  26 |     let xOffset = 0;
+  20 | function normalizePath(p: string) {
+  21 |   return (p ?? "").replace(/\\/g, "/");
+  22 | }
+  23 | 
+  24 | function stripProjectRoot(absPath: string, projectRoot: string) {
+  25 |   const a = normalizePath(absPath);
+  26 |   const r = normalizePath(projectRoot);
   27 | 
-  28 |     for (const group of groups) {
-  29 |       let width = 280;
-  30 |       let height = 200;
-  31 |       let children: AxonNode[] = [];
-  32 |       let groupEdges: AxonEdge[] = [];
-  33 | 
-  34 |       if (group.entryPoint) {
-  35 |         try {
-  36 |           const result = await scanGroup({
-  37 |             groupId: group.id,
-  38 |             projectRoot,
-  39 |             entryPoint: group.entryPoint,
-  40 |             depth: group.depth || 3,
-  41 |             flatten: !!group.flatten, // Ensure boolean
-  42 |           });
-  43 | 
-  44 |           if (result.nodes.length > 0) {
-  45 |             const xs = result.nodes.map(n => n.position.x);
-  46 |             const ys = result.nodes.map(n => n.position.y);
-  47 |             const minX = Math.min(...xs);
-  48 |             const maxX = Math.max(...xs);
-  49 |             const minY = Math.min(...ys);
-  50 |             const maxY = Math.max(...ys);
-  51 | 
-  52 |             const padding = 40;
-  53 |             const headerHeight = 60;
-  54 |             
-  55 |             width = (maxX - minX) + (padding * 2);
-  56 |             height = (maxY - minY) + (padding * 2) + headerHeight;
-  57 | 
-  58 |             children = result.nodes.map(n => ({
-  59 |               ...n,
-  60 |               parentId: group.id,
-  61 |               extent: 'parent', // Trap inside group
-  62 |               position: {
-  63 |                 x: n.position.x - minX + padding,
-  64 |                 y: n.position.y - minY + headerHeight
-  65 |               },
-  66 |               data: { ...n.data } // Ensure data reference is fresh
-  67 |             }));
-  68 |             
-  69 |             groupEdges = result.edges;
-  70 |           }
-  71 |         } catch (err) {
-  72 |           console.warn(`[Layout] Skipped group ${group.name}:`, err);
-  73 |         }
-  74 |       }
+  28 |   const aLow = a.toLowerCase();
+  29 |   const rLow = r.toLowerCase();
+  30 | 
+  31 |   if (r && aLow.startsWith(rLow)) {
+  32 |     let rel = a.slice(r.length);
+  33 |     if (rel.startsWith("/")) rel = rel.slice(1);
+  34 |     return rel;
+  35 |   }
+  36 |   return a;
+  37 | }
+  38 | 
+  39 | function dirname(relPath: string) {
+  40 |   const p = normalizePath(relPath);
+  41 |   const idx = p.lastIndexOf("/");
+  42 |   return idx === -1 ? "" : p.slice(0, idx);
+  43 | }
+  44 | 
+  45 | function folderDepth(folder: string) {
+  46 |   if (!folder) return 0;
+  47 |   return normalizePath(folder).split("/").filter(Boolean).length;
+  48 | }
+  49 | 
+  50 | function parentFolder(folder: string) {
+  51 |   if (!folder) return "";
+  52 |   const p = normalizePath(folder);
+  53 |   const idx = p.lastIndexOf("/");
+  54 |   return idx === -1 ? "" : p.slice(0, idx);
+  55 | }
+  56 | 
+  57 | function folderId(folder: string) {
+  58 |   return `folder:${normalizePath(folder)}`;
+  59 | }
+  60 | 
+  61 | function folderLabel(folder: string) {
+  62 |   const p = normalizePath(folder);
+  63 |   const parts = p.split("/").filter(Boolean);
+  64 |   return parts[parts.length - 1] ?? p ?? "folder";
+  65 | }
+  66 | 
+  67 | function coerceNum(v: unknown, fallback: number) {
+  68 |   if (typeof v === "number" && Number.isFinite(v)) return v;
+  69 |   if (typeof v === "string") {
+  70 |     const n = Number(v);
+  71 |     if (Number.isFinite(n)) return n;
+  72 |   }
+  73 |   return fallback;
+  74 | }
   75 | 
-  76 |       const groupNode: AxonNode = {
-  77 |         id: group.id,
-  78 |         type: 'groupNode',
-  79 |         position: { x: xOffset, y: 0 },
-  80 |         data: {
-  81 |           label: group.name,
-  82 |           entryPoint: group.entryPoint || null,
-  83 |           depth: group.depth || 3
-  84 |         },
-  85 |         style: { width, height },
-  86 |         selected: false, // selection handled by React Flow
-  87 |       };
+  76 | function approxNodeSize(n: any) {
+  77 |   const mw = n?.measured?.width;
+  78 |   const mh = n?.measured?.height;
+  79 | 
+  80 |   const sw = n?.style?.width;
+  81 |   const sh = n?.style?.height;
+  82 | 
+  83 |   const w = coerceNum(mw ?? sw, FALLBACK_NODE_W);
+  84 |   const h = coerceNum(mh ?? sh, FALLBACK_NODE_H);
+  85 | 
+  86 |   return { w, h };
+  87 | }
   88 | 
-  89 |       newNodes.push(groupNode, ...children);
-  90 |       newEdges.push(...groupEdges);
-  91 |       
-  92 |       xOffset += width + 100; 
-  93 |     }
-  94 | 
-  95 |     setNodes(newNodes);
-  96 |     setEdges(newEdges);
-  97 |     setIsScanning(false);
-  98 |   }, [groups, projectRoot, scanGroup, setNodes, setEdges]);
+  89 | type Bounds = { minX: number; minY: number; maxX: number; maxY: number; fileCount: number };
+  90 | type GroupAbs = { xAbs: number; yAbs: number; width: number; height: number };
+  91 | 
+  92 | export const useGraphLayout = () => {
+  93 |   const { projectRoot, workspaceId, scanConfig /* { entryPoint, depth, flatten } */ } = useWorkspace();
+  94 |   const { scanGroup } = useAxonCore();
+  95 | 
+  96 |   const [nodes, setNodes, onNodesChange] = useNodesState<AxonNode>([]);
+  97 |   const [edges, setEdges, onEdgesChange] = useEdgesState<AxonEdge>([]);
+  98 |   const [isScanning, setIsScanning] = useState(false);
   99 | 
  100 |   useEffect(() => {
- 101 |     refreshGraph();
- 102 |   }, [refreshGraph]);
- 103 | 
- 104 |   return {
- 105 |     nodes,
- 106 |     edges,
- 107 |     onNodesChange,
- 108 |     onEdgesChange,
- 109 |     isScanning,
- 110 |     setEdges, // Exposed for manual connections if needed
- 111 |   };
- 112 | };
+ 101 |     setNodes([]);
+ 102 |     setEdges([]);
+ 103 |   }, [workspaceId, setNodes, setEdges]);
+ 104 | 
+ 105 |   const canScan = useMemo(() => {
+ 106 |     return !!projectRoot && !!workspaceId && !!scanConfig?.entryPoint;
+ 107 |   }, [projectRoot, workspaceId, scanConfig?.entryPoint]);
+ 108 | 
+ 109 |   const refreshGraph = useCallback(
+ 110 |     async (override?: Partial<{ entryPoint: string; depth: number; flatten: boolean }>) => {
+ 111 |       if (!projectRoot || !workspaceId) return;
+ 112 | 
+ 113 |       const entryPoint = override?.entryPoint ?? scanConfig?.entryPoint ?? "";
+ 114 |       const depth = override?.depth ?? scanConfig?.depth ?? 3;
+ 115 |       const flatten = override?.flatten ?? scanConfig?.flatten ?? false;
+ 116 | 
+ 117 |       if (!entryPoint) return;
+ 118 | 
+ 119 |       setIsScanning(true);
+ 120 | 
+ 121 |       try {
+ 122 |         const result = await scanGroup({
+ 123 |           groupId: workspaceId, // re-using backend "groupId" as workspace scan id
+ 124 |           projectRoot,
+ 125 |           entryPoint,
+ 126 |           depth,
+ 127 |           flatten,
+ 128 |         });
+ 129 | 
+ 130 |         const rawNodes = result.nodes ?? [];
+ 131 |         const rawEdges = result.edges ?? [];
+ 132 | 
+ 133 |         const boundsByFolder = new Map<string, Bounds>();
+ 134 | 
+ 135 |         function bumpBounds(folder: string, x: number, y: number, w: number, h: number) {
+ 136 |           if (!folder) return; // no explicit root group
+ 137 |           const cur = boundsByFolder.get(folder);
+ 138 |           const next = {
+ 139 |             minX: Math.min(cur?.minX ?? x, x),
+ 140 |             minY: Math.min(cur?.minY ?? y, y),
+ 141 |             maxX: Math.max(cur?.maxX ?? x + w, x + w),
+ 142 |             maxY: Math.max(cur?.maxY ?? y + h, y + h),
+ 143 |             fileCount: (cur?.fileCount ?? 0) + 1,
+ 144 |           };
+ 145 |           boundsByFolder.set(folder, next);
+ 146 |         }
+ 147 | 
+ 148 |         for (const n of rawNodes as any[]) {
+ 149 |           if (!n?.data?.path) continue;
+ 150 |           const rel = stripProjectRoot(n.data.path, projectRoot);
+ 151 |           const folder = dirname(rel);
+ 152 |           if (!folder) continue;
+ 153 | 
+ 154 |           const { w, h } = approxNodeSize(n);
+ 155 |           const x = n.position?.x ?? 0;
+ 156 |           const y = n.position?.y ?? 0;
+ 157 | 
+ 158 |           let f = folder;
+ 159 |           while (f) {
+ 160 |             bumpBounds(f, x, y, w, h);
+ 161 |             f = parentFolder(f);
+ 162 |           }
+ 163 |         }
+ 164 | 
+ 165 |         const groupAbsByFolder = new Map<string, GroupAbs>();
+ 166 |         for (const [folder, b] of boundsByFolder.entries()) {
+ 167 |           const xAbs = b.minX - GROUP_PADDING;
+ 168 |           const yAbs = b.minY - GROUP_PADDING - GROUP_HEADER_H;
+ 169 |           const width = (b.maxX - b.minX) + GROUP_PADDING * 2;
+ 170 |           const height = (b.maxY - b.minY) + GROUP_PADDING * 2 + GROUP_HEADER_H;
+ 171 | 
+ 172 |           groupAbsByFolder.set(folder, { xAbs, yAbs, width, height });
+ 173 |         }
+ 174 | 
+ 175 |         const foldersSorted = Array.from(groupAbsByFolder.keys()).sort((a, b) => {
+ 176 |           const da = folderDepth(a);
+ 177 |           const db = folderDepth(b);
+ 178 |           return da - db || a.localeCompare(b);
+ 179 |         });
+ 180 | 
+ 181 |         const groupNodes: AxonNode[] = foldersSorted.map((folder) => {
+ 182 |           const abs = groupAbsByFolder.get(folder)!;
+ 183 |           const parent = parentFolder(folder);
+ 184 | 
+ 185 |           const parentId = parent ? folderId(parent) : undefined;
+ 186 |           const parentAbs = parent ? groupAbsByFolder.get(parent) : undefined;
+ 187 | 
+ 188 |           const position = parentId && parentAbs
+ 189 |             ? { x: abs.xAbs - parentAbs.xAbs, y: abs.yAbs - parentAbs.yAbs }
+ 190 |             : { x: abs.xAbs, y: abs.yAbs };
+ 191 | 
+ 192 |           return {
+ 193 |             id: folderId(folder),
+ 194 |             type: "groupNode",
+ 195 |             position,
+ 196 |             ...(parentId
+ 197 |               ? { parentId, extent: "parent" as const }
+ 198 |               : {}),
+ 199 |             style: {
+ 200 |               width: abs.width,
+ 201 |               height: abs.height,
+ 202 |             },
+ 203 |             data: {
+ 204 |               label: folderLabel(folder),
+ 205 |               folderPath: folder,
+ 206 |               folderDepth: folderDepth(folder),
+ 207 |               fileCount: boundsByFolder.get(folder)?.fileCount ?? 0,
+ 208 |             } as any,
+ 209 |             selectable: true,
+ 210 |             draggable: true,
+ 211 |           };
+ 212 |         });
+ 213 | 
+ 214 |         const folderToGroupId = new Map<string, string>();
+ 215 |         for (const f of foldersSorted) folderToGroupId.set(f, folderId(f));
+ 216 | 
+ 217 |         const fileNodes: AxonNode[] = (rawNodes as any[]).map((n) => {
+ 218 |           const absX = n.position?.x ?? 0;
+ 219 |           const absY = n.position?.y ?? 0;
+ 220 | 
+ 221 |           const path = n?.data?.path ? String(n.data.path) : "";
+ 222 |           const rel = path ? stripProjectRoot(path, projectRoot) : "";
+ 223 |           const folder = rel ? dirname(rel) : "";
+ 224 | 
+ 225 |           if (!folder || !groupAbsByFolder.has(folder)) {
+ 226 |             return {
+ 227 |               ...n,
+ 228 |               type: "fileNode",
+ 229 |               position: { x: absX, y: absY },
+ 230 |             } as AxonNode;
+ 231 |           }
+ 232 | 
+ 233 |           const groupId = folderToGroupId.get(folder)!;
+ 234 |           const gAbs = groupAbsByFolder.get(folder)!;
+ 235 | 
+ 236 |           return {
+ 237 |             ...n,
+ 238 |             type: "fileNode",
+ 239 |             parentId: groupId,
+ 240 |             extent: "parent",
+ 241 |             position: { x: absX - gAbs.xAbs, y: absY - gAbs.yAbs },
+ 242 |           } as AxonNode;
+ 243 |         });
+ 244 | 
+ 245 |         setNodes([...groupNodes, ...fileNodes]);
+ 246 |         setEdges(rawEdges as any);
+ 247 |       } catch (err) {
+ 248 |         console.error("[useGraphLayout] scan failed:", err);
+ 249 |       } finally {
+ 250 |         setIsScanning(false);
+ 251 |       }
+ 252 |     },
+ 253 |     [projectRoot, workspaceId, scanConfig?.entryPoint, scanConfig?.depth, scanConfig?.flatten, scanGroup, setNodes, setEdges]
+ 254 |   );
+ 255 | 
+ 256 |   useEffect(() => {
+ 257 |     if (!canScan) return;
+ 258 |     refreshGraph();
+ 259 |   }, [canScan, refreshGraph]);
+ 260 | 
+ 261 |   return {
+ 262 |     nodes,
+ 263 |     edges,
+ 264 |     onNodesChange,
+ 265 |     onEdgesChange,
+ 266 |     isScanning,
+ 267 |     refreshGraph,
+ 268 |     setEdges,
+ 269 |   };
+ 270 | };
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/features/workspace/useLibrary.ts">
@@ -4144,201 +4363,198 @@
    2 | import { useAppDispatch, useAppSelector } from "@app/hooks";
    3 | import {
    4 |   selectActiveRoot,
-   5 |   selectActiveGroups,
+   5 |   selectActiveScanConfig,
    6 |   selectActiveWorkspace,
-   7 |   addActiveGroup,
-   8 |   updateActiveGroup,
-   9 |   updateGlobalOptions,
-  10 |   type WorkspaceData,
-  11 | } from "./workspacesSlice";
-  12 | import { type AxonGroup } from "@axon-types/workspaceTypes";
-  13 | 
-  14 | export const useWorkspace = () => {
-  15 |   const dispatch = useAppDispatch();
-  16 | 
-  17 |   const projectRoot = useAppSelector(selectActiveRoot);
-  18 |   const groups = useAppSelector(selectActiveGroups);
-  19 |   const fullConfig = useAppSelector(selectActiveWorkspace);
-  20 | 
-  21 |   const createGroup = useCallback(
-  22 |     (group: AxonGroup) => {
-  23 |       dispatch(addActiveGroup(group));
-  24 |     },
-  25 |     [dispatch],
-  26 |   );
-  27 | 
-  28 |   const modifyGroup = useCallback(
-  29 |     (id: string, changes: Partial<AxonGroup>) => {
-  30 |       dispatch(updateActiveGroup({ id, changes }));
-  31 |     },
-  32 |     [dispatch],
-  33 |   );
-  34 | 
-  35 |   const setOptions = useCallback(
-  36 |     (options: Partial<WorkspaceData["globalOptions"]>) => {
-  37 |       dispatch(updateGlobalOptions(options));
-  38 |     },
-  39 |     [dispatch],
-  40 |   );
-  41 | 
-  42 |   const workspaceId = fullConfig?.id;
-  43 | 
-  44 |   return {
-  45 |     isActive: !!projectRoot,
-  46 |     workspaceId,
-  47 |     projectRoot,
-  48 |     groups,
-  49 |     config: fullConfig?.globalOptions,
-  50 | 
-  51 |     createGroup,
-  52 |     modifyGroup,
-  53 |     setOptions,
-  54 |   };
-  55 | };
+   7 |   updateScanConfig,
+   8 |   updateGlobalOptions,
+   9 |   type WorkspaceData,
+  10 | } from "./workspacesSlice";
+  11 | import type { ScanConfig } from "@axon-types/workspaceTypes";
+  12 | 
+  13 | export const useWorkspace = () => {
+  14 |   const dispatch = useAppDispatch();
+  15 | 
+  16 |   const projectRoot = useAppSelector(selectActiveRoot);
+  17 |   const scanConfig = useAppSelector(selectActiveScanConfig);
+  18 |   const fullConfig = useAppSelector(selectActiveWorkspace);
+  19 | 
+  20 |   const setScan = useCallback(
+  21 |     (patch: Partial<ScanConfig>) => {
+  22 |       dispatch(updateScanConfig(patch));
+  23 |     },
+  24 |     [dispatch],
+  25 |   );
+  26 | 
+  27 |   const setOptions = useCallback(
+  28 |     (options: Partial<WorkspaceData["globalOptions"]>) => {
+  29 |       dispatch(updateGlobalOptions(options));
+  30 |     },
+  31 |     [dispatch],
+  32 |   );
+  33 | 
+  34 |   const workspaceId = fullConfig?.id;
+  35 | 
+  36 |   return {
+  37 |     isActive: !!projectRoot,
+  38 |     workspaceId,
+  39 |     projectRoot,
+  40 | 
+  41 |     scanConfig,
+  42 | 
+  43 |     config: fullConfig?.globalOptions,
+  44 | 
+  45 |     setScan,
+  46 |     setOptions,
+  47 |   };
+  48 | };
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/features/workspace/workspacesSlice.ts">
-   1 | import { 
-   2 |   createSlice, 
-   3 |   createEntityAdapter, 
-   4 |   type PayloadAction, 
-   5 |   nanoid 
-   6 | } from '@reduxjs/toolkit';
-   7 | import { type RootState } from '@app/store';
-   8 | import { type AxonGroup} from '@axon-types/workspaceTypes';
-   9 | import type { PromptOptions } from '@axon-types/axonTypes';
+   1 | import {
+   2 |   createSlice,
+   3 |   createEntityAdapter,
+   4 |   type PayloadAction,
+   5 |   nanoid,
+   6 | } from "@reduxjs/toolkit";
+   7 | import { type RootState } from "@app/store";
+   8 | import type { PromptOptions } from "@axon-types/axonTypes";
+   9 | import type { ScanConfig } from "@axon-types/workspaceTypes";
   10 | 
   11 | export interface WorkspaceData {
   12 |   id: string;
   13 |   name: string;
   14 |   projectRoot: string;
-  15 |   lastOpened: string; 
-  16 |   groups: AxonGroup[];
-  17 |   globalOptions: PromptOptions;
-  18 |   selectedNodeId: string | null;
-  19 | }
-  20 | 
-  21 | const workspacesAdapter = createEntityAdapter<WorkspaceData>({
-  22 |   sortComparer: (a, b) => b.lastOpened.localeCompare(a.lastOpened),
-  23 | });
-  24 | 
-  25 | const initialState = workspacesAdapter.getInitialState({
-  26 |   activeId: null as string | null,
-  27 | });
-  28 | 
-  29 | const workspacesSlice = createSlice({
-  30 |   name: 'workspaces',
-  31 |   initialState,
-  32 |   reducers: {
-  33 |     createWorkspace: {
-  34 |       reducer: (state, action: PayloadAction<WorkspaceData>) => {
-  35 |         workspacesAdapter.addOne(state, action.payload);
-  36 |         state.activeId = action.payload.id;
-  37 |       },
-  38 |       prepare: (name: string, root: string) => {
-  39 |         const id = nanoid();
-  40 |         return {
-  41 |           payload: {
-  42 |             id,
-  43 |             name,
-  44 |             projectRoot: root,
-  45 |             lastOpened: new Date().toISOString(),
-  46 |             groups: [],
-  47 |             globalOptions: { skeletonMode: 'stripOnly', redactions: [], removeComments: true, showLineNumbers: true, skeletonTargets: [] },
-  48 |             selectedNodeId: null,
-  49 |           } as WorkspaceData
-  50 |         };
-  51 |       }
-  52 |     },
-  53 | 
-  54 |     setSelectedNode: (state, action: PayloadAction<string | null>) => {
-  55 |       if (state.activeId && state.entities[state.activeId]) {
-  56 |         state.entities[state.activeId].selectedNodeId = action.payload;
-  57 |       }
-  58 |     },
-  59 |     
-  60 |     deleteWorkspace: (state, action: PayloadAction<string>) => {
-  61 |       workspacesAdapter.removeOne(state, action.payload);
-  62 |       if (state.activeId === action.payload) {
-  63 |         state.activeId = null;
-  64 |       }
-  65 |     },
-  66 | 
-  67 |     setActiveWorkspace: (state, action: PayloadAction<string>) => {
-  68 |       workspacesAdapter.updateOne(state, {
-  69 |         id: action.payload,
-  70 |         changes: { lastOpened: new Date().toISOString() }
-  71 |       });
-  72 |       state.activeId = action.payload;
-  73 |     },
-  74 | 
-  75 |     
-  76 |     addActiveGroup: (state, action: PayloadAction<AxonGroup>) => {
-  77 |       if (state.activeId) {
-  78 |         const ws = state.entities[state.activeId];
-  79 |         if (ws) ws.groups.push(action.payload);
-  80 |       }
-  81 |     },
-  82 | 
-  83 | 
-  84 |     updateActiveGroup: (state, action: PayloadAction<{ id: string; changes: Partial<AxonGroup> }>) => {
-  85 |       if (!state.activeId) return;
-  86 |       
-  87 |       const workspace = state.entities[state.activeId];
-  88 |       if (!workspace) return;
-  89 | 
-  90 |       const groupIndex = workspace.groups.findIndex(g => g.id === action.payload.id);
-  91 |       
-  92 |       if (groupIndex !== -1) {
-  93 |         workspace.groups[groupIndex] = {
-  94 |           ...workspace.groups[groupIndex],
-  95 |           ...action.payload.changes
-  96 |         };
-  97 |       }
-  98 |     },
+  15 |   lastOpened: string;
+  16 | 
+  17 |   /** Single-scan settings for this workspace. */
+  18 |   scan: ScanConfig;
+  19 | 
+  20 |   /** Prompt generation options (rules, stripping, skeletons, etc.). */
+  21 |   globalOptions: PromptOptions;
+  22 | 
+  23 |   /** Selected node id in the graph (file node only). */
+  24 |   selectedNodeId: string | null;
+  25 | }
+  26 | 
+  27 | const workspacesAdapter = createEntityAdapter<WorkspaceData>({
+  28 |   sortComparer: (a, b) => b.lastOpened.localeCompare(a.lastOpened),
+  29 | });
+  30 | 
+  31 | const initialState = workspacesAdapter.getInitialState({
+  32 |   activeId: null as string | null,
+  33 | });
+  34 | 
+  35 | const defaultPromptOptions: PromptOptions = {
+  36 |   skeletonMode: "stripOnly",
+  37 |   redactions: [],
+  38 |   removeComments: true,
+  39 |   showLineNumbers: true,
+  40 |   skeletonTargets: [],
+  41 | };
+  42 | 
+  43 | const defaultScanConfig: ScanConfig = {
+  44 |   entryPoint: "",
+  45 |   depth: 3,
+  46 |   flatten: true,
+  47 | };
+  48 | 
+  49 | const workspacesSlice = createSlice({
+  50 |   name: "workspaces",
+  51 |   initialState,
+  52 |   reducers: {
+  53 |     createWorkspace: {
+  54 |       reducer: (state, action: PayloadAction<WorkspaceData>) => {
+  55 |         workspacesAdapter.addOne(state, action.payload);
+  56 |         state.activeId = action.payload.id;
+  57 |       },
+  58 |       prepare: (name: string, root: string) => {
+  59 |         const id = nanoid();
+  60 |         return {
+  61 |           payload: {
+  62 |             id,
+  63 |             name,
+  64 |             projectRoot: root,
+  65 |             lastOpened: new Date().toISOString(),
+  66 |             scan: { ...defaultScanConfig },
+  67 |             globalOptions: { ...defaultPromptOptions },
+  68 |             selectedNodeId: null,
+  69 |           } as WorkspaceData,
+  70 |         };
+  71 |       },
+  72 |     },
+  73 | 
+  74 |     setSelectedNode: (state, action: PayloadAction<string | null>) => {
+  75 |       if (state.activeId && state.entities[state.activeId]) {
+  76 |         state.entities[state.activeId]!.selectedNodeId = action.payload;
+  77 |       }
+  78 |     },
+  79 | 
+  80 |     deleteWorkspace: (state, action: PayloadAction<string>) => {
+  81 |       workspacesAdapter.removeOne(state, action.payload);
+  82 |       if (state.activeId === action.payload) {
+  83 |         state.activeId = null;
+  84 |       }
+  85 |     },
+  86 | 
+  87 |     setActiveWorkspace: (state, action: PayloadAction<string>) => {
+  88 |       workspacesAdapter.updateOne(state, {
+  89 |         id: action.payload,
+  90 |         changes: { lastOpened: new Date().toISOString() },
+  91 |       });
+  92 |       state.activeId = action.payload;
+  93 |     },
+  94 | 
+  95 |     updateScanConfig: (state, action: PayloadAction<Partial<ScanConfig>>) => {
+  96 |       if (!state.activeId) return;
+  97 |       const ws = state.entities[state.activeId];
+  98 |       if (!ws) return;
   99 | 
- 100 |     updateGlobalOptions: (state, action: PayloadAction<Partial<WorkspaceData['globalOptions']>>) => {
- 101 |       if (state.activeId && state.entities[state.activeId]) {
- 102 |         const ws = state.entities[state.activeId];
- 103 |         ws.globalOptions = { ...ws.globalOptions, ...action.payload };
- 104 |       }
- 105 |     },
- 106 |   },
- 107 | });
- 108 | 
- 109 | export const { 
- 110 |   createWorkspace, 
- 111 |   deleteWorkspace, 
- 112 |   setActiveWorkspace,
- 113 |   addActiveGroup,
- 114 |   updateActiveGroup,
- 115 |   setSelectedNode,
- 116 |   updateGlobalOptions,
- 117 | } = workspacesSlice.actions;
- 118 | 
- 119 | export default workspacesSlice.reducer;
- 120 | 
- 121 | 
- 122 | export const {
- 123 |   selectAll: selectAllWorkspaces,
- 124 |   selectById: selectWorkspaceById,
- 125 | } = workspacesAdapter.getSelectors<RootState>(state => state.workspaces);
- 126 | 
- 127 | export const selectActiveId = (state: RootState) => state.workspaces.activeId;
- 128 | 
- 129 | export const selectActiveWorkspace = (state: RootState) => {
- 130 |   const id = state.workspaces.activeId;
- 131 |   return id ? state.workspaces.entities[id] : null;
- 132 | };
- 133 | 
- 134 | export const selectActiveGroups = (state: RootState) => 
- 135 |   selectActiveWorkspace(state)?.groups ?? [];
- 136 | 
- 137 | export const selectActiveRoot = (state: RootState) => 
- 138 |   selectActiveWorkspace(state)?.projectRoot ?? null;
- 139 | 
- 140 | export const selectSelectedNodeId = (state: RootState) => 
- 141 |   selectActiveWorkspace(state)?.selectedNodeId ?? null;
+ 100 |       ws.scan = { ...ws.scan, ...action.payload };
+ 101 |     },
+ 102 | 
+ 103 |     updateGlobalOptions: (
+ 104 |       state,
+ 105 |       action: PayloadAction<Partial<WorkspaceData["globalOptions"]>>,
+ 106 |     ) => {
+ 107 |       if (state.activeId && state.entities[state.activeId]) {
+ 108 |         const ws = state.entities[state.activeId]!;
+ 109 |         ws.globalOptions = { ...ws.globalOptions, ...action.payload };
+ 110 |       }
+ 111 |     },
+ 112 |   },
+ 113 | });
+ 114 | 
+ 115 | export const {
+ 116 |   createWorkspace,
+ 117 |   deleteWorkspace,
+ 118 |   setActiveWorkspace,
+ 119 |   setSelectedNode,
+ 120 |   updateScanConfig,
+ 121 |   updateGlobalOptions,
+ 122 | } = workspacesSlice.actions;
+ 123 | 
+ 124 | export default workspacesSlice.reducer;
+ 125 | 
+ 126 | export const {
+ 127 |   selectAll: selectAllWorkspaces,
+ 128 |   selectById: selectWorkspaceById,
+ 129 | } = workspacesAdapter.getSelectors<RootState>((state) => state.workspaces);
+ 130 | 
+ 131 | export const selectActiveId = (state: RootState) => state.workspaces.activeId;
+ 132 | 
+ 133 | export const selectActiveWorkspace = (state: RootState) => {
+ 134 |   const id = state.workspaces.activeId;
+ 135 |   return id ? state.workspaces.entities[id] : null;
+ 136 | };
+ 137 | 
+ 138 | export const selectActiveScanConfig = (state: RootState) =>
+ 139 |   selectActiveWorkspace(state)?.scan ?? null;
+ 140 | 
+ 141 | export const selectActiveRoot = (state: RootState) =>
+ 142 |   selectActiveWorkspace(state)?.projectRoot ?? null;
+ 143 | 
+ 144 | export const selectSelectedNodeId = (state: RootState) =>
+ 145 |   selectActiveWorkspace(state)?.selectedNodeId ?? null;
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/pages/LibraryHubPage.tsx">
@@ -4418,298 +4634,246 @@
   74 |   border-radius: 4px;
   75 |   border: 1px solid ${({ theme }) => theme.colors.border};
   76 |   background: ${({ theme }) => theme.colors.bg.overlay};
-  77 |   color: ${({ theme }) => theme.colors.text.secondary};
-  78 | `;
-  79 | 
-  80 | const ContentGrid = styled.div`
-  81 |   display: grid;
-  82 |   grid-template-columns: 1.3fr 0.9fr;
-  83 |   gap: 16px;
+  77 | `;
+  78 | 
+  79 | const StatRow = styled.div`
+  80 |   display: grid;
+  81 |   grid-template-columns: repeat(4, minmax(0, 1fr));
+  82 |   gap: 12px;
+  83 |   margin-bottom: 18px;
   84 | 
   85 |   @media (max-width: 1100px) {
-  86 |     grid-template-columns: 1fr;
+  86 |     grid-template-columns: repeat(2, minmax(0, 1fr));
   87 |   }
-  88 | `;
-  89 | 
-  90 | const Panel = styled(Surface)`
-  91 |   border: 1px solid ${({ theme }) => theme.colors.border};
+  88 | 
+  89 |   @media (max-width: 620px) {
+  90 |     grid-template-columns: 1fr;
+  91 |   }
   92 | `;
   93 | 
-  94 | const StatRow = styled.div`
-  95 |   display: grid;
-  96 |   grid-template-columns: repeat(4, 1fr);
-  97 |   gap: 10px;
-  98 |   margin-bottom: 14px;
+  94 | const StatCard = styled(Surface)`
+  95 |   display: flex;
+  96 |   flex-direction: column;
+  97 |   gap: 8px;
+  98 | `;
   99 | 
- 100 |   @media (max-width: 1100px) {
- 101 |     grid-template-columns: repeat(2, 1fr);
- 102 |   }
- 103 | `;
- 104 | 
- 105 | const StatCard = styled(Surface)`
- 106 |   border: 1px solid ${({ theme }) => theme.colors.border};
- 107 |   display: flex;
- 108 |   flex-direction: column;
- 109 |   gap: 6px;
- 110 |   min-height: 74px;
- 111 | `;
- 112 | 
- 113 | const StatLabel = styled(Subtext)`
- 114 |   font-size: 11px;
- 115 |   text-transform: uppercase;
- 116 |   letter-spacing: 0.08em;
- 117 | `;
- 118 | 
- 119 | const StatValue = styled.div`
- 120 |   font-size: 18px;
- 121 |   font-weight: 700;
- 122 |   color: ${({ theme }) => theme.colors.text.primary};
- 123 |   display: flex;
- 124 |   align-items: center;
- 125 |   gap: 8px;
- 126 | `;
- 127 | 
- 128 | const StatMeta = styled(Subtext)`
- 129 |   font-size: 12px;
- 130 | `;
- 131 | 
- 132 | const Divider = styled.div`
- 133 |   height: 1px;
- 134 |   background: ${({ theme }) => theme.colors.border};
- 135 |   margin: 12px 0;
- 136 | `;
- 137 | 
- 138 | const ConfirmBody = styled.div`
- 139 |   display: flex;
- 140 |   flex-direction: column;
- 141 |   gap: 10px;
- 142 | `;
- 143 | 
- 144 | const ConfirmTitle = styled.div`
- 145 |   font-size: 14px;
- 146 |   font-weight: 700;
- 147 |   color: ${({ theme }) => theme.colors.text.primary};
- 148 | `;
- 149 | 
- 150 | const ConfirmActions = styled.div`
- 151 |   display: flex;
- 152 |   justify-content: flex-end;
- 153 |   gap: 10px;
- 154 |   margin-top: 10px;
- 155 | `;
- 156 | 
- 157 | const Button = styled.button<{ $primary?: boolean; $danger?: boolean }>`
- 158 |   background: ${({ theme, $primary, $danger }) =>
- 159 |     $danger ? theme.colors.palette.danger : $primary ? theme.colors.palette.primary : "transparent"};
- 160 |   color: ${({ theme, $primary, $danger }) =>
- 161 |     $danger || $primary ? "white" : theme.colors.text.secondary};
- 162 |   border: 1px solid
- 163 |     ${({ theme, $primary, $danger }) =>
- 164 |       $danger ? theme.colors.palette.danger : $primary ? theme.colors.palette.primary : theme.colors.border};
- 165 |   padding: 8px 12px;
- 166 |   border-radius: 4px;
- 167 |   cursor: pointer;
- 168 |   font-size: 13px;
- 169 |   font-weight: 600;
- 170 |   display: inline-flex;
- 171 |   gap: 8px;
- 172 |   align-items: center;
- 173 | 
- 174 |   &:hover {
- 175 |     filter: brightness(1.05);
- 176 |     background: ${({ theme, $primary, $danger }) =>
- 177 |       $danger ? theme.colors.palette.danger : $primary ? theme.colors.palette.primary : theme.colors.bg.overlay};
- 178 |     color: ${({ theme, $primary, $danger }) =>
- 179 |       $danger || $primary ? "white" : theme.colors.text.primary};
- 180 |   }
- 181 | `;
- 182 | 
- 183 | const fmtDateTime = (value?: string) => {
- 184 |   if (!value) return "—";
- 185 |   const d = new Date(value);
- 186 |   if (Number.isNaN(d.getTime())) return "—";
- 187 |   return new Intl.DateTimeFormat(undefined, {
- 188 |     year: "numeric",
- 189 |     month: "short",
- 190 |     day: "2-digit",
- 191 |     hour: "2-digit",
- 192 |     minute: "2-digit",
- 193 |   }).format(d);
- 194 | };
- 195 | 
- 196 | export const LibraryHubPage = () => {
- 197 |   const navigate = useNavigate();
- 198 |   const { workspaces, activeId, open, remove } = useLibrary();
- 199 |   const { toggle: toggleTheme } = useTheme();
- 200 | 
- 201 |   const palette = useToggle();
- 202 |   const [pendingDelete, setPendingDelete] = useState<WorkspaceData | null>(null);
- 203 | 
- 204 |   useEffect(() => {
- 205 |     const onKeyDown = (e: KeyboardEvent) => {
- 206 |       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
- 207 |         e.preventDefault();
- 208 |         palette.open();
- 209 |       }
- 210 |       if (e.key === "Escape") {
- 211 |         palette.close();
- 212 |       }
- 213 |     };
- 214 |     window.addEventListener("keydown", onKeyDown);
- 215 |     return () => window.removeEventListener("keydown", onKeyDown);
- 216 |   }, [palette]);
+ 100 | const StatLabel = styled.div`
+ 101 |   font-size: 11px;
+ 102 |   font-weight: 800;
+ 103 |   text-transform: uppercase;
+ 104 |   letter-spacing: 0.04em;
+ 105 |   color: ${({ theme }) => theme.colors.text.muted};
+ 106 | `;
+ 107 | 
+ 108 | const StatValue = styled.div`
+ 109 |   font-size: 22px;
+ 110 |   font-weight: 900;
+ 111 |   color: ${({ theme }) => theme.colors.text.primary};
+ 112 | `;
+ 113 | 
+ 114 | const StatMeta = styled(Subtext)`
+ 115 |   margin: 0;
+ 116 | `;
+ 117 | 
+ 118 | const SectionHeader = styled.div`
+ 119 |   display: flex;
+ 120 |   align-items: baseline;
+ 121 |   justify-content: space-between;
+ 122 |   gap: 12px;
+ 123 |   margin-top: 16px;
+ 124 |   margin-bottom: 10px;
+ 125 | `;
+ 126 | 
+ 127 | const DangerText = styled.div`
+ 128 |   color: ${({ theme }) => theme.colors.palette.danger};
+ 129 |   font-weight: 800;
+ 130 |   display: inline-flex;
+ 131 |   align-items: center;
+ 132 |   gap: 8px;
+ 133 | `;
+ 134 | 
+ 135 | const DangerButton = styled.button`
+ 136 |   background: transparent;
+ 137 |   border: 1px solid ${({ theme }) => theme.colors.border};
+ 138 |   color: ${({ theme }) => theme.colors.text.secondary};
+ 139 |   padding: 8px 10px;
+ 140 |   border-radius: 6px;
+ 141 |   cursor: pointer;
+ 142 |   display: inline-flex;
+ 143 |   align-items: center;
+ 144 |   gap: 8px;
+ 145 | 
+ 146 |   &:hover {
+ 147 |     background: ${({ theme }) => theme.colors.bg.overlay};
+ 148 |     color: ${({ theme }) => theme.colors.text.primary};
+ 149 |   }
+ 150 | `;
+ 151 | 
+ 152 | const fmtDateTime = (iso: string) => {
+ 153 |   const d = new Date(iso);
+ 154 |   return d.toLocaleString(undefined, {
+ 155 |     year: "numeric",
+ 156 |     month: "short",
+ 157 |     day: "2-digit",
+ 158 |     hour: "2-digit",
+ 159 |     minute: "2-digit",
+ 160 |   });
+ 161 | };
+ 162 | 
+ 163 | export const LibraryHubPage = () => {
+ 164 |   const navigate = useNavigate();
+ 165 |   const { workspaces, activeId, open, remove } = useLibrary();
+ 166 |   const { toggle: toggleTheme } = useTheme();
+ 167 |   const palette = useToggle()
+ 168 |   const deleteModal = useToggle();
+ 169 | 
+ 170 |   const [pendingDelete, setPendingDelete] = useState<WorkspaceData | null>(null);
+ 171 | 
+ 172 |   useEffect(() => {
+ 173 |     if (!pendingDelete) deleteModal.close();
+ 174 |   }, [pendingDelete, deleteModal]);
+ 175 | 
+ 176 |   const activeWorkspace = useMemo(
+ 177 |     () => workspaces.find((w: WorkspaceData) => w.id === activeId) ?? null,
+ 178 |     [workspaces, activeId]
+ 179 |   );
+ 180 | 
+ 181 |   const stats = useMemo(() => {
+ 182 |     const total = workspaces.length;
+ 183 | 
+ 184 |     const mostRecent = [...workspaces]
+ 185 |       .filter((w: WorkspaceData) => Boolean(w.lastOpened))
+ 186 |       .sort((a: WorkspaceData, b: WorkspaceData) => +new Date(b.lastOpened) - +new Date(a.lastOpened))[0];
+ 187 | 
+ 188 |     return {
+ 189 |       total,
+ 190 |       activeName: activeWorkspace?.name ?? "None",
+ 191 |       recent: mostRecent?.lastOpened ? fmtDateTime(mostRecent.lastOpened) : "—",
+ 192 |     };
+ 193 |   }, [workspaces, activeWorkspace]);
+ 194 | 
+ 195 |   const openWorkspace = (id: string) => {
+ 196 |     open(id);
+ 197 |     navigate("/workspace");
+ 198 |   };
+ 199 | 
+ 200 |   const requestDelete = (ws: WorkspaceData) => setPendingDelete(ws);
+ 201 | 
+ 202 |   const confirmDelete = () => {
+ 203 |     if (!pendingDelete) return;
+ 204 |     remove(pendingDelete.id);
+ 205 |     setPendingDelete(null);
+ 206 |   };
+ 207 | 
+ 208 |   return (
+ 209 |     <Page>
+ 210 |       <TopBar>
+ 211 |         <TitleBlock>
+ 212 |           <Heading style={{ marginBottom: 0 }}>Library Hub</Heading>
+ 213 |           <Subtext>
+ 214 |             Jump between workspaces, see what’s “hot”, and fly with <strong>Ctrl</strong>+<strong>K</strong>.
+ 215 |           </Subtext>
+ 216 |         </TitleBlock>
  217 | 
- 218 |   const activeWorkspace = useMemo(
- 219 |     () => workspaces.find((w: WorkspaceData) => w.id === activeId) ?? null,
- 220 |     [workspaces, activeId]
- 221 |   );
+ 218 |         <Actions>
+ 219 |           <Hint>
+ 220 |             <Kbd>Ctrl</Kbd> <span>+</span> <Kbd>K</Kbd>
+ 221 |           </Hint>
  222 | 
- 223 |   const stats = useMemo(() => {
- 224 |     const total = workspaces.length;
- 225 |     const groups = workspaces.reduce((acc: number, w: WorkspaceData) => acc + (w.groups?.length ?? 0), 0);
+ 223 |           <IconButton title="Search workspaces (Ctrl+K)" onClick={palette.open}>
+ 224 |             <VscSearch />
+ 225 |           </IconButton>
  226 | 
- 227 |     const mostRecent = [...workspaces]
- 228 |       .filter((w: WorkspaceData) => Boolean(w.lastOpened))
- 229 |       .sort((a: WorkspaceData, b: WorkspaceData) => +new Date(b.lastOpened) - +new Date(a.lastOpened))[0];
- 230 | 
- 231 |     return {
- 232 |       total,
- 233 |       groups,
- 234 |       activeName: activeWorkspace?.name ?? "None",
- 235 |       recent: mostRecent?.lastOpened ? fmtDateTime(mostRecent.lastOpened) : "—",
- 236 |     };
- 237 |   }, [workspaces, activeWorkspace]);
- 238 | 
- 239 |   const openWorkspace = (id: string) => {
- 240 |     open(id);
- 241 |     navigate("/workspace");
- 242 |   };
- 243 | 
- 244 |   const requestDelete = (ws: WorkspaceData) => setPendingDelete(ws);
+ 227 |           <IconButton title="Toggle theme" onClick={toggleTheme}>
+ 228 |             <VscColorMode />
+ 229 |           </IconButton>
+ 230 |         </Actions>
+ 231 |       </TopBar>
+ 232 | 
+ 233 |       <StatRow>
+ 234 |         <StatCard $variant="surface" $padding={3} $radius="md">
+ 235 |           <StatLabel>Workspaces</StatLabel>
+ 236 |           <StatValue>{stats.total}</StatValue>
+ 237 |           <StatMeta>All saved projects</StatMeta>
+ 238 |         </StatCard>
+ 239 | 
+ 240 |         <StatCard $variant="surface" $padding={3} $radius="md">
+ 241 |           <StatLabel>Active</StatLabel>
+ 242 |           <StatValue>{stats.activeName}</StatValue>
+ 243 |           <StatMeta>Currently selected</StatMeta>
+ 244 |         </StatCard>
  245 | 
- 246 |   const confirmDelete = () => {
- 247 |     if (!pendingDelete) return;
- 248 |     remove(pendingDelete.id);
- 249 |     setPendingDelete(null);
- 250 |   };
+ 246 |         <StatCard $variant="surface" $padding={3} $radius="md">
+ 247 |           <StatLabel>Most Recent</StatLabel>
+ 248 |           <StatValue>{stats.recent}</StatValue>
+ 249 |           <StatMeta>Last opened workspace</StatMeta>
+ 250 |         </StatCard>
  251 | 
- 252 |   return (
- 253 |     <Page>
- 254 |       <TopBar>
- 255 |         <TitleBlock>
- 256 |           <Heading style={{ marginBottom: 0 }}>Library Hub</Heading>
- 257 |           <Subtext>
- 258 |             Jump between workspaces, see what’s “hot”, and fly with <strong>Ctrl</strong>+<strong>K</strong>.
- 259 |           </Subtext>
- 260 |         </TitleBlock>
- 261 | 
- 262 |         <Actions>
- 263 |           <Hint>
- 264 |             <Kbd>Ctrl</Kbd> <span>+</span> <Kbd>K</Kbd>
- 265 |           </Hint>
- 266 | 
- 267 |           <IconButton title="Search workspaces (Ctrl+K)" onClick={palette.open}>
- 268 |             <VscSearch />
- 269 |           </IconButton>
- 270 | 
- 271 |           <IconButton title="Toggle theme" onClick={toggleTheme}>
- 272 |             <VscColorMode />
- 273 |           </IconButton>
- 274 |         </Actions>
- 275 |       </TopBar>
- 276 | 
- 277 |       <StatRow>
- 278 |         <StatCard $variant="surface" $padding={3} $radius="md">
- 279 |           <StatLabel>Workspaces</StatLabel>
- 280 |           <StatValue>{stats.total}</StatValue>
- 281 |           <StatMeta>All saved projects</StatMeta>
- 282 |         </StatCard>
- 283 | 
- 284 |         <StatCard $variant="surface" $padding={3} $radius="md">
- 285 |           <StatLabel>Total Groups</StatLabel>
- 286 |           <StatValue>{stats.groups}</StatValue>
- 287 |           <StatMeta>Across your library</StatMeta>
- 288 |         </StatCard>
- 289 | 
- 290 |         <StatCard $variant="surface" $padding={3} $radius="md">
- 291 |           <StatLabel>Active</StatLabel>
- 292 |           <StatValue>{stats.activeName}</StatValue>
- 293 |           <StatMeta>Currently selected</StatMeta>
- 294 |         </StatCard>
- 295 | 
- 296 |         <StatCard $variant="surface" $padding={3} $radius="md">
- 297 |           <StatLabel>Most Recent</StatLabel>
- 298 |           <StatValue>{stats.recent}</StatValue>
- 299 |           <StatMeta>Latest open time</StatMeta>
- 300 |         </StatCard>
- 301 |       </StatRow>
- 302 | 
- 303 |       <ContentGrid>
- 304 |         <Panel $variant="surface" $padding={3} $radius="md">
- 305 |           <Heading style={{ marginBottom: 6 }}>Your Workspaces</Heading>
- 306 |           <Subtext>Open, delete, or use the palette to teleport.</Subtext>
- 307 | 
- 308 |           <Divider />
- 309 | 
- 310 |           <WorkspaceGrid
- 311 |             workspaces={workspaces}
- 312 |             activeId={activeId}
- 313 |             onOpen={openWorkspace}
- 314 |             onDelete={requestDelete}
- 315 |           />
- 316 |         </Panel>
- 317 | 
- 318 |         <Panel $variant="surface" $padding={3} $radius="md">
- 319 |           <Heading style={{ marginBottom: 6 }}>Create</Heading>
- 320 |           <Subtext>Spin up a new workspace in seconds.</Subtext>
- 321 | 
- 322 |           <Divider />
- 323 | 
- 324 |           <CreateWorkspaceCard />
- 325 |         </Panel>
- 326 |       </ContentGrid>
- 327 | 
- 328 |       <WorkspaceCommandPalette
- 329 |         isOpen={palette.isOpen}
- 330 |         onClose={palette.close}
- 331 |         workspaces={workspaces}
- 332 |         activeId={activeId}
- 333 |         onOpen={(id) => {
- 334 |           palette.close();
- 335 |           openWorkspace(id);
- 336 |         }}
- 337 |         onDelete={(ws) => {
- 338 |           palette.close();
- 339 |           requestDelete(ws);
- 340 |         }}
- 341 |       />
- 342 | 
- 343 |       <Modal
- 344 |         isOpen={Boolean(pendingDelete)}
- 345 |         onClose={() => setPendingDelete(null)}
- 346 |         title="Delete workspace?"
- 347 |       >
- 348 |         <ConfirmBody>
- 349 |           <ConfirmTitle>
- 350 |             Delete <span style={{ color: "inherit" }}>{pendingDelete?.name ?? "this workspace"}</span>?
- 351 |           </ConfirmTitle>
- 352 |           <Subtext>
- 353 |             This removes it from your saved library. (Your files on disk are untouched.)
- 354 |           </Subtext>
- 355 | 
- 356 |           <ConfirmActions>
- 357 |             <Button onClick={() => setPendingDelete(null)}>Cancel</Button>
- 358 |             <Button $danger onClick={confirmDelete}>
- 359 |               <VscTrash />
- 360 |               Delete
- 361 |               <VscChevronRight />
- 362 |             </Button>
- 363 |           </ConfirmActions>
- 364 |         </ConfirmBody>
- 365 |       </Modal>
- 366 |     </Page>
- 367 |   );
- 368 | };
+ 252 |         <StatCard $variant="surface" $padding={3} $radius="md">
+ 253 |           <StatLabel>Quick Create</StatLabel>
+ 254 |           <StatValue style={{ fontSize: 14, fontWeight: 800 }}>New</StatValue>
+ 255 |           <StatMeta>Create a new workspace</StatMeta>
+ 256 |         </StatCard>
+ 257 |       </StatRow>
+ 258 | 
+ 259 |       <SectionHeader>
+ 260 |         <Heading style={{ marginBottom: 0, fontSize: 16 }}>Your Workspaces</Heading>
+ 261 |         <Subtext style={{ margin: 0 }}>
+ 262 |           Click to open · <strong>Ctrl</strong>+<strong>K</strong> to search
+ 263 |         </Subtext>
+ 264 |       </SectionHeader>
+ 265 | 
+ 266 |       <WorkspaceGrid
+ 267 |         workspaces={workspaces}
+ 268 |         activeId={activeId}
+ 269 |         onOpen={openWorkspace}
+ 270 |         onDelete={requestDelete}
+ 271 |       />
+ 272 | 
+ 273 |       <SectionHeader>
+ 274 |         <Heading style={{ marginBottom: 0, fontSize: 16 }}>Create</Heading>
+ 275 |         <Subtext style={{ margin: 0 }}>
+ 276 |           Start a new workspace from any folder
+ 277 |         </Subtext>
+ 278 |       </SectionHeader>
+ 279 | 
+ 280 |       <CreateWorkspaceCard />
+ 281 | 
+ 282 |       <WorkspaceCommandPalette
+ 283 |         onDelete={() => {}}
+ 284 |         activeId={activeId}
+ 285 |         isOpen={palette.isOpen}
+ 286 |         onClose={palette.close}
+ 287 |         workspaces={workspaces}
+ 288 |         onOpen={openWorkspace}
+ 289 |       />
+ 290 | 
+ 291 |       <Modal
+ 292 |         isOpen={deleteModal.isOpen}
+ 293 |         onClose={() => setPendingDelete(null)}
+ 294 |         title="Delete Workspace?"
+ 295 |       >
+ 296 |         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+ 297 |           <DangerText>
+ 298 |             <VscTrash /> This cannot be undone.
+ 299 |           </DangerText>
+ 300 |           <Subtext style={{ margin: 0 }}>
+ 301 |             Delete <strong>{pendingDelete?.name}</strong>?
+ 302 |           </Subtext>
+ 303 | 
+ 304 |           <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+ 305 |             <DangerButton onClick={() => setPendingDelete(null)}>
+ 306 |               Cancel
+ 307 |             </DangerButton>
+ 308 |             <DangerButton onClick={confirmDelete}>
+ 309 |               Delete <VscChevronRight />
+ 310 |             </DangerButton>
+ 311 |           </div>
+ 312 |         </div>
+ 313 |       </Modal>
+ 314 |     </Page>
+ 315 |   );
+ 316 | };
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/pages/WelcomePage.tsx">
@@ -4998,55 +5162,55 @@
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/types/axonTypes.ts">
-   1 | 
-   2 | import type { Node } from "@xyflow/react";
-   3 | 
-   4 | export interface Position {
-   5 |   x: number;
-   6 |   y: number;
-   7 | }
-   8 | 
-   9 | /**
-  10 |  * Data associated with a File Node.
-  11 |  * Matches the Rust `NodeData` struct.
-  12 |  */
-  13 | export interface FileNodeData {
-  14 |   label: string;
-  15 |   path: string;
-  16 |   definitions: string[];
-  17 |   calls: string[];
-  18 |   [key: string]: any; 
-  19 | }
-  20 | 
-  21 | /**
-  22 |  * Data associated with a Group Node.
-  23 |  * This is mostly frontend-specific (Config Mode vs View Mode).
-  24 |  */
-  25 | export interface GroupNodeData {
+   1 | import type { Node } from "@xyflow/react";
+   2 | 
+   3 | export interface Position {
+   4 |   x: number;
+   5 |   y: number;
+   6 | }
+   7 | 
+   8 | /**
+   9 |  * Data associated with a File Node.
+  10 |  * Matches the Rust `NodeData` struct.
+  11 |  */
+  12 | export interface FileNodeData {
+  13 |   label: string;
+  14 |   path: string;
+  15 |   definitions: string[];
+  16 |   calls: string[];
+  17 |   [key: string]: any;
+  18 | }
+  19 | 
+  20 | /**
+  21 |  * Data associated with a Folder Group Node.
+  22 |  * Frontend-generated grouping based on each file's directory.
+  23 |  */
+  24 | export interface GroupNodeData {
+  25 |   /** Display label (usually the folder path). */
   26 |   label: string;
-  27 |   entryPoint: string | null;
-  28 |   depth: number;
-  29 |   [key: string]: any;
-  30 | }
-  31 | 
-  32 | 
-  33 | export type AxonNode = Node<FileNodeData | GroupNodeData, 'fileNode' | 'groupNode'>;
-  34 | 
-  35 | export interface AxonEdge {
-  36 |   id: string;
-  37 |   source: string;
-  38 |   target: string;
-  39 | 
-  40 |   label?: string;
-  41 |   animated?: boolean;
-  42 |   style?: React.CSSProperties;
-  43 |   type?: string;
-  44 | 
-  45 |   markerEnd?: any;
-  46 |   markerStart?: any;
-  47 |   className?: string;
-  48 | }
-  49 | 
+  27 |   /** Folder path represented by this group (relative or absolute, depending on backend output). */
+  28 |   folderPath: string;
+  29 |   /** Optional count of file nodes inside the group. */
+  30 |   fileCount?: number;
+  31 |   [key: string]: any;
+  32 | }
+  33 | 
+  34 | export type AxonNode = Node<FileNodeData | GroupNodeData, "fileNode" | "groupNode">;
+  35 | 
+  36 | export interface AxonEdge {
+  37 |   id: string;
+  38 |   source: string;
+  39 |   target: string;
+  40 | 
+  41 |   label?: string;
+  42 |   animated?: boolean;
+  43 |   style?: React.CSSProperties;
+  44 |   type?: string;
+  45 | 
+  46 |   markerEnd?: any;
+  47 |   markerStart?: any;
+  48 |   className?: string;
+  49 | }
   50 | 
   51 | /**
   52 |  * Matches the `PromptOptions` struct in Rust.
@@ -5056,38 +5220,39 @@
   56 |   showLineNumbers: boolean;
   57 |   removeComments: boolean;
   58 |   redactions: string[];
-  59 |   
-  60 |   skeletonMode: string; 
+  59 | 
+  60 |   skeletonMode: string;
   61 |   skeletonTargets: string[];
   62 | }
   63 | 
   64 | /**
-  65 |  * Request payload for scanning a single group
+  65 |  * Request payload for scanning a workspace from a single entrypoint.
   66 |  */
   67 | export interface ScanParams {
-  68 |   groupId: string;
-  69 |   projectRoot: string;
-  70 |   entryPoint: string;
-  71 |   depth: number;
-  72 |   flatten: boolean;
-  73 | }
-  74 | 
-  75 | /**
-  76 |  * Request payload for combining multiple groups
-  77 |  */
-  78 | export interface GroupRequest {
-  79 |   entryPoint: string;
-  80 |   depth: number;
-  81 |   flatten: boolean;
-  82 | }
-  83 | 
-  84 | /**
-  85 |  * The raw response from the Rust `scan_workspace_group` command
-  86 |  */
-  87 | export interface ScanResponse {
-  88 |   nodes: AxonNode[];
-  89 |   edges: AxonEdge[];
-  90 | }
+  68 |   /** A stable id for the scan (we use workspace id on the frontend). */
+  69 |   groupId: string;
+  70 |   projectRoot: string;
+  71 |   entryPoint: string;
+  72 |   depth: number;
+  73 |   flatten: boolean;
+  74 | }
+  75 | 
+  76 | /**
+  77 |  * Request payload for combining multiple groups (we use a single group in the new flow).
+  78 |  */
+  79 | export interface GroupRequest {
+  80 |   entryPoint: string;
+  81 |   depth: number;
+  82 |   flatten: boolean;
+  83 | }
+  84 | 
+  85 | /**
+  86 |  * The raw response from the Rust `scan_workspace_group` command
+  87 |  */
+  88 | export interface ScanResponse {
+  89 |   nodes: AxonNode[];
+  90 |   edges: AxonEdge[];
+  91 | }
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/types/themeTypes.ts">
@@ -5142,30 +5307,39 @@
 </file>
 
 <file path="G:/Lesgo Coding Projects/axon/client-axon/src/types/workspaceTypes.ts">
-   1 | export type SkeletonMode = 'all' | 'keepOnly' | 'stripOnly';
+   1 | export type SkeletonMode = "all" | "keepOnly" | "stripOnly";
    2 | 
-   3 | export interface AxonGroup {
-   4 |   id: string;        
-   5 |   name: string;
-   6 |   entryPoint: string;
-   7 |   depth: number;
-   8 |   flatten: boolean; 
-   9 |   isActive: boolean;      
-  10 | }
-  11 | 
-  12 | export interface WorkspaceState {
-  13 |   id: string;
-  14 |   name: string;
-  15 |   projectRoot: string; 
-  16 |   tsConfigPath: string | null;
-  17 |   selectedGroupId: string | null;
-  18 |   
-  19 |   skeletonMode: SkeletonMode;
-  20 |   redactions: string[]; 
-  21 |   skeletonTargets: string[];
-  22 |   
-  23 |   showLineNumbers: boolean;
-  24 |   removeComments: boolean;
-  25 | }
+   3 | /**
+   4 |  * Scan settings for the current workspace.
+   5 |  * The app performs a single scan from `entryPoint` up to `depth`.
+   6 |  */
+   7 | export interface ScanConfig {
+   8 |   entryPoint: string;
+   9 |   depth: number;
+  10 |   /**
+  11 |    * Passed to the Rust scanner. If true, the backend may flatten directory structure.
+  12 |    * Folder grouping in the UI still uses the returned file paths.
+  13 |    */
+  14 |   flatten: boolean;
+  15 | }
+  16 | 
+  17 | /**
+  18 |  * Legacy types (kept for backward compatibility with older notes/components).
+  19 |  * If you no longer need them, feel free to remove.
+  20 |  */
+  21 | export interface WorkspaceState {
+  22 |   id: string;
+  23 |   name: string;
+  24 |   projectRoot: string;
+  25 |   tsConfigPath: string | null;
+  26 |   selectedGroupId: string | null;
+  27 | 
+  28 |   skeletonMode: SkeletonMode;
+  29 |   redactions: string[];
+  30 |   skeletonTargets: string[];
+  31 | 
+  32 |   showLineNumbers: boolean;
+  33 |   removeComments: boolean;
+  34 | }
 </file>
 

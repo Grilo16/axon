@@ -6,6 +6,7 @@ import type { AxonNode } from "@axon-types/axonTypes";
 import { useWorkspace } from "@features/workspace/useWorkspace";
 
 const NodeContainer = styled.div<{ $selected?: boolean }>`
+  position: relative;
   background: #252526;
   border: 1px solid ${(props) => (props.$selected ? "#007acc" : "#454545")};
   border-radius: 4px;
@@ -13,8 +14,15 @@ const NodeContainer = styled.div<{ $selected?: boolean }>`
   color: #cccccc;
   min-width: 230px;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-  transition: border-color 0.2s ease;
+
+  /* Shadows are expensive on large graphs — keep them only when useful */
+  box-shadow: ${(props) =>
+    props.$selected ? "0 10px 15px -3px rgba(0, 0, 0, 0.4)" : "none"};
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.35);
+  }
 `;
 
 const NodeHeader = styled.div`
@@ -167,6 +175,14 @@ function basename(p: string) {
   return parts[parts.length - 1] || p;
 }
 
+const handleCommonStyle: React.CSSProperties = {
+  width: 10,
+  height: 10,
+  borderRadius: 3,
+  background: "#2d2d2d",
+  border: "1px solid #777",
+};
+
 export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
   const { config, setOptions } = useWorkspace();
   const [showAllDefs, setShowAllDefs] = useState(false);
@@ -189,6 +205,7 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
     () => skeletonTargets.filter((t) => t.startsWith(`${fileName}:`)).length,
     [skeletonTargets, fileName]
   );
+
   const fileRedactCount = useMemo(
     () => redactions.filter((r) => r.startsWith(`${fileName}:`)).length,
     [redactions, fileName]
@@ -199,9 +216,10 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
   const toggleImpl = (token: string) => {
     if (!config) return;
 
-    // treat Impl vs Redact as mutually exclusive for clarity
     const nextTargets = toggle(skeletonTargets, token);
-    const nextRedactions = redactions.includes(token) ? redactions.filter((r) => r !== token) : redactions;
+    const nextRedactions = redactions.includes(token)
+      ? redactions.filter((r) => r !== token)
+      : redactions;
 
     setOptions({ skeletonTargets: nextTargets, redactions: nextRedactions });
   };
@@ -209,7 +227,6 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
   const toggleRedact = (token: string) => {
     if (!config) return;
 
-    // mutually exclusive
     const nextRedactions = toggle(redactions, token);
     const nextTargets = skeletonTargets.includes(token)
       ? skeletonTargets.filter((t) => t !== token)
@@ -224,15 +241,19 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
   const defSlice = showAllDefs ? defs : defs.slice(0, 3);
   const callSlice = showAllCalls ? calls : calls.slice(0, 2);
 
-  const renderSymbol = (symbol: string, kind: "def" | "call") => {
+  const renderSymbol = (symbol: string, index: number, kind: "def" | "call") => {
     const token = makeToken(symbol);
     const isRedact = redactions.includes(token);
     const isTarget = skeletonTargets.includes(token);
 
-    const state: "normal" | "target" | "redact" = isRedact ? "redact" : isTarget ? "target" : "normal";
+    const state: "normal" | "target" | "redact" = isRedact
+      ? "redact"
+      : isTarget
+        ? "target"
+        : "normal";
 
     return (
-      <SymbolRow key={`${kind}:${symbol}`} $state={state}>
+      <SymbolRow key={`${kind}:${symbol}:${index}`} $state={state}>
         <RowLeft>
           {kind === "def" ? <VscSymbolMethod size={12} /> : <VscSymbolVariable size={12} />}
           <SymbolName title={token}>{symbol}</SymbolName>
@@ -247,7 +268,11 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
               e.stopPropagation();
               toggleImpl(token);
             }}
-            title={!canTargetImpl ? "Targets are ignored in “all” mode" : `${implVerb} implementation for ${token}`}
+            title={
+              !canTargetImpl
+                ? "Targets are ignored in “all” mode"
+                : `${implVerb} implementation for ${token}`
+            }
           >
             {implVerb}
           </MiniBtn>
@@ -270,12 +295,29 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
 
   return (
     <NodeContainer $selected={selected}>
-      <Handle type="target" position={Position.Top} style={{ background: "#555" }} />
+      {/* incoming (top) */}
+      <Handle
+        id="in"
+        type="target"
+        position={Position.Top}
+        isConnectable={false}
+        style={{
+          ...handleCommonStyle,
+          top: -6,
+        }}
+      />
 
       <NodeHeader>
         <VscCode size={16} color="#519aba" />
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {data.label as string}
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={(data as any)?.path ?? fileName}
+        >
+          {fileName}
         </span>
 
         {(fileTargetCount > 0 || fileRedactCount > 0) && (
@@ -290,7 +332,7 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
         <>
           <SectionLabel>Exports/Definitions</SectionLabel>
           <SymbolList>
-            {defSlice.map((d) => renderSymbol(d, "def"))}
+            {defSlice.map((d, index) => renderSymbol(d, index, "def"))}
             {defs.length > 3 && (
               <MoreLink
                 onClick={(e) => {
@@ -309,7 +351,7 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
         <>
           <SectionLabel>Key Dependencies</SectionLabel>
           <SymbolList>
-            {callSlice.map((c) => renderSymbol(c, "call"))}
+            {callSlice.map((c, index) => renderSymbol(c, index, "call"))}
             {calls.length > 2 && (
               <MoreLink
                 onClick={(e) => {
@@ -324,7 +366,17 @@ export const FileNode = memo(({ data, selected }: NodeProps<AxonNode>) => {
         </>
       )}
 
-      <Handle type="source" position={Position.Bottom} style={{ background: "#555" }} />
+      {/* outgoing (bottom) */}
+      <Handle
+        id="out"
+        type="source"
+        position={Position.Bottom}
+        isConnectable={false}
+        style={{
+          ...handleCommonStyle,
+          bottom: -6,
+        }}
+      />
     </NodeContainer>
   );
 });

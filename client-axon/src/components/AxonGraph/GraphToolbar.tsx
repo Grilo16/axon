@@ -1,10 +1,9 @@
 import { useState } from "react";
 import styled from "styled-components";
 import { Panel } from "@xyflow/react";
-import { VscAdd, VscCopy, VscExport, VscLoading } from "react-icons/vsc";
+import { VscExport, VscLoading, VscSync } from "react-icons/vsc";
 import { useWorkspace } from "@features/workspace/useWorkspace";
 import { useAxonCore } from "@features/axon/useAxonCore";
-import { nanoid } from "@reduxjs/toolkit";
 import { useToast } from "@components/ui/Toast";
 import { Modal } from "@components/ui/Modal";
 
@@ -17,8 +16,7 @@ const ToolButton = styled.button<{ $primary?: boolean }>`
   background: ${({ theme, $primary }) =>
     $primary ? theme.colors.palette.primary : theme.colors.bg.surface};
   color: ${({ theme, $primary }) => ($primary ? "#fff" : theme.colors.text.primary)};
-  border: 1px solid
-    ${({ theme, $primary }) => ($primary ? "transparent" : theme.colors.border)};
+  border: 1px solid ${({ theme, $primary }) => ($primary ? "transparent" : theme.colors.border)};
   padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
@@ -26,11 +24,11 @@ const ToolButton = styled.button<{ $primary?: boolean }>`
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
 
-  &:hover {
+  &:hover:enabled {
     transform: translateY(-1px);
     filter: brightness(1.1);
   }
@@ -61,7 +59,7 @@ const CopyButton = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 12px;
 
   &:hover {
@@ -85,8 +83,14 @@ const PreviewBox = styled.pre`
   white-space: pre-wrap;
 `;
 
-export const GraphToolbar = () => {
-  const { groups, projectRoot, config, createGroup } = useWorkspace();
+export const GraphToolbar = ({
+  onRescan,
+  isScanning,
+}: {
+  onRescan: () => void;
+  isScanning: boolean;
+}) => {
+  const { projectRoot, config, scanConfig } = useWorkspace();
   const { generateCombinedPrompt } = useAxonCore();
   const toast = useToast();
 
@@ -94,29 +98,18 @@ export const GraphToolbar = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewMarkdown, setPreviewMarkdown] = useState<string | null>(null);
 
-  const handleAddGroup = () => {
-    createGroup({
-      id: nanoid(),
-      name: "New Scope",
-      entryPoint: "",
-      depth: 3,
-      isActive: true,
-      flatten: true,
-    });
-  };
+  const canBundle =
+    !!projectRoot && !!config && !!scanConfig?.entryPoint && (scanConfig?.depth ?? 0) > 0;
 
   const handleBundle = async () => {
     if (!projectRoot) {
       toast.warning("No workspace loaded", "Open or create a workspace first.");
       return;
     }
-
-    const activeGroups = groups.filter((g) => g.isActive && g.entryPoint);
-    if (activeGroups.length === 0) {
-      toast.warning("Nothing to bundle", "Activate a scope and choose an entry file.");
+    if (!scanConfig?.entryPoint) {
+      toast.warning("No entrypoint", "Choose an entry file to scan first.");
       return;
     }
-
     if (!config) {
       toast.danger("Missing config", "Root config is unavailable; try reloading the app.");
       return;
@@ -125,17 +118,20 @@ export const GraphToolbar = () => {
     setIsBundling(true);
     const loadingId = toast.loading(
       "Bundling prompt…",
-      `Reading ${activeGroups.length} scope(s) and generating markdown…`
+      `Generating markdown from ${scanConfig.entryPoint} (depth ${scanConfig.depth ?? 3})…`
     );
 
     try {
+      // Keep using the combined endpoint for compatibility; we just pass 1 group.
       const markdown = await generateCombinedPrompt({
         projectRoot,
-        groups: activeGroups.map((g) => ({
-          entryPoint: g.entryPoint!,
-          depth: g.depth || 3,
-          flatten: g.flatten,
-        })),
+        groups: [
+          {
+            entryPoint: scanConfig.entryPoint,
+            depth: scanConfig.depth ?? 3,
+            flatten: !!scanConfig.flatten,
+          },
+        ],
         options: config,
       });
 
@@ -143,7 +139,7 @@ export const GraphToolbar = () => {
       setPreviewMarkdown(markdown);
 
       toast.dismiss(loadingId);
-      toast.success("Copied to clipboard", `Bundled ${activeGroups.length} scope(s).`, {
+      toast.success("Copied to clipboard", "Your prompt markdown is ready.", {
         actionLabel: "Preview",
         onAction: () => setPreviewOpen(true),
         duration: 4500,
@@ -169,26 +165,21 @@ export const GraphToolbar = () => {
     <>
       <Panel position="top-right">
         <ToolbarContainer>
-          <ToolButton onClick={handleAddGroup}>
-            <VscAdd /> Add Group
+          <ToolButton onClick={onRescan} disabled={isScanning || !scanConfig?.entryPoint}>
+            <VscSync />
+            {isScanning ? "Scanning…" : "Rescan"}
           </ToolButton>
 
-          <ToolButton $primary onClick={handleBundle} disabled={isBundling}>
+          <ToolButton $primary onClick={handleBundle} disabled={isBundling || !canBundle}>
             {isBundling ? <VscLoading className="spin" /> : <VscExport />}
             {isBundling ? "Bundling…" : "Bundle & Copy"}
           </ToolButton>
         </ToolbarContainer>
       </Panel>
 
-      <Modal
-        isOpen={previewOpen}
-        onClose={() => setPreviewOpen(false)}
-        title="Bundled Prompt Preview"
-      >
+      <Modal isOpen={previewOpen} onClose={() => setPreviewOpen(false)} title="Bundled Prompt Preview">
         <PreviewActions>
-          <CopyButton onClick={handleCopyAgain}>
-            <VscCopy /> Copy
-          </CopyButton>
+          <CopyButton onClick={handleCopyAgain}>Copy</CopyButton>
           <span style={{ opacity: 0.8, fontSize: 12 }}>
             This is exactly what was copied to your clipboard.
           </span>
