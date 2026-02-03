@@ -1,13 +1,13 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
   MiniMap,
   Controls,
   Background,
   BackgroundVariant,
-  type Node,
-  type Edge,
   Panel,
+  type Edge,
+  type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import styled, { useTheme } from "styled-components";
@@ -27,7 +27,8 @@ import { Subtext } from "@components/ui/Typography";
 import { FileSelectorModal } from "@components/FileSelector/FileSelectorModal";
 import { useFileSystem } from "@features/axon/useFileSystem";
 import { useToggle } from "@app/hooks";
-import { VscFolderOpened, VscPlay } from "react-icons/vsc";
+import { VscClose, VscFolderOpened, VscPlay, VscTrash } from "react-icons/vsc";
+
 
 const CanvasContainer = styled.div`
   width: 100%;
@@ -58,31 +59,122 @@ const CanvasContainer = styled.div`
   }
 `;
 
-const FocusCard = styled(Surface)`
-  width: 310px;
+const BundleCard = styled(Surface)`
+  width: 360px;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1.5)};
+  gap: ${({ theme }) => theme.spacing(1)};
+  max-height: 42vh;
+  overflow: hidden;
 `;
 
-const Row = styled.div`
+const BundleList = styled.div`
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+  padding-right: 2px;
+`;
+
+const BundleItemRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 72px 28px;
   gap: 10px;
   align-items: center;
+  padding: 8px 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.bg.surface};
 `;
 
-const Slider = styled.input`
-  width: 100%;
-  accent-color: ${({ theme }) => theme.colors.palette.primary};
+const BundlePath = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 `;
 
-const Pill = styled.div`
+const BundleTitle = styled.div`
+  font-weight: 900;
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.text.primary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const BundleSubtitle = styled.div`
+  font-size: 11px;
+  opacity: 0.78;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const DepthInput = styled.input`
+  width: 72px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  padding: 8px 8px;
+  background: ${({ theme }) => theme.colors.bg.main};
+  color: ${({ theme }) => theme.colors.text.primary};
+  font-weight: 800;
+
+  &:focus {
+    outline: none;
+    border-color: ${({ theme }) => theme.colors.palette.primary};
+  }
+`;
+
+const IconButton = styled.button`
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.bg.overlay};
-  color: ${({ theme }) => theme.colors.text.secondary};
-  border-radius: 999px;
-  padding: 4px 8px;
+  color: ${({ theme }) => theme.colors.text.primary};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
+`;
+
+const BundleFooter = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const SmallButton = styled.button<{ $danger?: boolean }>`
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.bg.surface};
+  color: ${({ theme }) => theme.colors.text.primary};
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 900;
   font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  ${({ $danger, theme }) =>
+    $danger
+      ? `
+    border-color: ${theme.colors.palette.danger}55;
+    background: ${theme.colors.bg.overlay};
+  `
+      : ""}
+
+  &:hover {
+    filter: brightness(1.08);
+  }
 `;
 
 const SetupOverlay = styled.div`
@@ -176,105 +268,141 @@ function collectAncestors(startId: string, parentById: Map<string, string | unde
   return out;
 }
 
-function computeHighlight(
-  focusId: string,
+type BundleTarget = {
+  nodeId: string;
+  entryPoint: string;
+  depth: number;
+  label?: string;
+};
+
+function normalizeSlashes(p: string) {
+  return (p ?? "").replace(/\\/g, "/");
+}
+
+function stripProjectRoot(absPath: string, projectRoot: string) {
+  const abs = normalizeSlashes(absPath);
+  const root = normalizeSlashes(projectRoot).replace(/\/+$/, "");
+  if (!root) return abs;
+  if (abs === root) return "";
+  if (abs.startsWith(root + "/")) return abs.slice(root.length + 1);
+  if (abs.startsWith(root)) return abs.slice(root.length).replace(/^\/+/, "");
+  return abs;
+}
+
+function baseName(p: string) {
+  const s = normalizeSlashes(p).replace(/\/+$/, "");
+  const i = s.lastIndexOf("/");
+  return i >= 0 ? s.slice(i + 1) : s;
+}
+
+function toEntryPoint(node: any, projectRoot: string | null) {
+  const data: any = node?.data ?? {};
+  const raw =
+    typeof data.path === "string" && data.path
+      ? data.path
+      : typeof node?.id === "string"
+      ? node.id
+      : "";
+  if (!raw) return "";
+  if (!projectRoot) return normalizeSlashes(raw);
+  const rel = stripProjectRoot(raw, projectRoot);
+  return rel || normalizeSlashes(raw);
+}
+
+const HIGHLIGHT_MAX_DEPTH = 6;
+
+function computeMultiHighlight(
+  targets: { nodeId: string; depth: number }[],
   nodes: Node[],
-  edges: Edge[],
-  depth: number
+  edges: Edge[]
 ) {
   const byId = new Map<string, any>();
   const parentById = new Map<string, string | undefined>();
-  const childrenByParent = new Map<string, string[]>();
 
   for (const n of nodes as any[]) {
     byId.set(n.id, n);
     parentById.set(n.id, n.parentId);
-    if (n.parentId) {
-      if (!childrenByParent.has(n.parentId)) childrenByParent.set(n.parentId, []);
-      childrenByParent.get(n.parentId)!.push(n.id);
-    }
   }
-
-  const focus = byId.get(focusId);
-  if (!focus) return null;
 
   const highlightedNodeIds = new Set<string>();
   const highlightedEdgeIds = new Set<string>();
   const relatedGroupIds = new Set<string>();
+  const focusNodeIds = new Set<string>();
 
-  if (focus.type === "groupNode") {
-    const q: string[] = [focusId];
-    highlightedNodeIds.add(focusId);
-    relatedGroupIds.add(focusId);
-
-    while (q.length) {
-      const cur = q.shift()!;
-      const kids = childrenByParent.get(cur) ?? [];
-      for (const k of kids) {
-        highlightedNodeIds.add(k);
-        q.push(k);
-      }
-    }
-
-    for (const a of collectAncestors(focusId, parentById)) relatedGroupIds.add(a);
-
-    for (const e of edges as any[]) {
-      if (highlightedNodeIds.has(e.source) && highlightedNodeIds.has(e.target)) {
-        highlightedEdgeIds.add(e.id);
-      }
-    }
-
-    return { highlightedNodeIds, highlightedEdgeIds, relatedGroupIds };
-  }
-
-  const adj = new Map<string, string[]>();
-  const add = (a: string, b: string) => {
-    if (!adj.has(a)) adj.set(a, []);
-    adj.get(a)!.push(b);
+  /**
+   * IMPORTANT:
+   * The backend "bundle" only follows imports from an entrypoint outward.
+   * So our highlight should mirror that: walk OUTGOING edges only (source -> target),
+   * and do NOT include "parents" (incoming edges).
+   */
+  const outgoing = new Map<string, string[]>();
+  const addOut = (a: string, b: string) => {
+    if (!outgoing.has(a)) outgoing.set(a, []);
+    outgoing.get(a)!.push(b);
   };
 
   for (const e of edges as any[]) {
     if (!byId.has(e.source) || !byId.has(e.target)) continue;
+
     const s = byId.get(e.source);
     const t = byId.get(e.target);
+
+    // ignore folder/group nodes in traversal
     if (s?.type === "groupNode" || t?.type === "groupNode") continue;
 
-    add(e.source, e.target);
-    add(e.target, e.source);
+    addOut(String(e.source), String(e.target));
   }
 
-  const dist = new Map<string, number>();
-  const q: string[] = [focusId];
-  dist.set(focusId, 0);
-  highlightedNodeIds.add(focusId);
+  for (const t of targets) {
+    const focusId = String(t.nodeId);
+    const focus = byId.get(focusId);
+    if (!focus || focus.type === "groupNode") continue;
 
-  while (q.length) {
-    const cur = q.shift()!;
-    const d = dist.get(cur)!;
-    if (d >= depth) continue;
+    focusNodeIds.add(focusId);
 
-    for (const nxt of adj.get(cur) ?? []) {
-      if (dist.has(nxt)) continue;
-      dist.set(nxt, d + 1);
-      highlightedNodeIds.add(nxt);
-      q.push(nxt);
+    const depth = Math.max(
+      1,
+      Math.min(HIGHLIGHT_MAX_DEPTH, Math.floor(Number(t.depth) || 1))
+    );
+
+    const dist = new Map<string, number>();
+    const q: string[] = [focusId];
+    dist.set(focusId, 0);
+    highlightedNodeIds.add(focusId);
+
+    while (q.length) {
+      const cur = q.shift()!;
+      const d = dist.get(cur)!;
+      if (d >= depth) continue;
+
+      for (const nxt of outgoing.get(cur) ?? []) {
+        if (dist.has(nxt)) continue;
+        dist.set(nxt, d + 1);
+        highlightedNodeIds.add(nxt);
+        q.push(nxt);
+      }
     }
   }
 
+  if (!highlightedNodeIds.size) return null;
+
+  // Highlight edges that connect highlighted nodes in the OUTGOING direction.
   for (const e of edges as any[]) {
     if (highlightedNodeIds.has(e.source) && highlightedNodeIds.has(e.target)) {
       highlightedEdgeIds.add(e.id);
     }
   }
 
+  // Keep folder containers visible by including ancestors of highlighted nodes.
   for (const nId of highlightedNodeIds) {
     for (const a of collectAncestors(nId, parentById)) relatedGroupIds.add(a);
     const p = parentById.get(nId);
     if (p) relatedGroupIds.add(p);
   }
 
-  return { highlightedNodeIds, highlightedEdgeIds, relatedGroupIds };
+  return { highlightedNodeIds, highlightedEdgeIds, relatedGroupIds, focusNodeIds };
 }
+
 
 export const GraphCanvas = () => {
   const theme = useTheme();
@@ -284,8 +412,12 @@ export const GraphCanvas = () => {
   const { nodes, edges, onNodesChange, onEdgesChange, isScanning, refreshGraph, graphRevision } =
     useGraphLayout();
 
-  const [focusId, setFocusId] = useState<string | null>(null);
-  const [highlightDepth, setHighlightDepth] = useState<number>(2);
+  const [bundleTargets, setBundleTargets] = useState<BundleTarget[]>([]);
+
+  useEffect(() => {
+    // Clear bundle selection when switching workspaces/roots.
+    setBundleTargets([]);
+  }, [workspaceId, projectRoot]);
 
   const [entryDraft, setEntryDraft] = useState(scanConfig?.entryPoint ?? "");
   const [depthDraft, setDepthDraft] = useState<number>(scanConfig?.depth ?? 3);
@@ -320,54 +452,91 @@ export const GraphCanvas = () => {
     []
   );
 
-    // We disable manual edge creation in the UI (edges come from scans).
-  // This prevents accidental duplicate edges when interacting with large graphs.
+  // Disable manual edge creation in the UI: edges come from scans.
   const onConnect = undefined;
 
-
   const handleNodeClick = useCallback(
-    (_: any, node: any) => {
-      setFocusId(node?.id ?? null);
+    (evt: any, node: any) => {
+      const isFile = node?.type === "fileNode";
+      dispatch(setSelectedNode(isFile ? node.id : null));
 
-      const fileId = node?.type === "fileNode" ? node.id : null;
-      dispatch(setSelectedNode(fileId));
+      if (!isFile) return;
+
+      const entryPoint = toEntryPoint(node, projectRoot);
+      if (!entryPoint) return;
+
+      const data: any = node?.data ?? {};
+      const label =
+        (typeof data.label === "string" && data.label) ||
+        (typeof data.path === "string" && data.path
+          ? baseName(stripProjectRoot(data.path, projectRoot ?? ""))
+          : "") ||
+        baseName(entryPoint);
+
+      const fallbackDepth = Math.max(1, Number(scanConfig?.depth) || 3);
+      const defaultDepth = Math.max(1, Math.min(25, Math.floor(fallbackDepth)));
+
+      const next: BundleTarget = {
+        nodeId: String(node.id),
+        entryPoint,
+        depth: defaultDepth,
+        label,
+      };
+
+      const isMulti = !!(evt?.ctrlKey || evt?.metaKey);
+
+      setBundleTargets((prev) => {
+        const exists = prev.some((p) => p.entryPoint === entryPoint);
+        if (isMulti) {
+          // toggle in/out
+          return exists ? prev.filter((p) => p.entryPoint !== entryPoint) : [...prev, next];
+        }
+        // single select
+        return [next];
+      });
     },
-    [dispatch]
+    [dispatch, projectRoot, scanConfig?.depth]
   );
 
-  const clearFocus = useCallback(() => {
-    setFocusId(null);
+  const onPaneClick = useCallback(() => {
+    // Clicking empty canvas clears the node inspector selection, but keeps the bundle selection.
     dispatch(setSelectedNode(null));
   }, [dispatch]);
 
+  const focusTargets = useMemo(
+    () => (bundleTargets ?? []).map((t) => ({ nodeId: t.nodeId, depth: t.depth })),
+    [bundleTargets]
+  );
+
   const highlight = useMemo(() => {
-    if (!focusId) return null;
-    return computeHighlight(focusId, nodes as any, edges as any, highlightDepth);
-  }, [focusId, nodes, edges, highlightDepth]);
+    if (!focusTargets.length) return null;
+    return computeMultiHighlight(focusTargets, nodes as any, edges as any);
+  }, [focusTargets, nodes, edges]);
 
   const displayNodes = useMemo(() => {
-    if (!highlight || !focusId) return nodes;
+    if (!highlight) return nodes;
 
-    const { highlightedNodeIds, relatedGroupIds } = highlight;
+    const { highlightedNodeIds, relatedGroupIds, focusNodeIds } = highlight;
 
     return (nodes as any[]).map((n) => {
-      const isFocus = n.id === focusId;
       const isGroup = n.type === "groupNode";
+      const isFocus = focusNodeIds.has(n.id);
 
       const isHot =
         highlightedNodeIds.has(n.id) || (isGroup && relatedGroupIds.has(n.id));
 
-      let className = "";
-      if (!isHot) className = "axon-dim";
-      else className = "axon-highlight";
-      if (isFocus) className = "axon-focus";
+      let tag = "";
+      if (!isHot) tag = "axon-dim";
+      else tag = "axon-highlight";
+      if (isFocus) tag = "axon-focus";
 
-      return { ...n, className };
+      const combined = n.className ? `${n.className} ${tag}` : tag;
+      return { ...n, className: combined };
     });
-  }, [nodes, highlight, focusId]);
+  }, [nodes, highlight]);
 
   const displayEdges = useMemo(() => {
-    if (!highlight || !focusId) {
+    if (!highlight) {
       return (edges as any[]).map((e) => ({
         ...e,
         animated: false,
@@ -393,8 +562,7 @@ export const GraphCanvas = () => {
         },
       };
     });
-  }, [edges, highlight, focusId]);
-
+  }, [edges, highlight]);
 
   const isBigGraph = nodes.length > 450 || edges.length > 800;
 
@@ -469,11 +637,7 @@ export const GraphCanvas = () => {
             </SetupGrid>
 
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
-              <Button
-                $primary
-                onClick={runFirstScan}
-                disabled={!entryDraft.trim() || isScanning}
-              >
+              <Button $primary onClick={runFirstScan} disabled={!entryDraft.trim() || isScanning}>
                 <VscPlay />
                 {isScanning ? "Scanning…" : "Scan"}
               </Button>
@@ -498,84 +662,125 @@ export const GraphCanvas = () => {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={handleNodeClick}
-        onPaneClick={clearFocus}
+        onPaneClick={onPaneClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         nodesConnectable={false}
         // NOTE: onlyRenderVisibleElements can cause edge 'trails/ghosts' with custom SVG gradients in some setups.
-        // Leave it off for correctness; we keep other perf wins (minimap/background gating, lighter nodes).
+        // We leave it off for correctness.
         defaultEdgeOptions={{ type: "axonBiColor" }}
         fitView
         minZoom={0.1}
         proOptions={{ hideAttribution: true }}
       >
-        <GraphToolbar onRescan={() => refreshGraph()} isScanning={isScanning} />
+        <GraphToolbar
+          onRescan={() => refreshGraph()}
+          isScanning={isScanning}
+          bundleTargets={bundleTargets as any}
+        />
 
-        <Panel position="top-left">
-          <FocusCard $variant="overlay" $padding={2} $radius="md" $border>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: 900,
-                  color: theme.colors.text.primary,
-                }}
-              >
-                Focus
-              </div>
-              <Subtext>
-                Click a file or folder to highlight. Click empty space to clear.
-              </Subtext>
-              {focusId ? (
-                <Subtext style={{ margin: 0, opacity: 0.85 }}>
-                  Focused: <span style={{ fontFamily: "monospace" }}>{focusId}</span>
-                </Subtext>
-              ) : null}
-            </div>
+        {bundleTargets.length > 0 && (
+          <Panel position="bottom-left">
+            <BundleCard
+              $variant="overlay"
+              $padding={2}
+              $radius="md"
+              $border
+              onMouseDown={(e: any) => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                  <div style={{ fontSize: 13, fontWeight: 900 }}>
+                    Focus selection <span style={{ opacity: 0.7 }}>({bundleTargets.length})</span>
+                  </div>
+                  <div style={{ fontSize: 11, opacity: 0.7 }}>Ctrl/Cmd+Click to add</div>
+                </div>
 
-            <div>
-              <Subtext>Highlight depth</Subtext>
-              <Row style={{ marginTop: 6 }}>
-                <Slider
-                  type="range"
-                  min={1}
-                  max={6}
-                  value={highlightDepth}
-                  onChange={(e) => setHighlightDepth(Number(e.target.value))}
-                  disabled={!focusId}
-                />
-                <Pill>{highlightDepth}</Pill>
-              </Row>
-            </div>
+                <BundleList>
+                  {bundleTargets.map((t) => (
+                    <BundleItemRow key={t.entryPoint} onMouseDown={(e: any) => e.stopPropagation()}>
+                      <BundlePath>
+                        <BundleTitle title={t.entryPoint}>
+                          {t.label ?? baseName(t.entryPoint)}
+                        </BundleTitle>
+                        <BundleSubtitle title={t.entryPoint}>{t.entryPoint}</BundleSubtitle>
+                      </BundlePath>
 
-            <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 2 }}>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <div
-                  style={{
-                    width: 18,
-                    height: 3,
-                    background: theme.colors.palette.primary,
-                    borderRadius: 2,
-                  }}
-                />
-                <Subtext>bottom (outgoing)</Subtext>
+                      <DepthInput
+                        type="number"
+                        min={1}
+                        max={25}
+                        value={t.depth}
+                        onMouseDown={(e: any) => e.stopPropagation()}
+                        onChange={(e) => {
+                          const v = Math.max(1, Math.min(25, Math.floor(Number(e.target.value) || 1)));
+                          setBundleTargets((prev) =>
+                            prev.map((p) => (p.entryPoint === t.entryPoint ? { ...p, depth: v } : p))
+                          );
+                        }}
+                      />
+
+                      <IconButton
+                        title="Remove from focus selection"
+                        onMouseDown={(e: any) => e.stopPropagation()}
+                        onClick={() =>
+                          setBundleTargets((prev) => prev.filter((p) => p.entryPoint !== t.entryPoint))
+                        }
+                      >
+                        <VscClose />
+                      </IconButton>
+                    </BundleItemRow>
+                  ))}
+                </BundleList>
+
+                <BundleFooter>
+                  <div style={{ fontSize: 11, opacity: 0.75 }}>
+                    Bundle &amp; Copy will use these entrypoints. Highlighting follows this selection.
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: 18,
+                          height: 3,
+                          background: theme.colors.palette.primary,
+                          borderRadius: 2,
+                        }}
+                      />
+                      <span style={{ fontSize: 11, opacity: 0.75 }}>outgoing</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: 18,
+                          height: 3,
+                          background: theme.colors.palette.success,
+                          borderRadius: 2,
+                        }}
+                      />
+                      <span style={{ fontSize: 11, opacity: 0.75 }}>incoming</span>
+                    </div>
+
+                    <div style={{ flex: 1 }} />
+
+                    <SmallButton
+                      $danger
+                      onMouseDown={(e: any) => e.stopPropagation()}
+                      onClick={() => setBundleTargets([])}
+                      title="Clear focus selection"
+                    >
+                      <VscTrash /> Clear
+                    </SmallButton>
+                  </div>
+                </BundleFooter>
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <div
-                  style={{
-                    width: 18,
-                    height: 3,
-                    background: theme.colors.palette.success,
-                    borderRadius: 2,
-                  }}
-                />
-                <Subtext>top (incoming)</Subtext>
-              </div>
-            </div>
-          </FocusCard>
-        </Panel>
+            </BundleCard>
+          </Panel>
+        )}
 
         <Controls style={{ background: "#2d2d2d", fill: "#fff", border: "none" }} />
+
         {!isBigGraph && (
           <MiniMap
             zoomable
@@ -586,12 +791,7 @@ export const GraphCanvas = () => {
         )}
 
         {!isBigGraph && (
-          <Background
-            variant={BackgroundVariant.Dots}
-            gap={24}
-            size={1}
-            color="#444"
-          />
+          <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#444" />
         )}
       </ReactFlow>
     </CanvasContainer>

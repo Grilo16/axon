@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import styled from "styled-components";
 import { Panel } from "@xyflow/react";
 import { VscExport, VscLoading, VscSync } from "react-icons/vsc";
@@ -37,58 +37,73 @@ const ToolButton = styled.button<{ $primary?: boolean }>`
     opacity: 0.65;
     cursor: not-allowed;
     transform: none;
-    filter: none;
   }
+`;
+
+const ScopeBadge = styled.span`
+  margin-left: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+`;
+
+const PreviewBox = styled.pre`
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
+  font-size: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.bg.main};
+  color: ${({ theme }) => theme.colors.text.primary};
+  max-height: 62vh;
+  overflow: auto;
 `;
 
 const PreviewActions = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 10px;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
 `;
 
 const CopyButton = styled.button`
-  background: ${({ theme }) => theme.colors.bg.overlay};
   border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.bg.surface};
   color: ${({ theme }) => theme.colors.text.primary};
+  border-radius: 8px;
   padding: 8px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 800;
+  font-weight: 900;
   font-size: 12px;
+  cursor: pointer;
 
   &:hover {
     filter: brightness(1.08);
   }
 `;
 
-const PreviewBox = styled.pre`
-  margin: 0;
-  background: ${({ theme }) => theme.colors.bg.main};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 6px;
-  padding: ${({ theme }) => theme.spacing(3)};
-  color: ${({ theme }) => theme.colors.text.primary};
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-  font-size: 12px;
-  line-height: 1.45;
-  max-height: 55vh;
-  overflow: auto;
-  white-space: pre-wrap;
-`;
+export type BundleTarget = {
+  entryPoint: string;
+  depth: number;
+  label?: string;
+};
 
 export const GraphToolbar = ({
   onRescan,
   isScanning,
+  bundleTargets,
 }: {
   onRescan: () => void;
   isScanning: boolean;
+  bundleTargets?: BundleTarget[] | null;
 }) => {
   const { projectRoot, config, scanConfig } = useWorkspace();
   const { generateCombinedPrompt } = useAxonCore();
@@ -98,48 +113,99 @@ export const GraphToolbar = ({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewMarkdown, setPreviewMarkdown] = useState<string | null>(null);
 
-  const canBundle =
-    !!projectRoot && !!config && !!scanConfig?.entryPoint && (scanConfig?.depth ?? 0) > 0;
+  const [lastBundleMeta, setLastBundleMeta] = useState<{
+    scope: "selection" | "entrypoint";
+    groups: { entryPoint: string; depth: number }[];
+  } | null>(null);
+
+  const defaultGroup = useMemo(() => {
+    const ep = scanConfig?.entryPoint?.trim();
+    if (!ep) return null;
+    return {
+      entryPoint: ep,
+      depth: Math.max(1, Number(scanConfig?.depth) || 1),
+      flatten: !!scanConfig?.flatten,
+    };
+  }, [scanConfig?.entryPoint, scanConfig?.depth, scanConfig?.flatten]);
+
+  const selectionGroups = useMemo(() => {
+    const items = (bundleTargets ?? []).filter((t) => (t?.entryPoint ?? "").trim().length > 0);
+    if (!items.length) return [];
+    const dedup = new Map<string, BundleTarget>();
+    for (const t of items) dedup.set(t.entryPoint.trim(), t);
+    return Array.from(dedup.values()).map((t) => ({
+      entryPoint: t.entryPoint.trim(),
+      depth: Math.max(1, Number(t.depth) || 1),
+      flatten: !!scanConfig?.flatten,
+    }));
+  }, [bundleTargets, scanConfig?.flatten]);
+
+  const activeScope: "selection" | "entrypoint" = selectionGroups.length ? "selection" : "entrypoint";
+
+  const groupsToBundle = useMemo(() => {
+    if (selectionGroups.length) return selectionGroups;
+    return defaultGroup ? [defaultGroup] : [];
+  }, [selectionGroups, defaultGroup]);
+
+  const canBundle = useMemo(() => {
+    if (!projectRoot) return false;
+    if (!config) return false;
+    return groupsToBundle.length > 0;
+  }, [projectRoot, config, groupsToBundle.length]);
+
+  const bundleTitle = useMemo(() => {
+    if (selectionGroups.length) return `Bundle ${selectionGroups.length} entrypoints`;
+    if (defaultGroup?.entryPoint) return `Bundle from ${defaultGroup.entryPoint}`;
+    return "Bundle & Copy";
+  }, [selectionGroups.length, defaultGroup?.entryPoint]);
 
   const handleBundle = async () => {
     if (!projectRoot) {
       toast.warning("No workspace loaded", "Open or create a workspace first.");
       return;
     }
-    if (!scanConfig?.entryPoint) {
-      toast.warning("No entrypoint", "Choose an entry file to scan first.");
+
+    if (!groupsToBundle.length) {
+      toast.warning(
+        "Nothing selected",
+        "Select a file node (Ctrl/Cmd+Click to multi-select) or choose an entry file to scan first."
+      );
       return;
     }
+
     if (!config) {
       toast.danger("Missing config", "Root config is unavailable; try reloading the app.");
       return;
     }
 
     setIsBundling(true);
+
+    const scopeText = activeScope === "selection" ? "selection" : "entrypoint";
     const loadingId = toast.loading(
       "Bundling prompt…",
-      `Generating markdown from ${scanConfig.entryPoint} (depth ${scanConfig.depth ?? 3})…`
+      selectionGroups.length
+        ? `Generating markdown from ${groupsToBundle.length} entrypoints [${scopeText}]…`
+        : `Generating markdown from ${groupsToBundle[0].entryPoint} (depth ${groupsToBundle[0].depth}) [${scopeText}]…`
     );
 
     try {
-      // Keep using the combined endpoint for compatibility; we just pass 1 group.
       const markdown = await generateCombinedPrompt({
         projectRoot,
-        groups: [
-          {
-            entryPoint: scanConfig.entryPoint,
-            depth: scanConfig.depth ?? 3,
-            flatten: !!scanConfig.flatten,
-          },
-        ],
+        groups: groupsToBundle,
         options: config,
       });
 
       await navigator.clipboard.writeText(markdown);
+
       setPreviewMarkdown(markdown);
+      setLastBundleMeta({
+        scope: activeScope,
+        groups: groupsToBundle.map((g) => ({ entryPoint: g.entryPoint, depth: g.depth })),
+      });
 
       toast.dismiss(loadingId);
-      toast.success("Copied to clipboard", "Your prompt markdown is ready.", {
+
+      toast.success("Bundled & copied", "Prompt is in your clipboard.", {
         actionLabel: "Preview",
         onAction: () => setPreviewOpen(true),
         duration: 4500,
@@ -170,9 +236,10 @@ export const GraphToolbar = ({
             {isScanning ? "Scanning…" : "Rescan"}
           </ToolButton>
 
-          <ToolButton $primary onClick={handleBundle} disabled={isBundling || !canBundle}>
+          <ToolButton $primary onClick={handleBundle} disabled={isBundling || !canBundle} title={bundleTitle}>
             {isBundling ? <VscLoading className="spin" /> : <VscExport />}
             {isBundling ? "Bundling…" : "Bundle & Copy"}
+            {activeScope === "selection" ? <ScopeBadge>selection</ScopeBadge> : <ScopeBadge>app</ScopeBadge>}
           </ToolButton>
         </ToolbarContainer>
       </Panel>
@@ -184,6 +251,23 @@ export const GraphToolbar = ({
             This is exactly what was copied to your clipboard.
           </span>
         </PreviewActions>
+
+        {lastBundleMeta ? (
+          <div style={{ marginBottom: 10, opacity: 0.85, fontSize: 12 }}>
+            Scope: <strong>{lastBundleMeta.scope}</strong> · Groups:{" "}
+            <strong>{lastBundleMeta.groups.length}</strong>
+            <div style={{ marginTop: 6, fontFamily: "monospace", opacity: 0.9 }}>
+              {lastBundleMeta.groups.slice(0, 6).map((g) => (
+                <div key={g.entryPoint}>
+                  {g.entryPoint} <span style={{ opacity: 0.8 }}>· depth {g.depth}</span>
+                </div>
+              ))}
+              {lastBundleMeta.groups.length > 6 ? (
+                <div style={{ opacity: 0.8 }}>…and {lastBundleMeta.groups.length - 6} more</div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
 
         <PreviewBox>{previewMarkdown ?? ""}</PreviewBox>
       </Modal>
