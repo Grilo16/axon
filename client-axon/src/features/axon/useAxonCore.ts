@@ -29,7 +29,7 @@ export const useAxonCore = () => {
   // We use the imported ScanParams directly
   const scanGroup = useCallback(async (params: ScanParams): Promise<ScanResponse> => {
     try {
-      return await invoke<ScanResponse>('scan_workspace_group', {
+      const result = await invoke<ScanResponse>('scan_workspace_group', {
         // Explicit mapping ensures frontend naming (useFlattening) 
         // maps to backend naming if they differ, or stays explicit.
         groupId: params.groupId,
@@ -38,6 +38,8 @@ export const useAxonCore = () => {
         depth: params.depth,
         flatten: params.flatten, // ⚠️ Rust command arg is 'flatten'
       });
+      console.log(result)
+      return result
     } catch (error) {
       console.error(`[AxonCore] Scan Failed for ${params.groupId}:`, error);
       throw error;

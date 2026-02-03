@@ -44,6 +44,103 @@ function normalizePath(p: string) {
   return (p ?? "").replace(/\\/g, "/");
 }
 
+function normalizeId(id: string) {
+  const n = normalizePath(id);
+  // Windows paths are case-insensitive; normalize drive-letter paths to lower for comparisons.
+  return /^[a-zA-Z]:\//.test(n) ? n.toLowerCase() : n;
+}
+
+function uniqStrings(a: any, b: any) {
+  const out = new Set<string>();
+  for (const x of [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]) {
+    if (typeof x === "string" && x.trim()) out.add(x);
+  }
+  return Array.from(out);
+}
+
+function dedupeScanNodes(raw: any[]) {
+  const byKey = new Map<string, any>();
+  const dupes: string[] = [];
+
+  for (const n of raw ?? []) {
+    const id = typeof n?.id === "string" ? n.id : String(n?.id ?? "");
+    if (!id) continue;
+
+    const key = normalizeId(id);
+    if (!byKey.has(key)) {
+      byKey.set(key, n);
+      continue;
+    }
+
+    // Merge defs/calls if provided, but keep the existing node's ID (stable for ReactFlow).
+    const prev = byKey.get(key);
+    const pd = prev?.data ?? {};
+    const nd = n?.data ?? {};
+
+    byKey.set(key, {
+      ...prev,
+      data: {
+        ...pd,
+        ...nd,
+        definitions: uniqStrings(pd.definitions, nd.definitions),
+        calls: uniqStrings(pd.calls, nd.calls),
+      },
+    });
+
+    dupes.push(id);
+  }
+
+  if (dupes.length) {
+    const uniq = Array.from(new Set(dupes));
+    console.warn(
+      `[useGraphLayout] Deduped ${dupes.length} duplicate file nodes (${uniq.length} unique ids). Example:`,
+      uniq.slice(0, 6)
+    );
+  }
+
+  return Array.from(byKey.values());
+}
+
+function edgeKey(e: any) {
+  const s = normalizeId(String(e?.source ?? ""));
+  const t = normalizeId(String(e?.target ?? ""));
+  const ty = typeof e?.type === "string" ? e.type : "";
+  return `${s}->${t}::${ty}`;
+}
+
+function dedupeScanEdges(raw: any[]) {
+  const byId = new Map<string, any>();
+  const byKey = new Map<string, any>();
+  let dupeById = 0;
+  let dupeByKey = 0;
+
+  for (const e of raw ?? []) {
+    const id = typeof e?.id === "string" ? e.id : String(e?.id ?? "");
+    if (id) {
+      if (byId.has(id)) {
+        dupeById += 1;
+        continue;
+      }
+      byId.set(id, e);
+      continue;
+    }
+
+    const key = edgeKey(e);
+    if (byKey.has(key)) {
+      dupeByKey += 1;
+      continue;
+    }
+    byKey.set(key, e);
+  }
+
+  const out = [...Array.from(byId.values()), ...Array.from(byKey.values())];
+  if (dupeById || dupeByKey) {
+    console.warn(`[useGraphLayout] Deduped edges: byId=${dupeById}, byKey=${dupeByKey}. Final=${out.length}`);
+  }
+  return out;
+}
+
+
 function stripProjectRoot(absPath: string, projectRoot: string) {
   const a = normalizePath(absPath);
   const r = normalizePath(projectRoot);
@@ -193,13 +290,10 @@ export const useGraphLayout = () => {
 
   
 
-  // Forces a clean ReactFlow remount on successful scans (helps clear rare render artifacts).
   const [graphRevision, setGraphRevision] = useState(0);
-// Prevent stale async scan results from overwriting newer scans.
   const scanSeq = useRef(0);
 
   useEffect(() => {
-    // Cancel any in-flight scan results and reset graph when switching workspaces.
     scanSeq.current += 1;
     setNodes([]);
     setEdges([]);
@@ -223,7 +317,6 @@ const canScan = useMemo(() => {
       const mySeq = ++scanSeq.current;
 
       setIsScanning(true);
-      // Clear immediately to avoid "leftover edges" while new scan is inflight.
       setEdges([]);
 
       try {
@@ -235,13 +328,11 @@ const canScan = useMemo(() => {
           flatten,
         });
 
-        // If a newer scan started, ignore this one.
         if (mySeq !== scanSeq.current) return;
 
-        const rawNodes = (result.nodes ?? []) as any[];
-        const rawEdges = (result.edges ?? []) as any[];
+        const rawNodes = dedupeScanNodes((result.nodes ?? []) as any[]);
+        const rawEdges = dedupeScanEdges((result.edges ?? []) as any[]);
 
-        // Build file items + folder tree
         const files: FileItem[] = [];
         const folders = new Set<string>();
         folders.add(""); // pseudo root
@@ -280,7 +371,6 @@ const canScan = useMemo(() => {
           addFolderChain(folder);
         }
 
-        // childrenByFolder: immediate folder nesting
         const childrenByFolder = new Map<string, string[]>();
         for (const f of folders) childrenByFolder.set(f, []);
         for (const f of folders) {
@@ -290,7 +380,6 @@ const canScan = useMemo(() => {
           childrenByFolder.get(p)!.push(f);
         }
 
-        // stable ordering
         for (const [k, list] of childrenByFolder.entries()) {
           const uniq = Array.from(new Set(list));
           uniq.sort((a, b) => a.localeCompare(b));
@@ -314,7 +403,6 @@ const canScan = useMemo(() => {
           const children = childrenByFolder.get(folder) ?? [];
           const directFiles = filesByFolder.get(folder) ?? [];
 
-          // Layout children first (bottom-up)
           for (const c of children) layoutFolder(c);
 
           const childFolderPos = new Map<string, { x: number; y: number }>();
@@ -323,7 +411,6 @@ const canScan = useMemo(() => {
           const startX = padding;
           const startY = topInset + padding;
 
-          // --- Child folders grid ---
           const childPack = gridPack({
             items: children,
             cols: chooseCols(children.length, isRoot ? ROOT_MAX_COLS : FOLDER_MAX_COLS),
@@ -340,7 +427,6 @@ const canScan = useMemo(() => {
             if (p) childFolderPos.set(fKey, p);
           }
 
-          // --- Direct files grid (placed below children, if any) ---
           const directIds = directFiles.map((f) => f.id);
           const dimById = new Map<string, { w: number; h: number }>();
           for (const f of directFiles) dimById.set(f.id, { w: f.w, h: f.h });
@@ -387,10 +473,8 @@ const canScan = useMemo(() => {
 
         const rootLayout = layoutFolder("");
 
-        // Build group nodes (all folders except root)
         const groupNodes: AxonNode[] = [];
 
-        // Parents first (ReactFlow nesting expects parent earlier)
         const folderList = Array.from(folders)
           .filter((f) => f !== "")
           .sort((a, b) => folderDepth(a) - folderDepth(b) || a.localeCompare(b));
@@ -419,7 +503,6 @@ const canScan = useMemo(() => {
           });
         }
 
-        // Build file nodes
         const fileNodes: AxonNode[] = files.map((f) => {
           const base = {
             ...f.raw,
@@ -428,7 +511,6 @@ const canScan = useMemo(() => {
           } as any;
 
           if (!f.folder) {
-            // Root-level file (no parent group)
             const p = rootLayout.filePos.get(f.id) ?? { x: 0, y: 0 };
             return { ...base, position: p } as AxonNode;
           }
@@ -451,7 +533,6 @@ const canScan = useMemo(() => {
         for (const n of groupNodes) allNodeIds.add(n.id);
         for (const n of fileNodes) allNodeIds.add(n.id);
 
-        // Style + sanitize edges (filter anything referring to missing nodes)
         const edgesStyled: AxonEdge[] = rawEdges
           .map((e, idx) => {
             const source = String(e?.source ?? "");

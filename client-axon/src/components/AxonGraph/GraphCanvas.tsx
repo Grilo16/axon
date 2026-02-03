@@ -1,21 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ReactFlow,
   MiniMap,
   Controls,
   Background,
   BackgroundVariant,
-  Panel,
   type Edge,
   type Node,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import styled, { useTheme } from "styled-components";
+import styled from "styled-components";
 
 import { FileNode } from "./FileNode";
 import { GroupNode } from "./GroupNode";
 import { GraphToolbar } from "./GraphToolbar";
 import { BiColorEdge } from "./BiColorEdge";
+import { ProjectExplorerSidebar, type BundleTarget } from "./ProjectExplorerSidebar";
 
 import { useWorkspace } from "@features/workspace/useWorkspace";
 import { useGraphLayout } from "@features/visualizer/useGraphLayout";
@@ -27,8 +28,8 @@ import { Subtext } from "@components/ui/Typography";
 import { FileSelectorModal } from "@components/FileSelector/FileSelectorModal";
 import { useFileSystem } from "@features/axon/useFileSystem";
 import { useToggle } from "@app/hooks";
-import { VscClose, VscFolderOpened, VscPlay, VscTrash } from "react-icons/vsc";
-
+import { VscFolderOpened, VscPlay } from "react-icons/vsc";
+import type { AxonEdge, AxonNode } from "@axon-types/axonTypes";
 
 const CanvasContainer = styled.div`
   width: 100%;
@@ -57,124 +58,25 @@ const CanvasContainer = styled.div`
     opacity: 1;
     filter: drop-shadow(0 0 10px rgba(0, 122, 204, 0.35));
   }
+
+  .react-flow__node.axon-hover {
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 10px rgba(102, 204, 255, 0.32));
+  }
 `;
 
-const BundleCard = styled(Surface)`
-  width: 360px;
+const Shell = styled.div`
+  width: 100%;
+  height: 100%;
   display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.spacing(1)};
-  max-height: 42vh;
+  flex-direction: row;
   overflow: hidden;
 `;
 
-const BundleList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow: auto;
-  padding-right: 2px;
-`;
-
-const BundleItemRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 72px 28px;
-  gap: 10px;
-  align-items: center;
-  padding: 8px 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  background: ${({ theme }) => theme.colors.bg.surface};
-`;
-
-const BundlePath = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+const GraphPane = styled.div`
+  flex: 1;
+  height: 100%;
   min-width: 0;
-`;
-
-const BundleTitle = styled.div`
-  font-weight: 900;
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.text.primary};
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const BundleSubtitle = styled.div`
-  font-size: 11px;
-  opacity: 0.78;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-const DepthInput = styled.input`
-  width: 72px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  padding: 8px 8px;
-  background: ${({ theme }) => theme.colors.bg.main};
-  color: ${({ theme }) => theme.colors.text.primary};
-  font-weight: 800;
-
-  &:focus {
-    outline: none;
-    border-color: ${({ theme }) => theme.colors.palette.primary};
-  }
-`;
-
-const IconButton = styled.button`
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.bg.overlay};
-  color: ${({ theme }) => theme.colors.text.primary};
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-
-  &:hover {
-    filter: brightness(1.12);
-  }
-`;
-
-const BundleFooter = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const SmallButton = styled.button<{ $danger?: boolean }>`
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.bg.surface};
-  color: ${({ theme }) => theme.colors.text.primary};
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-weight: 900;
-  font-size: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  ${({ $danger, theme }) =>
-    $danger
-      ? `
-    border-color: ${theme.colors.palette.danger}55;
-    background: ${theme.colors.bg.overlay};
-  `
-      : ""}
-
-  &:hover {
-    filter: brightness(1.08);
-  }
 `;
 
 const SetupOverlay = styled.div`
@@ -268,13 +170,6 @@ function collectAncestors(startId: string, parentById: Map<string, string | unde
   return out;
 }
 
-type BundleTarget = {
-  nodeId: string;
-  entryPoint: string;
-  depth: number;
-  label?: string;
-};
-
 function normalizeSlashes(p: string) {
   return (p ?? "").replace(/\\/g, "/");
 }
@@ -295,7 +190,7 @@ function baseName(p: string) {
   return i >= 0 ? s.slice(i + 1) : s;
 }
 
-function toEntryPoint(node: any, projectRoot: string | null) {
+export function toEntryPoint(node: any, projectRoot: string | null) {
   const data: any = node?.data ?? {};
   const raw =
     typeof data.path === "string" && data.path
@@ -403,9 +298,7 @@ function computeMultiHighlight(
   return { highlightedNodeIds, highlightedEdgeIds, relatedGroupIds, focusNodeIds };
 }
 
-
 export const GraphCanvas = () => {
-  const theme = useTheme();
   const dispatch = useAppDispatch();
 
   const { projectRoot, workspaceId, scanConfig, setScan } = useWorkspace();
@@ -413,11 +306,33 @@ export const GraphCanvas = () => {
     useGraphLayout();
 
   const [bundleTargets, setBundleTargets] = useState<BundleTarget[]>([]);
+  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
+
+  const rfRef = useRef<ReactFlowInstance<AxonNode, AxonEdge> | null>(null);
+
+  const fitViewNow = useCallback((duration = 350) => {
+    const inst = rfRef.current;
+    if (!inst) return;
+    try {
+      inst.fitView({ padding: 0.18, duration, includeHiddenNodes: true });
+    } catch {
+      // noop
+    }
+  }, []);
+
 
   useEffect(() => {
     // Clear bundle selection when switching workspaces/roots.
     setBundleTargets([]);
+    setHoverNodeId(null);
   }, [workspaceId, projectRoot]);
+
+  useEffect(() => {
+    // Fit view when the graph changes as a result of a scan/layout, not on every minor UI update.
+    if (!nodes.length) return;
+    // graphRevision is bumped by the layout hook after a scan completes.
+    fitViewNow(420);
+  }, [graphRevision, nodes.length, fitViewNow]);
 
   const [entryDraft, setEntryDraft] = useState(scanConfig?.entryPoint ?? "");
   const [depthDraft, setDepthDraft] = useState<number>(scanConfig?.depth ?? 3);
@@ -459,11 +374,13 @@ export const GraphCanvas = () => {
     (evt: any, node: any) => {
       const isFile = node?.type === "fileNode";
       dispatch(setSelectedNode(isFile ? node.id : null));
+      setHoverNodeId(null);
 
       if (!isFile) return;
 
       const entryPoint = toEntryPoint(node, projectRoot);
       if (!entryPoint) return;
+    
 
       const data: any = node?.data ?? {};
       const label =
@@ -514,16 +431,27 @@ export const GraphCanvas = () => {
   }, [focusTargets, nodes, edges]);
 
   const displayNodes = useMemo(() => {
-    if (!highlight) return nodes;
+    const applyHover = (arr: any[]) => {
+      if (!hoverNodeId) return arr;
+      return arr.map((n) => {
+        const hover = n?.type === "fileNode" && String(n.id) === String(hoverNodeId);
+        if (!hover) return n;
+        const cls = `${n.className ?? ""} axon-hover`.trim();
+        return { ...n, className: cls };
+      });
+    };
+
+    if (!highlight) {
+      return applyHover(nodes as any[]);
+    }
 
     const { highlightedNodeIds, relatedGroupIds, focusNodeIds } = highlight;
 
-    return (nodes as any[]).map((n) => {
+    const mapped = (nodes as any[]).map((n) => {
       const isGroup = n.type === "groupNode";
       const isFocus = focusNodeIds.has(n.id);
 
-      const isHot =
-        highlightedNodeIds.has(n.id) || (isGroup && relatedGroupIds.has(n.id));
+      const isHot = highlightedNodeIds.has(n.id) || (isGroup && relatedGroupIds.has(n.id));
 
       let tag = "";
       if (!isHot) tag = "axon-dim";
@@ -533,7 +461,9 @@ export const GraphCanvas = () => {
       const combined = n.className ? `${n.className} ${tag}` : tag;
       return { ...n, className: combined };
     });
-  }, [nodes, highlight]);
+
+    return applyHover(mapped);
+  }, [nodes, highlight, hoverNodeId]);
 
   const displayEdges = useMemo(() => {
     if (!highlight) {
@@ -654,7 +584,18 @@ export const GraphCanvas = () => {
         </SetupOverlay>
       ) : null}
 
-      <ReactFlow
+      <Shell>
+          <ProjectExplorerSidebar
+          nodes={nodes as any}
+          projectRoot={projectRoot ?? null}
+          bundleTargets={bundleTargets}
+          setBundleTargets={setBundleTargets as any}
+          defaultDepth={Math.max(1, Number(scanConfig?.depth) || 3)}
+          onActivateFile={(nodeId) => dispatch(setSelectedNode(nodeId))}
+          onHoverFile={(nodeId) => setHoverNodeId(nodeId)}
+        />
+        <GraphPane>
+          <ReactFlow
         key={`${workspaceId ?? "ws"}:${graphRevision}`}
         nodes={displayNodes as any}
         edges={displayEdges as any}
@@ -669,115 +610,19 @@ export const GraphCanvas = () => {
         // NOTE: onlyRenderVisibleElements can cause edge 'trails/ghosts' with custom SVG gradients in some setups.
         // We leave it off for correctness.
         defaultEdgeOptions={{ type: "axonBiColor" }}
-        fitView
-        minZoom={0.1}
+minZoom={0.1}
         proOptions={{ hideAttribution: true }}
+        onInit={(inst) => {
+          rfRef.current = inst;
+          // Fit once after mount (scan/layout uses graphRevision key so this runs after each scan).
+          requestAnimationFrame(() => fitViewNow(420));
+        }}
       >
         <GraphToolbar
           onRescan={() => refreshGraph()}
           isScanning={isScanning}
           bundleTargets={bundleTargets as any}
         />
-
-        {bundleTargets.length > 0 && (
-          <Panel position="bottom-left">
-            <BundleCard
-              $variant="overlay"
-              $padding={2}
-              $radius="md"
-              $border
-              onMouseDown={(e: any) => e.stopPropagation()}
-            >
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: 13, fontWeight: 900 }}>
-                    Focus selection <span style={{ opacity: 0.7 }}>({bundleTargets.length})</span>
-                  </div>
-                  <div style={{ fontSize: 11, opacity: 0.7 }}>Ctrl/Cmd+Click to add</div>
-                </div>
-
-                <BundleList>
-                  {bundleTargets.map((t) => (
-                    <BundleItemRow key={t.entryPoint} onMouseDown={(e: any) => e.stopPropagation()}>
-                      <BundlePath>
-                        <BundleTitle title={t.entryPoint}>
-                          {t.label ?? baseName(t.entryPoint)}
-                        </BundleTitle>
-                        <BundleSubtitle title={t.entryPoint}>{t.entryPoint}</BundleSubtitle>
-                      </BundlePath>
-
-                      <DepthInput
-                        type="number"
-                        min={1}
-                        max={25}
-                        value={t.depth}
-                        onMouseDown={(e: any) => e.stopPropagation()}
-                        onChange={(e) => {
-                          const v = Math.max(1, Math.min(25, Math.floor(Number(e.target.value) || 1)));
-                          setBundleTargets((prev) =>
-                            prev.map((p) => (p.entryPoint === t.entryPoint ? { ...p, depth: v } : p))
-                          );
-                        }}
-                      />
-
-                      <IconButton
-                        title="Remove from focus selection"
-                        onMouseDown={(e: any) => e.stopPropagation()}
-                        onClick={() =>
-                          setBundleTargets((prev) => prev.filter((p) => p.entryPoint !== t.entryPoint))
-                        }
-                      >
-                        <VscClose />
-                      </IconButton>
-                    </BundleItemRow>
-                  ))}
-                </BundleList>
-
-                <BundleFooter>
-                  <div style={{ fontSize: 11, opacity: 0.75 }}>
-                    Bundle &amp; Copy will use these entrypoints. Highlighting follows this selection.
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <div
-                        style={{
-                          width: 18,
-                          height: 3,
-                          background: theme.colors.palette.primary,
-                          borderRadius: 2,
-                        }}
-                      />
-                      <span style={{ fontSize: 11, opacity: 0.75 }}>outgoing</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                      <div
-                        style={{
-                          width: 18,
-                          height: 3,
-                          background: theme.colors.palette.success,
-                          borderRadius: 2,
-                        }}
-                      />
-                      <span style={{ fontSize: 11, opacity: 0.75 }}>incoming</span>
-                    </div>
-
-                    <div style={{ flex: 1 }} />
-
-                    <SmallButton
-                      $danger
-                      onMouseDown={(e: any) => e.stopPropagation()}
-                      onClick={() => setBundleTargets([])}
-                      title="Clear focus selection"
-                    >
-                      <VscTrash /> Clear
-                    </SmallButton>
-                  </div>
-                </BundleFooter>
-              </div>
-            </BundleCard>
-          </Panel>
-        )}
 
         <Controls style={{ background: "#2d2d2d", fill: "#fff", border: "none" }} />
 
@@ -793,7 +638,11 @@ export const GraphCanvas = () => {
         {!isBigGraph && (
           <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#444" />
         )}
-      </ReactFlow>
+          </ReactFlow>
+        </GraphPane>
+
+      
+      </Shell>
     </CanvasContainer>
   );
 };
