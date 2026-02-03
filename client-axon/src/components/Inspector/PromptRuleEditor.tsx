@@ -21,6 +21,8 @@ const LabelRow = styled.div`
   justify-content: space-between;
   align-items: baseline;
   gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
 `;
 
 const Label = styled.div`
@@ -32,6 +34,9 @@ const Label = styled.div`
 
 const SmallHint = styled(Subtext)`
   font-size: 11px;
+  max-width: 100%;
+  min-width: 0;
+  margin-left: auto;
 `;
 
 const Select = styled.select`
@@ -53,10 +58,13 @@ const Row = styled.div`
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
 `;
 
 const Input = styled.input`
-  flex: 1;
+  flex: 1 1 240px;
+  min-width: 0;
   background: ${({ theme }) => theme.colors.bg.input};
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.text.primary};
@@ -72,7 +80,9 @@ const Input = styled.input`
 const Button = styled.button<{ $tone?: "primary" | "danger" }>`
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  white-space: nowrap;
   border-radius: 4px;
   padding: 8px 10px;
   cursor: pointer;
@@ -82,9 +92,7 @@ const Button = styled.button<{ $tone?: "primary" | "danger" }>`
       $tone === "danger" ? theme.colors.palette.danger : theme.colors.border};
   background: ${({ theme }) => theme.colors.bg.surface};
   color: ${({ theme, $tone }) =>
-    $tone === "danger"
-      ? theme.colors.palette.danger
-      : theme.colors.text.primary};
+    $tone === "danger" ? theme.colors.palette.danger : theme.colors.text.primary};
 
   &:hover {
     border-color: ${({ theme, $tone }) =>
@@ -98,6 +106,7 @@ const ChipList = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-width: 0;
 `;
 
 const Chip = styled.div<{ $tone?: "target" | "redact" }>`
@@ -108,6 +117,8 @@ const Chip = styled.div<{ $tone?: "target" | "redact" }>`
   padding: 6px 10px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.bg.overlay};
+  max-width: 100%;
+  min-width: 0;
 
   ${({ $tone, theme }) =>
     $tone === "redact"
@@ -127,11 +138,16 @@ const ChipText = styled.span`
     "Courier New", monospace;
   font-size: 12px;
   color: ${({ theme }) => theme.colors.text.primary};
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const ChipX = styled.button<{ $tone?: "target" | "redact" }>`
   width: 18px;
   height: 18px;
+  padding: 0;
   border-radius: 999px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: transparent;
@@ -142,6 +158,12 @@ const ChipX = styled.button<{ $tone?: "target" | "redact" }>`
       : $tone === "target"
         ? theme.colors.palette.accent
         : theme.colors.text.secondary};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 14px;
+  font-weight: 900;
 
   &:hover {
     border-color: ${({ theme, $tone }) =>
@@ -154,7 +176,6 @@ const ChipX = styled.button<{ $tone?: "target" | "redact" }>`
 `;
 
 function normalizeMany(raw: string): string[] {
-  // supports comma/newline separated lists
   return raw
     .split(/[\n,]+/g)
     .map((s) => s.trim())

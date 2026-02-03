@@ -5,6 +5,7 @@ import {
   selectActiveScanConfig,
   selectActiveWorkspace,
   updateScanConfig,
+  updateProjectRoot,
   updateGlobalOptions,
   type WorkspaceData,
 } from "./workspacesSlice";
@@ -20,6 +21,13 @@ export const useWorkspace = () => {
   const setScan = useCallback(
     (patch: Partial<ScanConfig>) => {
       dispatch(updateScanConfig(patch));
+    },
+    [dispatch],
+  );
+
+  const setProjectRoot = useCallback(
+    (root: string) => {
+      dispatch(updateProjectRoot(root));
     },
     [dispatch],
   );
@@ -43,6 +51,7 @@ export const useWorkspace = () => {
     config: fullConfig?.globalOptions,
 
     setScan,
+    setProjectRoot,
     setOptions,
   };
 };

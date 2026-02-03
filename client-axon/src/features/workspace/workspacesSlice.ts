@@ -100,6 +100,17 @@ const workspacesSlice = createSlice({
       ws.scan = { ...ws.scan, ...action.payload };
     },
 
+    updateProjectRoot: (state, action: PayloadAction<string>) => {
+      if (!state.activeId) return;
+      const ws = state.entities[state.activeId];
+      if (!ws) return;
+
+      ws.projectRoot = action.payload;
+      ws.lastOpened = new Date().toISOString();
+      ws.scan = { ...ws.scan, entryPoint: "" };
+      ws.selectedNodeId = null;
+    },
+
     updateGlobalOptions: (
       state,
       action: PayloadAction<Partial<WorkspaceData["globalOptions"]>>,
@@ -118,6 +129,7 @@ export const {
   setActiveWorkspace,
   setSelectedNode,
   updateScanConfig,
+  updateProjectRoot,
   updateGlobalOptions,
 } = workspacesSlice.actions;
 

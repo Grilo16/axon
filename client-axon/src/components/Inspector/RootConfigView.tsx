@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { useWorkspace } from "@features/workspace/useWorkspace";
 import { Heading, Subtext } from "@components/ui/Typography";
-import { VscSearch, VscSettingsGear } from "react-icons/vsc";
+import { VscSearch, VscSettingsGear, VscFolderOpened } from "react-icons/vsc";
 import { PromptRuleEditor } from "./PromptRuleEditor";
 import { useToggle } from "@app/hooks";
 import { useFileSystem } from "@features/axon/useFileSystem";
@@ -13,6 +13,10 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 `;
 
 const Section = styled.div`
@@ -28,23 +32,25 @@ const Label = styled.label`
   color: ${({ theme }) => theme.colors.text.muted};
 `;
 
-const InfoBox = styled.div`
-  padding: 12px;
-  background: ${({ theme }) => theme.colors.bg.overlay};
-  border-radius: 6px;
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.text.secondary};
-  line-height: 1.5;
+const SmallHint = styled(Subtext)`
+  font-size: 11px;
+  max-width: 100%;
 `;
+
 
 const InputRow = styled.div`
   display: flex;
   gap: 10px;
   align-items: center;
+  min-width: 0;
+  flex-wrap: wrap;
 `;
 
 const Input = styled.input`
-  flex: 1;
+  flex: 1 1 280px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
   background: ${({ theme }) => theme.colors.bg.input};
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.text.primary};
@@ -69,6 +75,8 @@ const Button = styled.button`
   gap: 8px;
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
+  flex: 0 0 auto;
 
   &:hover {
     background: ${({ theme }) => theme.colors.bg.overlay};
@@ -90,21 +98,33 @@ const CheckboxLabel = styled.label`
 `;
 
 export const RootConfigView = () => {
-  const { config, setOptions, projectRoot, scanConfig, setScan } =
+  const { config, setOptions, projectRoot, scanConfig, setScan, setProjectRoot } =
     useWorkspace();
 
-  const { isOpen, toggle, open } = useToggle();
+  const entryPicker = useToggle();
+  const rootPicker = useToggle();
+
   const fs = useFileSystem(projectRoot || null);
+  const rootFs = useFileSystem("/");
 
   const [entryPoint, setEntryPoint] = useState(scanConfig?.entryPoint ?? "");
   const [depth, setDepth] = useState<number>(scanConfig?.depth ?? 3);
   const [flatten, setFlatten] = useState<boolean>(scanConfig?.flatten ?? true);
+  const [rootDraft, setRootDraft] = useState(projectRoot ?? "");
 
   useEffect(() => {
     setEntryPoint(scanConfig?.entryPoint ?? "");
     setDepth(scanConfig?.depth ?? 3);
     setFlatten(scanConfig?.flatten ?? true);
   }, [scanConfig?.entryPoint, scanConfig?.depth, scanConfig?.flatten]);
+
+  useEffect(() => {
+    setRootDraft(projectRoot ?? "");
+    if (projectRoot) {
+      // keep the entry-point browser rooted to the current workspace root
+      fs.cd(projectRoot);
+    }
+  }, [projectRoot]);
 
   const canBrowse = useMemo(() => Boolean(projectRoot), [projectRoot]);
 
@@ -146,7 +166,7 @@ export const RootConfigView = () => {
               onClick={() => {
                 if (!canBrowse) return;
                 fs.refresh();
-                open();
+                entryPicker.open();
               }}
               disabled={!canBrowse}
               title={canBrowse ? "Browse files" : "Open a workspace first"}
@@ -184,9 +204,32 @@ export const RootConfigView = () => {
 
       <Section>
         <Label>Project Root</Label>
-        <InfoBox style={{ fontFamily: "monospace", wordBreak: "break-all" }}>
-          {projectRoot}
-        </InfoBox>
+        <Subtext style={{ marginBottom: 8 }}>Workspace folder</Subtext>
+        <InputRow>
+          <Input
+            value={rootDraft}
+            readOnly
+            onClick={() => {
+              rootFs.cd(rootDraft || "/");
+              rootPicker.open();
+            }}
+            style={{ cursor: "default", fontFamily: "monospace" }}
+            title="Click to browse and change the workspace root"
+          />
+          <Button
+            onClick={() => {
+              rootFs.cd(rootDraft || "/");
+              rootPicker.open();
+            }}
+            title="Browse for a new workspace root folder"
+          >
+            <VscFolderOpened />
+            Browse
+          </Button>
+        </InputRow>
+        <SmallHint>
+          Changing the root will clear the current entrypoint and you&#39;ll need to scan again.
+        </SmallHint>
       </Section>
 
       <PromptRuleEditor
@@ -196,13 +239,27 @@ export const RootConfigView = () => {
       />
 
       <FileSelectorModal
-        isOpen={isOpen}
-        toggle={toggle}
+        isOpen={entryPicker.isOpen}
+        toggle={entryPicker.toggle}
         fs={fs}
         mode="file"
         onSelect={(path) => {
           setEntryPoint(path);
           setScan({ entryPoint: path });
+        }}
+      />
+
+      <FileSelectorModal
+        isOpen={rootPicker.isOpen}
+        toggle={rootPicker.toggle}
+        fs={rootFs}
+        mode="directory"
+        onSelect={(path) => {
+          setRootDraft(path);
+          setProjectRoot(path);
+          // entrypoints are relative to the current root; clear it on change
+          setEntryPoint("");
+          setScan({ entryPoint: "" });
         }}
       />
     </Container>
