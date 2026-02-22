@@ -1,7 +1,35 @@
 [workspace]
+resolver = "2"
 members = [
     "crates/axon_core",
-    "crates/axon_cli",
-    "src-tauri",
+    "apps/client-axon/src-tauri",
 ]
-resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Thomas Britton"] 
+edition = "2021"
+repository = "https://github.com/your-username/axon" # Placeholder
+license = "MIT" 
+
+[workspace.dependencies]
+# Core Workspace Dependencies
+axon_core = { path = "crates/axon_core" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.149"
+tokio = { version = "1.0", features = ["full"] }
+ts-rs = { version = "10.1", features = ["serde-compat"] }
+
+# Third Party
+thiserror = "1.0"
+log = "0.4"
+ignore = "0.4"
+async-trait = "0.1"
+futures = "0.3"
+
+# OXC Toolchain (Standardizing versions)
+oxc_allocator = "0.13"
+oxc_parser = "0.13"
+oxc_syntax = "0.13"
+oxc_ast = "0.13"
+oxc_span = "0.13"

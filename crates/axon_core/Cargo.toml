@@ -1,40 +1,29 @@
 [package]
-name = "axon_core" 
-version = "0.1.0"
-edition = "2021"
+name = "axon_core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [lib]
-name = "axon_core"
 path = "src/lib.rs"
 
+
 [dependencies]
-oxc_allocator = "0.13"
-oxc_parser = "0.13"
-oxc_span = "0.13"
-oxc_ast = "0.13"
-oxc_syntax = "0.13"
+# Inherited from Workspace
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+ts-rs.workspace = true
+thiserror.workspace = true
+log.workspace = true
+ignore.workspace = true
+async-trait.workspace = true
+futures.workspace = true
 
-clap = { version = "4.4", features = ["derive"] }
-
-
-walkdir = "2.4"
-anyhow = "1.0"
-
-oxc_resolver = "1.0"
-
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-json_comments = "0.2"
-serde_json_lenient = "0.1"
-
-thiserror = "1.0"
-
-log = "0.4"
-env_logger = "0.10"
-
-rayon = "1.8"
-dashmap = "5.5"
-crossbeam-channel = "0.5"
-
-regex = "1.10"
-lazy_static = "1.4"
+# Parser Stack
+oxc_allocator.workspace = true
+oxc_parser.workspace = true
+oxc_syntax.workspace = true
+oxc_ast.workspace = true
+oxc_span.workspace = true

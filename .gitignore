@@ -1,1 +1,20 @@
-/target
+# Secrets
+.env
+.env.local
+
+# Rust
+target/
+**/*.rs.bk
+
+# Node / React
+node_modules/
+dist/
+.eslintcache
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Axon Specific
+.playground

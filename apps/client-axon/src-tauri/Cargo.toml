@@ -1,0 +1,28 @@
+[package]
+name = "axon-desktop"
+description = "Desktop distribution for the Axon static analysis platform"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version = "1.77.2"
+
+[lib]
+name = "axon_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5.3", features = [] }
+
+[dependencies]
+# Internal
+axon_core = { workspace = true }
+
+# Workspace standard
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+
+# Tauri Specific
+tauri = { version = "2.9.5", features = [] }
+tauri-plugin-log = "2"
