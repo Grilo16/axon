@@ -9,3 +9,4 @@ pub mod parser;
 pub mod graph;
 pub mod ts_exporter;
 pub mod explorer;
+pub mod bundler;

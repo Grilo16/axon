@@ -1,2 +1,2 @@
 export * from "./useStore"
-export * from "./useToggle"
+export * from "../../shared/hooks/useToggle"

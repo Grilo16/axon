@@ -1,68 +1,44 @@
-import { memo } from "react";
-import { BaseEdge, getBezierPath, type EdgeProps } from "@xyflow/react";
-import { useTheme } from "styled-components";
+import { BaseEdge, getSmoothStepPath, type EdgeProps } from "@xyflow/react";
 
-/**
- * Bi-color edge: start color at the source, end color at the target.
- * Note: SVG ids must be "safe" (no spaces, slashes, etc.) or gradients can fail to resolve.
- */
-export const BiColorEdge = memo((props: EdgeProps) => {
-  const theme = useTheme();
+export function BiColorEdge({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+}: EdgeProps) {
+  
 
-  const {
-    id,
+  const safeTargetX = sourceX === targetX ? targetX + 0.001 : targetX;
+  const safeTargetY = sourceY === targetY ? targetY + 0.001 : targetY;
+
+  const [path] = getSmoothStepPath({
     sourceX,
     sourceY,
-    targetX,
-    targetY,
+    targetX: safeTargetX,
+    targetY: safeTargetY,
     sourcePosition,
     targetPosition,
-    style,
-    markerEnd,
-    markerStart,
-  } = props;
-
-  const [path] = getBezierPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition,
+    borderRadius: 32,
+    offset: 24,
   });
 
-  const start = theme.colors.palette.primary;
-  const end = theme.colors.palette.success;
-
-  // Make the gradient id safe for SVG URL references.
-  const safe = String(id).replace(/[^a-zA-Z0-9\-_:.]/g, "_");
-  const gradId = `axon-grad-${safe}`;
+  const isFlowingDown = targetY > sourceY;
+  const gradientId = !isFlowingDown ? "url(#edge-gradient-down)" : "url(#edge-gradient-up)";
 
   return (
     <>
-      <defs>
-        <linearGradient
-          id={gradId}
-          gradientUnits="userSpaceOnUse"
-          x1={sourceX}
-          y1={sourceY}
-          x2={targetX}
-          y2={targetY}
-        >
-          <stop offset="0%" stopColor={start} stopOpacity={1} />
-          <stop offset="100%" stopColor={end} stopOpacity={1} />
-        </linearGradient>
-      </defs>
-
       <BaseEdge
+        id={id}
         path={path}
-        markerEnd={markerEnd}
-        markerStart={markerStart}
         style={{
-          ...(style ?? {}),
-          stroke: `url(#${gradId})`,
+          stroke: gradientId,
+          strokeWidth: 1.5,
+          opacity: 0.8,
         }}
       />
     </>
   );
-});
+}

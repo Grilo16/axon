@@ -3,7 +3,7 @@ import type { SymbolId } from "./ids";
 
 export type ByteOffset = number;
 
-export type Export = { name: string, isReexport: boolean, };
+export type Export = { name: string, isReexport: boolean, source: string | null, };
 
 export type Symbol = { id: SymbolId, kind: SymbolKind, name: string, 
 /**

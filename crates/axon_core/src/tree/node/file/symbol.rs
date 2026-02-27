@@ -145,4 +145,5 @@ pub struct UnresolvedReference {
 pub struct Export {
     pub name: String,
     pub is_reexport: bool,
+    pub source: Option<String>, 
 }

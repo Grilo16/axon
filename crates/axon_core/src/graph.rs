@@ -1,11 +1,21 @@
+// --- FILE: graph.rs ---
+pub mod builder;
+
+#[cfg(test)]
+pub(crate) mod test_utils;
+
 use crate::ids::{FileId, SymbolId};
-use crate::path::RelativeAxonPath;
 use crate::tree::node::file::symbol::Symbol;
 use crate::tree::state::RegistryAccess;
 use crate::tree::{state::Analyzed, AxonTree};
-use std::collections::{HashMap, HashSet};
+use builder::GraphBuilder;
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 use ts_rs::TS;
+
+// ============================================================================
+// 1. DATA TRANSFER OBJECTS (VIEWS)
+// ============================================================================
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export_to = "graph.ts", rename_all = "camelCase")]
@@ -19,10 +29,12 @@ pub struct AxonGraphView {
 #[ts(export_to = "graph.ts", rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub struct FileNodeView {
-    pub id: String, // React Flow likes string IDs
+    pub id: String,
     pub label: String,
     pub path: String,
     pub symbols: Vec<Symbol>,
+    pub imports: Vec<String>,
+    pub used_by: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
@@ -34,59 +46,23 @@ pub struct FileEdgeView {
     pub target: String,
 }
 
+// ============================================================================
+// 2. THE CORE GRAPH
+// ============================================================================
 
 pub struct AxonGraph {
-    /// Layer 1: File-level dependencies (Your existing maps)
-    forward: HashMap<FileId, HashSet<FileId>>,
-    reverse: HashMap<FileId, HashSet<FileId>>,
-
-    /// Layer 2: The Global Symbol Registry
-    /// This allows us to find ANY symbol in the project by ID instantly.
-    symbols: HashMap<SymbolId, Symbol>,
-
-    /// Layer 3: File Ownership
-    /// Maps a File to its top-level (root) symbols.
-    file_roots: HashMap<FileId, Vec<SymbolId>>,
+    pub(crate) forward: HashMap<FileId, HashSet<FileId>>,
+    pub(crate) reverse: HashMap<FileId, HashSet<FileId>>,
+    pub(crate) symbols: HashMap<SymbolId, Symbol>,
+    pub(crate) file_roots: HashMap<FileId, Vec<SymbolId>>,
 }
 
 impl AxonGraph {
-    pub fn new(tree: &AxonTree<Analyzed>) -> Self {
-        let mut forward: HashMap<FileId, HashSet<FileId>> = HashMap::new();
-        let mut reverse: HashMap<FileId, HashSet<FileId>> = HashMap::new();
-        let mut symbols = HashMap::new();
-        let mut file_roots = HashMap::new();
-
-        // --- Layer 1: Resolve File Dependencies ---
-        for file in tree.files() {
-            let source_id = file.id();
-
-            let mut roots = Vec::new();
-
-            for symbol in file.symbols() {
-                symbols.insert(symbol.id, symbol.clone());
-
-                if symbol.parent.is_none() {
-                    roots.push(symbol.id);
-                }
-            }
-
-            file_roots.insert(source_id, roots);
-            // Standard import resolution
-            for import in file.imports() {
-                if let Some(target_id) = resolve_id(tree, source_id, &import.raw_path) {
-                    forward.entry(source_id).or_default().insert(target_id);
-                    reverse.entry(target_id).or_default().insert(source_id);
-                }
-            }
-        }
-
-        Self {
-            forward,
-            reverse,
-            symbols,
-            file_roots,
-        }
+    pub fn build(tree: &AxonTree<Analyzed>) -> Self {
+        GraphBuilder::new(tree).build()
     }
+
+    // --- RESTORED HELPER METHODS ---
 
     /// Find a symbol and all its nested children recursively
     pub fn get_symbol_tree(&self, id: SymbolId) -> Vec<&Symbol> {
@@ -100,16 +76,6 @@ impl AxonGraph {
         results
     }
 
-    /// Get outbound dependencies for a file
-    pub fn dependencies_of(&self, id: FileId) -> Option<&HashSet<FileId>> {
-        self.forward.get(&id)
-    }
-
-    /// Get inbound dependents for a file
-    pub fn dependents_of(&self, id: FileId) -> Option<&HashSet<FileId>> {
-        self.reverse.get(&id)
-    }
-
     /// Get the root symbols for a specific file
     pub fn root_symbols_for(&self, id: FileId) -> Option<&Vec<SymbolId>> {
         self.file_roots.get(&id)
@@ -120,40 +86,109 @@ impl AxonGraph {
         println!("\n🕸️  Project Dependency Graph Summary");
         println!("------------------------------------");
         for file in tree.files() {
-            let deps_count = self.dependencies_of(file.id()).map(|d| d.len()).unwrap_or(0);
-            let rev_count = self.dependents_of(file.id()).map(|d| d.len()).unwrap_or(0);
-            
+            let deps_count = self.dependencies_of(file.id()).map_or(0, |d| d.len());
+            let rev_count = self.dependents_of(file.id()).map_or(0, |d| d.len());
+
             if deps_count > 0 || rev_count > 0 {
-                println!("{:<40} | Out: {:>2} | In: {:>2}", 
-                    file.name(), 
-                    deps_count, 
+                println!(
+                    "{:<40} | Out: {:>2} | In: {:>2}",
+                    file.name(),
+                    deps_count,
                     rev_count
                 );
             }
         }
     }
 
-    pub fn to_view(&self, tree: &AxonTree<Analyzed>) -> AxonGraphView {
+    // --- DEPENDENCY METHODS ---
+
+    pub fn dependencies_of(&self, id: FileId) -> Option<&HashSet<FileId>> {
+        self.forward.get(&id)
+    }
+
+    pub fn dependents_of(&self, id: FileId) -> Option<&HashSet<FileId>> {
+        self.reverse.get(&id)
+    }
+
+    pub fn to_view(
+        &self,
+        tree: &AxonTree<Analyzed>,
+        focus_paths: &[&str],
+        hide_index_files: bool,
+    ) -> AxonGraphView {
+        if focus_paths.is_empty() {
+            return AxonGraphView {
+                nodes: Vec::new(),
+                edges: Vec::new(),
+            };
+        }
+
+        let is_index = |name: &str| {
+            matches!(
+                name,
+                "index.ts" | "index.tsx" | "index.js" | "index.jsx" | "index.mjs" | "index.cjs"
+            )
+        };
+
+        let is_hidden = |file: &crate::tree::node::AxonFile<_>| {
+            hide_index_files && is_index(file.name())
+        };
+
+        // 1. Determine our working set of FileIds
+        // Since we already early-exited on empty, we strictly map the requested paths!
+        let mut focus_set = HashSet::new();
+        for &path in focus_paths {
+            if let Some(id) = tree.file_id_by_path(path) {
+                focus_set.insert(id);
+            }
+        }
+
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
 
-        // 1. Build Nodes
-        for file in tree.files() {
-            nodes.push(FileNodeView {
-                id: file.id().to_string(),
-                label: file.name().to_string(),
-                path: file.path().as_str().to_string(),
-                symbols: file.symbols().to_vec(),
-            });
+        // Safe helper to map FileIds to paths, aggressively stripping hidden files
+        let map_ids_to_paths = |ids: &HashSet<FileId>| -> Vec<String> {
+            ids.iter()
+                .filter_map(|&id| tree.file(id))
+                .filter(|f| !is_hidden(f))
+                .map(|f| f.path().as_str().to_string())
+                .collect()
+        };
 
-            // 2. Build Edges from the 'forward' map
-            if let Some(targets) = self.forward.get(&file.id()) {
-                for &target_id in targets {
-                    edges.push(FileEdgeView {
-                        id: format!("{}-{}", file.id(), target_id),
-                        source: file.id().to_string(),
-                        target: target_id.to_string(),
-                    });
+        for &file_id in &focus_set {
+            if let Some(file) = tree.file(file_id) {
+                if is_hidden(file) {
+                    continue;
+                }
+
+                let file_path = file.path().as_str();
+                let imports = self.dependencies_of(file_id).map(map_ids_to_paths).unwrap_or_default();
+                let used_by = self.dependents_of(file_id).map(map_ids_to_paths).unwrap_or_default();
+
+                nodes.push(FileNodeView {
+                    id: file_path.to_string(),
+                    label: file.name().to_string(),
+                    path: file_path.to_string(),
+                    symbols: file.symbols().to_vec(),
+                    imports,
+                    used_by,
+                });
+
+                if let Some(targets) = self.dependencies_of(file_id) {
+                    for &target_id in targets {
+                        if focus_set.contains(&target_id) {
+                            if let Some(target_file) = tree.file(target_id) {
+                                if !is_hidden(target_file) {
+                                    let target_path = target_file.path().as_str();
+                                    edges.push(FileEdgeView {
+                                        id: format!("{}-{}", file_path, target_path),
+                                        source: file_path.to_string(),
+                                        target: target_path.to_string(),
+                                    });
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -162,46 +197,41 @@ impl AxonGraph {
     }
 
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::graph::test_utils::MockTreeBuilder;
+    use std::collections::HashMap;
 
+    #[test]
+    fn test_unified_to_view_filtering() {
+        let mut builder = MockTreeBuilder::new();
+        builder.add_file("src/utils.ts", vec![], vec![], vec![]);
+        let index_id = builder.add_file("src/index.ts", vec![], vec![], vec![]);
+        let main_id = builder.add_file("src/main.ts", vec![], vec![("./index", vec![])], vec![]);
 
+        let tree = builder.build();
+        let mut graph = AxonGraph { 
+            forward: HashMap::new(),
+            reverse: HashMap::new(),
+            symbols: HashMap::new(),
+            file_roots: HashMap::new(),
+        };
+        
+        graph.forward.entry(main_id).or_default().insert(index_id);
+        graph.reverse.entry(index_id).or_default().insert(main_id);
 
-fn resolve_id(tree: &AxonTree<Analyzed>, source_id: FileId, raw: &str) -> Option<FileId> {
-    // 1. Handle Aliases (Simple version: just treat them as relative to src)
-    // You can expand this later to read actual tsconfig paths!
-    let sanitized_path = if raw.starts_with('@') {
-        // Example: Change "@app/store" to "src/store"
-        // Adjust "src/" to match your actual project structure!
-        raw.replacen('@', "src/", 1).replace("//", "/")
-    } else if raw.starts_with('.') {
-        let source_file = tree.file(source_id)?;
-        let current_dir = source_file.path().parent()?;
-        let raw_path = RelativeAxonPath::from(raw);
-        current_dir.join(&raw_path).as_str().to_string()
-    } else {
-        // Likely a node_module, skip for internal graph
-        return None;
-    };
-
-    let base_candidate = RelativeAxonPath::from(sanitized_path.as_str());
-
-    // 2. The Probe Loop
-    let extensions = ["ts", "tsx", "js", "jsx"];
-
-    // Check direct file
-    for ext in &extensions {
-        let path_str = format!("{}.{}", base_candidate.as_str(), ext);
-        if let Some(id) = tree.file_id_by_path(&path_str) {
-            return Some(id);
-        }
+  
+        let focus_paths = ["src/main.ts", "src/utils.ts", "src/index.ts"];
+        let view = graph.to_view(&tree, &focus_paths, true); 
+        
+        // Test 1: Hide Index file
+        assert!(!view.nodes.iter().any(|n| n.label == "index.ts"), "Index file should be completely hidden");
+        
+        // Test 2: Ensure imports are stripped
+        let main_node = view.nodes.iter().find(|n| n.label == "main.ts")
+            .expect("main.ts should exist in the view!"); // .expect() is better than .unwrap() for tests!
+            
+        assert!(main_node.imports.is_empty(), "Index file should be stripped from imports array");
     }
-
-    // Check index files
-    for ext in &extensions {
-        let path_str = format!("{}/index.{}", base_candidate.as_str(), ext);
-        if let Some(id) = tree.file_id_by_path(&path_str) {
-            return Some(id);
-        }
-    }
-
-    None
 }

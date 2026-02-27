@@ -88,6 +88,7 @@ mod tests {
                 root: PathBuf::from("/test"),
                 scan: AxonScanOptions {
                     allowed_extensions: HashSet::from(["ts".to_string()]),
+                    ..Default::default()
                 },
             },
             state: Scanned(registry),

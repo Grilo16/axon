@@ -1,2 +1,1 @@
-export * from "./WelcomePage"
-export * from "./WorkspacePage"
+export * from "./test-page"

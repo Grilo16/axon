@@ -1,7 +1,5 @@
 use crate::tree::{
-    node::file::symbol::Symbol,
-    state::{Analyzed, RegistryAccess},
-    AxonTree,
+    AxonTree, node::file::symbol::Symbol, resolver::ImportResolver, state::{Analyzed, RegistryAccess}
 };
 
 impl AxonTree<Analyzed> {
@@ -27,6 +25,114 @@ impl AxonTree<Analyzed> {
             })
             .collect()
     }
+
+    pub fn get_all_file_paths(&self, limit: Option<usize>) -> Vec<String> {
+        self.files()
+            .iter()
+            .map(|f| f.path().as_str().to_string())
+            .take(limit.unwrap_or(usize::MAX))
+            .collect()
+    }
+
+    pub fn get_file_paths_by_dir(
+        &self,
+        target_path: &str,
+        recursive: bool,
+        limit: Option<usize>,
+    ) -> Option<Vec<String>> {
+        let start_dir_id = self.dir_id_by_path(target_path)?;
+
+        // If no limit is provided, use the absolute maximum possible size
+        let max_files = limit.unwrap_or(usize::MAX);
+
+        if max_files == 0 {
+            return Some(Vec::new()); // Early exit for zero
+        }
+
+        match recursive {
+            false => {
+                let paths = self
+                    .directory(start_dir_id)?
+                    .child_files()
+                    .iter()
+                    .filter_map(|&id| self.file(id))
+                    .map(|f| f.path().as_str().to_string())
+                    .take(max_files)
+                    .collect();
+
+                Some(paths)
+            }
+            true => {
+                let mut results = Vec::new();
+                let mut stack = vec![start_dir_id];
+
+                while let Some(current_dir_id) = stack.pop() {
+                    if let Some(dir) = self.directory(current_dir_id) {
+                        let remaining = max_files.saturating_sub(results.len());
+
+                        results.extend(
+                            dir.child_files()
+                                .iter()
+                                .filter_map(|&id| self.file(id))
+                                .map(|f| f.path().as_str().to_string())
+                                .take(remaining), // 🛡️ Never take more than we need
+                        );
+
+                        // If we hit the absolute limit, stop digging deeper!
+                        if results.len() >= max_files {
+                            break;
+                        }
+
+                        // Push all subdirectories onto the stack
+                        stack.extend(dir.child_dirs().iter().copied());
+                    }
+                }
+
+                Some(results)
+            }
+        }
+    }
+
+    pub fn read_file_content(&self, target_path: &str) -> Option<String> {
+        let file_id = self.file_id_by_path(target_path)?;
+        let file = self.file(file_id)?;
+
+        // Grab the content and convert it to an owned String for Tauri serialization
+        Some(file.content().to_string())
+    }
+
+    pub fn dependencies_of(&self, file_id: crate::ids::FileId) -> Option<Vec<crate::ids::FileId>> {
+        let file = self.file(file_id)?;
+        let mut deps = Vec::new();
+        let resolver = ImportResolver::new(self);
+
+        for import in file.imports() {
+            // Use your brilliant resolve_path logic!
+            if let Some(target_id) = resolver.resolve_path(file_id, &import.raw_path) {
+                deps.push(target_id);
+            }
+        }
+
+        Some(deps)
+    }
+
+    /// Returns a list of FileIds that import the given file.
+    pub fn dependents_of(&self, target_file_id: crate::ids::FileId) -> Option<Vec<crate::ids::FileId>> {
+        self.file(target_file_id)?; 
+
+        let mut dependents = Vec::new();
+
+        // Check every file to see if it imports the target
+        for file in self.files() {
+            if let Some(deps) = self.dependencies_of(file.id()) {
+                if deps.contains(&target_file_id) {
+                    dependents.push(file.id());
+                }
+            }
+        }
+
+        Some(dependents)
+    }
 }
 
 #[cfg(test)]
@@ -36,7 +142,7 @@ mod tests {
     use crate::path::RelativeAxonPath;
     use crate::tree::node::file::symbol::{ByteOffset, Symbol, SymbolKind, TextRange};
     use crate::tree::node::file::{state::Outlined, AxonFile};
-    use crate::tree::state::RegistryAccess; // Important: must be in scope
+    use crate::tree::state::RegistryAccess;
     use crate::tree::state::TreeRegistry;
     use crate::tree::AxonTreeCore;
     use oxc_span::SourceType;
@@ -93,6 +199,7 @@ mod tests {
                 root: PathBuf::from("/test"),
                 scan: crate::tree::options::AxonScanOptions {
                     allowed_extensions: HashSet::from(["ts".to_string()]),
+                    ..Default::default()
                 },
             },
             state: Analyzed(registry),

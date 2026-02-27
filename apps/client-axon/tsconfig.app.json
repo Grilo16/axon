@@ -19,7 +19,7 @@
     "baseUrl": ".",
     "paths": {
       "@app/*": ["src/app/*"],
-      "@axon-types/*": ["src/types/*"],
+      "@axon-types/*": ["src/components/CreateWorkspaceCard/types/*"],
       "@features/*": ["src/features/*"],
       "@components/*": ["src/components/*"],
       "@pages/*": ["src/pages/*"],

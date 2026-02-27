@@ -31,9 +31,9 @@ async fn main() -> AxonResult<()> {
     // THE GRAPH: Resolve all internal relationships
     // ---------------------------------------------------------
 
-    let graph = AxonGraph::new(&analyzed_tree);
+    let graph = AxonGraph::build(&analyzed_tree);
 
-    let graph_view = graph.to_view(&analyzed_tree);
+    let graph_view = graph.to_view(&analyzed_tree, &[],true);
 
     // 2. Serialize to pretty-printed JSON
     let json_data = serde_json::to_string_pretty(&graph_view)?;
@@ -60,8 +60,6 @@ async fn main() -> AxonResult<()> {
     );
 
     // Use our new Graph Reporter
-    graph.print_summary(&analyzed_tree);
-
     let target_path = "src/features/workspace/workspacesSlice.ts";
 
     if let Some(file_id) = analyzed_tree.file_id_by_path(target_path) {

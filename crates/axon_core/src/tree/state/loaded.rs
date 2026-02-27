@@ -86,8 +86,8 @@ mod tests {
             core: crate::tree::AxonTreeCore {
                 root: std::path::PathBuf::from("/test"),
                 scan: crate::tree::options::AxonScanOptions {
-                    // FIX: AxonScanOptions usually expects HashSet<String>
                     allowed_extensions: vec!["rs".to_string()].into_iter().collect::<HashSet<_>>(),
+                    ..Default::default()
                 },
             },
             state: Loaded(TreeRegistry {

@@ -1,65 +1,76 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { FileCode, Plus, Check } from "lucide-react";
 import { ExplorerEntry } from "./explorer-entry";
-import { ExplorerError, ExplorerLoader } from "./explorer-layout";
-import { ExplorerToolbar } from "./explorer-toolbar";
-import type { UseExplorerReturn } from "../hooks/use-explorer";
+import { ExplorerLoader } from "./explorer-layout";
+import { ExplorerSearch } from "./explorer-search"; // ✨ The new search bar
 import * as S from "../styles";
+import { useExplorer } from "../hooks/use-explorer";
+import { useLazyGetAllFilePathsQuery } from "@features/core/workspace/api/workspace-api";
+import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
 
-export interface ExplorerOptions {
-  foldersSelectable?: boolean;
-  filesSelectable?: boolean;
-  multiSelect?: boolean;
-  cascade?: boolean;
-}
-
-interface FileExplorerProps {
-  explorer: UseExplorerReturn; // 👈 Everything is inside this now!
-  options?: ExplorerOptions;
-}
-
-export const FileExplorer: React.FC<FileExplorerProps> = ({
-  explorer,
-  options = { foldersSelectable: true, filesSelectable: true, multiSelect: true, cascade: true}
-}) => {
-  const { 
-    entries, navigateTo, openFile, isLoading, error, 
-    currentPath, goBack, goForward, fetchDir, 
-    canGoBack, canGoForward,
-    selectedPaths, handleSelect, clearSelection 
-  } = explorer;
+export const FileExplorer: React.FC = () => {
+  const { entries, isLoading, fetchDir } = useExplorer();
+  const { activePaths, setPaths, toggleTarget } = useBundleSession();
+  
+  const [searchQuery, setSearchQuery] = useState("");
+  const [triggerGetAll, { data: allPaths }] = useLazyGetAllFilePathsQuery();
 
   useEffect(() => {
-    if (currentPath) navigateTo(currentPath);
-  }, []);
+    if (searchQuery && !allPaths) {
+      triggerGetAll({});
+    }
+  }, [searchQuery, allPaths, triggerGetAll]);
+
+  // Fuzzy filter
+  const searchResults = useMemo(() => {
+    if (!searchQuery || !allPaths) return [];
+    const lowerQuery = searchQuery.toLowerCase();
+    // Exclude node_modules or standard noise if you want, and limit to 100 for performance
+    return allPaths.filter(p => p.toLowerCase().includes(lowerQuery)).slice(0, 100);
+  }, [searchQuery, allPaths]);
+
+  const handleAddAll = () => {
+    const nextPaths = Array.from(new Set([...activePaths, ...searchResults]));
+    setPaths(nextPaths);
+    setSearchQuery(""); 
+  };
 
   return (
     <S.ExplorerContainer>
-      <ExplorerToolbar
-        canGoBack={canGoBack}
-        canGoForward={canGoForward}
-        goBack={goBack}
-        goForward={goForward}
-        currentPath={currentPath}
-        onNavigate={navigateTo}
-        onRefresh={() => currentPath && navigateTo(currentPath)}
+      <ExplorerSearch 
+        searchQuery={searchQuery} 
+        setSearchQuery={setSearchQuery} 
+        onAddAll={handleAddAll} 
+        resultCount={searchResults.length}
       />
-      <S.ScrollArea onClick={clearSelection}>
-        {error && <ExplorerError type={error.type} />}
 
+      <S.ScrollArea>
         {isLoading && entries.length === 0 ? (
           <ExplorerLoader />
+        ) : searchQuery ? (
+          searchResults.map((path) => {
+            const name = path.split(/[/\\]/).pop() || path;
+            const inGraph = activePaths.includes(path);
+            
+            return (
+              <S.ItemRow key={path} $depth={0} $isFocused={false} $isSelected={false} onClick={() => toggleTarget(path)}>
+                <FileCode size={14} className={inGraph ? "text-green-400" : "text-gray-400"} />
+                <S.Label $inGraph={inGraph} title={path}>{name}</S.Label>
+                <S.GraphToggleBtn $inGraph={inGraph} onClick={(e) => { e.stopPropagation(); toggleTarget(path); }}>
+                  {inGraph ? <Check size={14} /> : <Plus size={14} />}
+                </S.GraphToggleBtn>
+              </S.ItemRow>
+            );
+          })
         ) : (
           entries.map((entry) => (
             <ExplorerEntry
               key={entry.data.path}
               entry={entry}
               depth={0}
-              selectedPaths={selectedPaths}
-              options={options}
-              onFileClick={openFile}
-              onSelect={handleSelect}
+              options={{ cascade: true }}
               onFolderExpand={fetchDir}
-              onNavigate={navigateTo}
+              onNavigate={() => {}}
             />
           ))
         )}

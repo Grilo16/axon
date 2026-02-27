@@ -199,7 +199,9 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
             walk::walk_class(self, class);
         }
     }
+   
     fn visit_import_declaration(&mut self, decl: &ast::ImportDeclaration<'a>) {
+
         let raw_path = decl.source.value.to_string();
         let mut symbols = Vec::new();
 
@@ -226,4 +228,51 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
         });
         walk::walk_import_declaration(self, decl);
     }
+
+    // Catches: export * from './module';
+    fn visit_export_all_declaration(&mut self, decl: &ast::ExportAllDeclaration<'a>) {
+        let raw_path = decl.source.value.to_string();
+        
+        self.exports.push(Export {
+            name: "*".to_string(),
+            is_reexport: true,
+            source: Some(raw_path),
+        });
+        
+        walk::walk_export_all_declaration(self, decl);
+    }
+
+    // Catches: export { x } from './module'; OR export const x = 1;
+    fn visit_export_named_declaration(&mut self, decl: &ast::ExportNamedDeclaration<'a>) {
+        let source_path = decl.source.as_ref().map(|s| s.value.to_string());
+        let is_reexport = source_path.is_some();
+
+        for specifier in &decl.specifiers {
+            // OXC's ExportSpecifier is a struct, so we can access .exported directly!
+            let export_name = specifier.exported.name().to_string();
+
+            self.exports.push(Export {
+                name: export_name,
+                is_reexport,
+                source: source_path.clone(),
+            });
+        }
+        
+        walk::walk_export_named_declaration(self, decl);
+    }
+
+    fn visit_ts_type_alias_declaration(&mut self, decl: &ast::TSTypeAliasDeclaration<'a>) {
+        let id = self.push_symbol(
+            SymbolKind::TypeAlias,
+            decl.id.name.to_string(),
+            decl.span,
+            decl.id.span,
+            Some(decl.type_annotation.span()),
+        );
+        
+        self.scope_stack.push(id);
+        walk::walk_ts_type_alias_declaration(self, decl);
+        self.scope_stack.pop();
+    }
+    
 }

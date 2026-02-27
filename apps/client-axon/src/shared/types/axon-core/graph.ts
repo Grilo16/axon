@@ -5,4 +5,4 @@ export type AxonGraphView = { nodes: Array<FileNodeView>, edges: Array<FileEdgeV
 
 export type FileEdgeView = { id: string, source: string, target: string, };
 
-export type FileNodeView = { id: string, label: string, path: string, symbols: Array<Symbol>, };
+export type FileNodeView = { id: string, label: string, path: string, symbols: Array<Symbol>, imports: Array<string>, usedBy: Array<string>, };

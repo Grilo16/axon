@@ -5,139 +5,209 @@ import {
   FolderOpen,
   FileCode,
   Loader2,
+  Plus,
+  Check,
+  Minus, // <-- Added for partial state!
 } from "lucide-react";
 import type { ExplorerEntry as ExplorerEntryType } from "@shared/types/axon-core/explorer";
-import type { ExplorerOptions } from "./file-explorer";
 import * as S from "../styles";
+import type { ExplorerOptions } from "../types";
+import { useLazyGetFilePathsByDirQuery } from "@features/core/workspace/api/workspace-api";
+import { useNodeSession, useWorkspaceSession } from "@features/core/workspace";
+import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
 
 interface Props {
   entry: ExplorerEntryType;
   depth: number;
-  selectedPaths: Set<string>;
   options: ExplorerOptions;
-  onFileClick: (path: string) => void;
-  onSelect: (path: string, isMulti: boolean) => void;
   onFolderExpand: (path: string) => Promise<ExplorerEntryType[] | undefined>;
   onNavigate: (path: string) => void;
 }
 
-export const ExplorerEntry = memo(
-  ({
-    entry,
-    depth,
-    selectedPaths,
-    options,
-    onFileClick,
-    onSelect,
-    onFolderExpand,
-    onNavigate,
-  }: Props) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [children, setChildren] = useState<ExplorerEntryType[]>([]);
-    const [loading, setLoading] = useState(false);
+export const ExplorerEntry = memo((props: Props) => {
+  const { entry, depth, options, onFolderExpand, onNavigate } = props;
+  const path = entry.data.path;
+  const isFolder = entry.type === "folder";
 
-    const isFolder = entry.type === "folder";
-    const isSelected = selectedPaths.has(entry.data.path);
+  // --- 1. Local UI State ---
+  const [isOpen, setIsOpen] = useState(false);
+  const [children, setChildren] = useState<ExplorerEntryType[]>([]);
+  const [loading, setLoading] = useState(false);
 
-    const handleToggle = async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (!isFolder) return;
+  // --- 2. Global Session & Backend Hooks ---
+  const { hoverRelationship, isSelected } = useNodeSession(path);
+  const { toggleSelection, setHovered } = useWorkspaceSession();
+  const { activePaths, setPaths, toggleTarget } = useBundleSession();
+  const [triggerGetDirPaths, { isFetching }] = useLazyGetFilePathsByDirQuery();
 
-      if (options.cascade === false) {
-        onNavigate(entry.data.path);
-        return;
-      }
+  const isFocused = hoverRelationship === "exact" || (hoverRelationship === "child-hovered" && !isOpen);
 
-      if (!isOpen && children.length === 0) {
-        setLoading(true);
-        const result = await onFolderExpand(entry.data.path);
-        if (result) setChildren(result);
-        setLoading(false);
-      }
-      setIsOpen(!isOpen);
-    };
+  // --- 3. Derived Sync State ---
+  const inGraph = !isFolder && activePaths.includes(path);
+  
+  // Magic Check: Does this folder have ANY files currently in the graph?
+  const folderActiveFilesCount = isFolder 
+    ? activePaths.filter((p) => p.startsWith(path + '/')).length 
+    : 0;
+  const hasFilesInGraph = folderActiveFilesCount > 0;
 
-    const handleSelect = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      // Enforce Selectable Options
-      if (isFolder && options.foldersSelectable === false) return;
-      if (!isFolder && options.filesSelectable === false) return;
-      // Detect Multi-Select
-      const isMultiRequested = e.ctrlKey || e.metaKey;
-      const isMulti = options.multiSelect ? isMultiRequested : false;
+  // --- 4. Event Handlers ---
 
-      onSelect(entry.data.path, isMulti);
-    };
+  const handleToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isFolder) return;
+    
+    if (options.cascade === false) {
+      onNavigate(path);
+      return;
+    }
+    
+    if (!isOpen && children.length === 0) {
+      setLoading(true);
+      const result = await onFolderExpand(path);
+      if (result) setChildren(result);
+      setLoading(false);
+    }
+    setIsOpen(!isOpen);
+  };
 
-    const handleDoubleClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (isFolder) {
-        handleToggle(e);
+  const handleSelect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isFolder && options.foldersSelectable === false) return;
+    if (!isFolder && options.filesSelectable === false) return;
+
+    toggleSelection(path, options.multiSelect ? e.ctrlKey || e.metaKey : false);
+  };
+
+  const handleToggleFileGraph = (e: React.MouseEvent) => {
+   e.stopPropagation();
+    toggleTarget(path);
+  };
+
+  const handleToggleFolderGraph = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isFolder) return;
+
+    try {
+      const folderFiles = await triggerGetDirPaths({
+        path: entry.data.path,
+        recursive: true,
+      }).unwrap();
+
+      if (!folderFiles || folderFiles.length === 0) return;
+
+      const allInGraph = folderFiles.every((f) => activePaths.includes(f));
+
+     if (allInGraph) {
+        const nextPaths = activePaths.filter((p) => !folderFiles.includes(p));
+        setPaths(nextPaths); 
       } else {
-        onFileClick(entry.data.path);
+        const nextPaths = Array.from(new Set([...activePaths, ...folderFiles]));
+        setPaths(nextPaths); 
       }
-    };
+    } catch (err) {
+      console.error("Failed to toggle folder files", err);
+    }
+  };
 
-    return (
-      <S.TreeItem>
-        <S.ItemRow
-          $depth={depth}
-          $isActive={isSelected}
-          onClick={handleSelect}
-          onDoubleClick={handleDoubleClick}
-        >
-          {options.cascade !== false ? (
-            <div
-              onClick={handleToggle}
-              style={{ width: 16, display: "flex", alignItems: "center" }}
-            >
-              {loading ? (
-                <Loader2 size={12} className="animate-spin text-blue-400" />
-              ) : isFolder ? (
-                <ChevronRight
-                  size={14}
-                  style={{
-                    transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s",
-                  }}
-                />
-              ) : null}
-            </div>
-          ) : null}
-
-          {isFolder ? (
-            isOpen ? (
-              <FolderOpen size={14} className="text-blue-400" />
-            ) : (
-              <Folder size={14} className="text-gray-500" />
-            )
-          ) : (
-            <FileCode size={14} className="text-gray-400" />
-          )}
-
-          <S.Label>{entry.data.name}</S.Label>
-        </S.ItemRow>
-
-        {isOpen && (
-          <S.ChildrenContainer>
-            {children.map((child) => (
-              <ExplorerEntry
-                key={child.data.path}
-                entry={child}
-                depth={depth + 1}
-                selectedPaths={selectedPaths}
-                options={options}
-                onFileClick={onFileClick}
-                onSelect={onSelect}
-                onFolderExpand={onFolderExpand}
-                onNavigate={onNavigate}
+  // --- 5. Render ---
+  return (
+    <S.TreeItem>
+      <S.ItemRow
+        $depth={depth}
+        $isSelected={isSelected}
+        $isFocused={isFocused} 
+        onClick={(e) => {
+          if (!isFolder) handleSelect(e);
+          if (isFolder) handleToggle(e); 
+        }}
+        onMouseEnter={() => setHovered(path)}
+        onMouseLeave={() => setHovered(null)}
+      >
+        {/* Caret */}
+        {options.cascade !== false && (
+          <div
+            onClick={handleToggle}
+            style={{ width: 16, display: "flex", alignItems: "center" }}
+          >
+            {loading ? (
+              <Loader2 size={12} className="animate-spin text-blue-400" />
+            ) : isFolder ? (
+              <ChevronRight
+                size={14}
+                style={{
+                  transform: isOpen ? "rotate(90deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s",
+                }}
               />
-            ))}
-          </S.ChildrenContainer>
+            ) : null}
+          </div>
         )}
-      </S.TreeItem>
-    );
-  },
-);
+
+        {/* Icon */}
+        {isFolder ? (
+          isOpen ? (
+            <FolderOpen size={14} className="text-blue-400" />
+          ) : (
+            <Folder size={14} className="text-gray-500" />
+          )
+        ) : (
+          <FileCode
+            size={14}
+            className={inGraph ? "text-green-400" : "text-gray-400"}
+          />
+        )}
+
+        {/* Label */}
+        <S.Label $inGraph={inGraph || hasFilesInGraph} title={entry.data.name}>
+          {entry.data.name}
+        </S.Label>
+
+        {/* Quick Actions */}
+        {isFolder ? (
+          <S.GraphToggleBtn
+            className="graph-toggle-btn"
+            // If the folder has files in the graph, we keep the button highlighted and visible!
+            $inGraph={hasFilesInGraph} 
+            onClick={handleToggleFolderGraph}
+            title={hasFilesInGraph ? "Sync folder with Graph (Add missing / Remove all)" : "Add all files to Graph"}
+            disabled={isFetching}
+          >
+            {isFetching ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : hasFilesInGraph ? (
+              <Minus size={14} /> // The universal "Partial/Mixed" icon
+            ) : (
+              <Plus size={14} />
+            )}
+          </S.GraphToggleBtn>
+        ) : (
+          <S.GraphToggleBtn
+            className="graph-toggle-btn"
+            $inGraph={inGraph}
+            onClick={handleToggleFileGraph}
+            title={inGraph ? "Remove from Graph" : "Add to Graph"}
+          >
+            {inGraph ? <Check size={14} /> : <Plus size={14} />}
+          </S.GraphToggleBtn>
+        )}
+      </S.ItemRow>
+
+      {/* Children */}
+      {isOpen && (
+        <S.ChildrenContainer>
+          {children.map((child) => (
+            <ExplorerEntry
+              key={child.data.path}
+              {...props}
+              entry={child}
+              depth={depth + 1}
+            />
+          ))}
+        </S.ChildrenContainer>
+      )}
+    </S.TreeItem>
+  );
+});
 
 ExplorerEntry.displayName = "ExplorerEntry";

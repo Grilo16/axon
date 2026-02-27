@@ -107,6 +107,28 @@ impl RelativeAxonPath {
         }
         Self(format!("{}/{}", self.0, other.0))
     }
+
+    pub fn normalize(&self) -> Self {
+        let mut stack = Vec::new();
+        
+        for seg in self.segments() {
+            if seg == "." {
+                continue;
+            } else if seg == ".." {
+                stack.pop(); 
+            } else {
+                stack.push(seg);
+            }
+        }
+        
+        if stack.is_empty() {
+            Self::base()
+        } else {
+            Self(stack.join("/"))
+        }
+    }
+
+
 }
 
 impl Borrow<str> for RelativeAxonPath {

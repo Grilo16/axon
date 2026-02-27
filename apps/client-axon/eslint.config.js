@@ -23,6 +23,31 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+      'import/no-restricted-paths': [
+      'error',
+      {
+        zones: [
+          // 1. SHARED IS BLIND: Cannot import from anywhere above it
+          {
+            target: './src/shared',
+            from: ['./src/features', './src/pages', './src/app'],
+            message: '🛑 Architectural Violation: The "shared" folder is dumb and cannot import from features, pages, or app.'
+          },
+          // 2. CORE IS BLIND TO UI: Cannot import from standard features or pages
+          {
+            target: './src/features/core',
+            from: ['./src/pages', './src/features/!(core)'], // The !(core) ignores itself
+            message: '🛑 Architectural Violation: "features/core" is foundational. It cannot import from UI features or pages.'
+          },
+          // 3. FEATURES ARE BLIND TO PAGES: UI Features cannot import from the top level
+          {
+            target: './src/features',
+            from: ['./src/pages', './src/app'],
+            message: '🛑 Architectural Violation: "features" cannot import from pages or the app setup.'
+          }
+        ]
+      }
+    ],
     },
   },
 )
