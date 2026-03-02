@@ -4,6 +4,8 @@ import { VscAdd } from "react-icons/vsc";
 import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
 import { WorkspaceLoader } from "@features/core/workspace";
 import { LibraryHubModal } from "./library-hub-modal"; 
+import { WorkspaceLauncher } from "@features/core/workspace/components/workspace-launcher/workspace-launcher";
+import type { WorkspaceRecord } from "@shared/types/axon-core/workspace-api";
 
 const Container = styled.div`
   display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -30,18 +32,9 @@ const ActivePill = styled.div`
   background-color: ${({ theme }) => theme.colors.text.primary}; border-radius: 0 4px 4px 0;
 `;
 
-function getInitials(name: string) {
-  const clean = (name ?? "").trim();
-  if (!clean) return "WS";
-  const parts = clean.split(/[\s\-_./]+/).filter(Boolean);
-  if (!parts.length) return clean.slice(0, 2).toUpperCase();
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
 
 export const Sidebar = () => {
-  const { workspaces, activeWorkspace, open } = useWorkspaceManager();
-  const activeId = activeWorkspace?.id;
+  const { workspaces } = useWorkspaceManager();
 
   const [isLoaderOpen, setIsLoaderOpen] = useState(false);
   const [isHubOpen, setIsHubOpen] = useState(false);
@@ -58,28 +51,14 @@ export const Sidebar = () => {
         <Separator /> */}
 
         {/* Workspace icons */}
-        {workspaces.map((ws: any) => {
-          const isActive = ws.id === activeId && !isHubOpen && !isLoaderOpen;
+        {workspaces.map((ws: WorkspaceRecord) => {
           return (
-            <WorkspaceIcon
-              key={ws.id}
-              $active={isActive}
-              onClick={() => {
-                open(ws.id);
-                setIsHubOpen(false);
-                setIsLoaderOpen(false);
-              }}
-              title={ws.name}
-            >
-              {isActive && <ActivePill />}
-              {getInitials(ws.name)}
-            </WorkspaceIcon>
+            <WorkspaceLauncher workspace={ws}/> 
           );
         })}
 
         <Separator />
 
-        {/* Create Workspace (No longer green, matches theme!) */}
         <WorkspaceIcon 
           title="Create New Workspace" 
           $active={isLoaderOpen}
@@ -90,7 +69,6 @@ export const Sidebar = () => {
         </WorkspaceIcon>
       </Container>
 
-      {/* ✨ Render the Modals safely on top of the App */}
       {isLoaderOpen && <WorkspaceLoader onClose={() => setIsLoaderOpen(false)} />}
       {isHubOpen && <LibraryHubModal onClose={() => setIsHubOpen(false)} />}
     </>

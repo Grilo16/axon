@@ -1,48 +1,56 @@
 import { invoke } from '@tauri-apps/api/core';
-import {type BaseQueryFn } from '@reduxjs/toolkit/query/react';
+import { type BaseQueryFn } from '@reduxjs/toolkit/query/react';
 import type { AxonError } from '@shared/types/axon-core/error';
 
-// This is the payload our RTKQ endpoints will return to the baseQuery
 export type AxonQueryArgs = {
-  command: string;          // For Tauri
-  url: string;              // For Web/HTTP
-  method?: 'GET' | 'POST';  // For Web/HTTP
-  body?: Record<string, any>; // Sent as args to Tauri, or body to HTTP
+  command: string;
+  url: string;
+  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  body?: Record<string, any>;
+  tauriArgs?: Record<string, any>;
 };
 
 export const dualBaseQuery: BaseQueryFn<
   AxonQueryArgs,
   unknown,
   AxonError
-> = async ({ command, url, method = 'GET', body }) => {
-  
-  // Detect if we are running inside Tauri
+> = async ({ command, url, method = 'GET', body, tauriArgs }) => {
   const isTauri = '__TAURI_INTERNALS__' in window;
 
   if (isTauri) {
-    // === TAURI EXECUTOR ===
+    // === 🖥️ TAURI EXECUTOR ===
     try {
-      const result = await invoke(command, body);
+      const result = await invoke(command, tauriArgs || body || {});
       return { data: result };
     } catch (error) {
       return { error: error as AxonError };
     }
   } else {
-    // === WEB HTTP EXECUTOR ===
-   try {
+    // === 🌐 WEB HTTP EXECUTOR ===
+    try {
       const options: RequestInit = {
         method,
         headers: { 'Content-Type': 'application/json' },
       };
+
+    
+      const oidcStorageKey = `oidc.user:http://localhost:8080/realms/axon:axon-client`;
+      const oidcStorage = sessionStorage.getItem(oidcStorageKey);
       
+      if (oidcStorage) {
+        const { access_token } = JSON.parse(oidcStorage);
+        options.headers = {
+          ...options.headers,
+          Authorization: `Bearer ${access_token}`, // Inject the VIP wristband!
+        };
+      }
+
       if (method !== 'GET' && body) {
         options.body = JSON.stringify(body);
       }
 
-      const response = await fetch(`/api${url}`, options);
+      const response = await fetch(`http://localhost:8000/api${url}`, options);
       
-      // If the response is not OK, we assume your backend sent back 
-      // a JSON response that already matches the AxonError shape.
       if (!response.ok) {
         const errorData = await response.json();
         return { error: errorData as AxonError };

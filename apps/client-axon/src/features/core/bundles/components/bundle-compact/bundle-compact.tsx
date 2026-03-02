@@ -8,8 +8,8 @@ export const BundleCompact = () => {
 
   if (!activeBundle) return null;
 
-  const fileCount = activeBundle.options.targetFiles.length;
-  const ruleCount = activeBundle.options.rules.length;
+  const fileCount = activeBundle.options?.targetFiles?.length;
+  const ruleCount = activeBundle.options?.rules?.length;
   const hasFiles = fileCount > 0;
 
   return (

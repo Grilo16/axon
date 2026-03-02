@@ -4,6 +4,6 @@ import { dualBaseQuery } from './axon-base-query';
 export const axonApi = createApi({
   reducerPath: 'axonApi',
   baseQuery: dualBaseQuery,
-  tagTypes: ['Graph', 'Workspace', "Explorer"], 
+  tagTypes: ['Workspace', "Bundle"], 
   endpoints: () => ({}), 
 });

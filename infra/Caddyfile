@@ -1,0 +1,7 @@
+api.yourdomain.com {
+    reverse_proxy axon-server:8000
+}
+
+auth.yourdomain.com {
+    reverse_proxy keycloak:8080
+}

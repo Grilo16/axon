@@ -1,15 +1,28 @@
 use std::sync::Arc;
-use tokio::sync::RwLock;
-use axon_core::tree::{AxonTree, state::Analyzed};
+use moka::future::Cache;
+use axon_core::{
+    domain::workspace::WorkspaceRepository,
+    domain::bundle::BundleRepository,
+    tree::{state::Analyzed, AxonTree},
+};
 
-pub struct AxonAppState {
-    pub tree_cache: RwLock<Option<Arc<AxonTree<Analyzed>>>>,
+pub struct AppState {
+    pub workspace_repo: Arc<dyn WorkspaceRepository>,
+    pub bundle_repo: Arc<dyn BundleRepository>,
+    pub active_trees: Cache<String, Arc<AxonTree<Analyzed>>>,
 }
 
-impl AxonAppState {
-    pub fn new() -> Self {
-        Self {
-            tree_cache: RwLock::new(None),
-        }
+impl AppState {
+    pub fn new(
+        workspace_repo: Arc<dyn WorkspaceRepository>,
+        bundle_repo: Arc<dyn BundleRepository>
+    ) -> Self {
+        let active_trees = Cache::builder()
+            // Desktop apps don't need 1000 trees in RAM, 10 is plenty!
+            .time_to_idle(std::time::Duration::from_secs(30 * 60)) 
+            .max_capacity(10)
+            .build();
+
+        Self { workspace_repo, bundle_repo, active_trees }
     }
 }

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE workspaces\n            SET last_opened = $1\n            WHERE id = $2 AND owner_id = $3\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ef2eafcccabdc42ed7b04cc5a3891f77695ecfd4278e09f243c0a864efd3a3f5"
+}

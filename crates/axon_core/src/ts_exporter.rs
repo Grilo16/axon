@@ -2,14 +2,9 @@ use std::path::Path;
 use ts_rs::TS;
 
 use crate::{
-    bundler::rules::{BundleOptions, RedactionRule, RedactionType, TargetScope},
-    error::AxonError,
-    explorer::{ExplorerEntry, ExplorerFile, ExplorerFolder},
-    graph::{AxonGraphView, FileNodeView},
-    ids::{DirectoryId, FileId, SymbolId},
-    tree::node::file::symbol::{
+    bundler::rules::{BundleOptions, RedactionRule, RedactionType, TargetScope}, domain::{bundle::{BundleRecord, CloneBundleReq, CreateBundleReq, ListBundlesQuery, UpdateBundlePayload}, workspace::{CreateWorkspaceReq, DirQuery, FileQuery, ListWorkspacesQuery, ReadFileReq, UpdateWorkspacePayload, WorkspaceRecord}}, error::AxonError, explorer::{ExplorerEntry, ExplorerFile, ExplorerFolder}, graph::{AxonGraphView, FileNodeView}, ids::{DirectoryId, FileId, SymbolId}, tree::node::file::symbol::{
         ByteOffset, Export, Symbol, SymbolKind, TextRange, UnresolvedReference,
-    },
+    }
 };
 
 pub fn do_export() {
@@ -45,6 +40,25 @@ pub fn do_export() {
         (TargetScope::export_all_to(base_path)),
         (RedactionRule::export_all_to(base_path)),
         (BundleOptions::export_all_to(base_path)),
+        
+
+
+        
+        (WorkspaceRecord::export_all_to(base_path)),
+        (UpdateWorkspacePayload::export_all_to(base_path)),
+        (CreateWorkspaceReq::export_all_to(base_path)),
+        (ListWorkspacesQuery::export_all_to(base_path)),
+        (FileQuery::export_all_to(base_path)),
+        (DirQuery::export_all_to(base_path)),
+        (ReadFileReq::export_all_to(base_path)),
+
+
+        
+        (BundleRecord::export_all_to(base_path)),
+        (UpdateBundlePayload::export_all_to(base_path)),
+        (CreateBundleReq::export_all_to(base_path)),
+        (CloneBundleReq::export_all_to(base_path)),
+        (ListBundlesQuery::export_all_to(base_path)),
         
         // export the error type
         (AxonError::export_all_to(base_path)),

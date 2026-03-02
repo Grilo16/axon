@@ -1,68 +1,167 @@
 import { axonApi } from "@app/api/axon-api";
-import { AXON_COMMANDS } from "@shared/api/commands";
-import type { BundleOptions } from "@shared/types/axon-core/bundler";
+import type { 
+  WorkspaceRecord, 
+  UpdateWorkspacePayload, 
+  CreateWorkspaceReq, 
+  DirQuery, 
+  ReadFileReq, 
+  ListWorkspacesQuery,
+  FileQuery
+} from "@shared/types/axon-core/workspace-api";
+import type { ExplorerEntry } from "@shared/types/axon-core/explorer";
 
 export const workspaceApi = axonApi.injectEndpoints({
   endpoints: (builder) => ({
-    loadWorkspace: builder.mutation<void, { path: string }>({
-      query: (args) => ({
-        command: AXON_COMMANDS.WORKSPACE.LOAD_WORKSPACE,
-        body: args,
-        url: "/workspace/load",
+    createWorkspace: builder.mutation<WorkspaceRecord, CreateWorkspaceReq>({
+      query: (payload) => ({
+        command: "create_workspace",
+        url: "/v1/workspaces",
         method: "POST",
+        body: payload,
+        tauriArgs: { payload },
       }),
-      invalidatesTags: ["Explorer", "Graph"],
+      invalidatesTags: ["Workspace"],
     }),
-
-    // The Composable Query: Fetches the paths
-    getAllFilePaths: builder.query<string[], { limit?: number }>({
-      query: (args) => ({
-        command: AXON_COMMANDS.WORKSPACE.GET_ALL_FILE_PATHS,
-        body: args,
-        url: `/workspace/paths${args.limit ? `?limit=${args.limit}` : ""}`,
+    getWorkspace: builder.query<WorkspaceRecord, string>({
+      query: (id) => ({
+        command: "get_workspace",
+        url: `/v1/workspaces/${id}`,
         method: "GET",
+        tauriArgs: { id },
       }),
-      // We tag it so it automatically refreshes if the workspace changes
-      providesTags: ["Explorer"],
+      providesTags: (_result, _error, id) => [{ type: "Workspace", id }],
     }),
-
-    getFilePathsByDir: builder.query<string[],{ path: string; recursive: boolean; limit?: number }>({
-      query: (args) => ({
-        // Make sure to add GET_FILE_PATHS_BY_DIR to your AXON_COMMANDS!
-        command: AXON_COMMANDS.WORKSPACE.GET_FILE_PATHS_BY_DIR,
-        body: args,
-        url: `/workspace/dir-paths`,
-        method: "POST", // POST because we are sending a complex body with boolean/optional args
-      }),
-      // Tag it so it resets if the workspace changes
-      providesTags: ["Explorer"],
-    }),
-
-    readFileContent: builder.query<string, { path: string }>({
-      query: (args) => ({
-        // Make sure to add READ_FILE to your AXON_COMMANDS in Rust/TS!
-        command: AXON_COMMANDS.WORKSPACE.READ_FILE,
-        body: args,
-        url: `/workspace/file?path=${encodeURIComponent(args.path)}`,
+    listWorkspaces: builder.query<WorkspaceRecord[], ListWorkspacesQuery>({
+      query: (query) => ({
+        command: "list_workspaces",
+        url: `/v1/workspaces?limit=${query.limit || 50}&offset=${query.offset || 0}`,
         method: "GET",
+        tauriArgs: { query }, 
       }),
+      providesTags: ["Workspace"],
     }),
-    generateBundle: builder.mutation<Record<string, string>, BundleOptions>({
-      query: (options) => ({
-        // Make sure to add GENERATE_BUNDLE to your AXON_COMMANDS!
-        command: AXON_COMMANDS.WORKSPACE.GENERATE_BUNDLE,
-        // Tauri maps the exact argument name from Rust: `options`
-        body: { options },
-        url: `/workspace/bundle`,
+    updateWorkspace: builder.mutation<void, { id: string; payload: UpdateWorkspacePayload }>({
+      query: ({ id, payload }) => ({
+        command: "update_workspace",
+        url: `/v1/workspaces/${id}`,
+        method: "PATCH",
+        body: payload,
+        tauriArgs: { id, payload },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [{ type: "Workspace", id }, "Workspace"],
+    }),
+    touchWorkspace: builder.mutation<void, string>({
+      query: (id) => ({
+        command: 'touch_workspace',
+        url: `/v1/workspaces/${id}/touch`,
+        method: 'POST',
+        tauriArgs: { id },
+      }),
+      invalidatesTags: (_result, _error, id) => [{ type: 'Workspace', id }],
+    }),
+    deleteWorkspace: builder.mutation<void, string>({
+      query: (id) => ({
+        command: "delete_workspace",
+        url: `/v1/workspaces/${id}`,
+        method: "DELETE",
+        tauriArgs: { id },
+      }),
+      invalidatesTags: ["Workspace"],
+    }),
+    getWorkspaceStatus: builder.query<{ isLoaded: boolean; workspaceId: string }, string>({
+      query: (id) => ({
+        command: "workspace_status",
+        url: `/v1/workspaces/${id}/status`,
+        method: "GET",
+        tauriArgs: { id },
+      }),
+      providesTags: (_result, _error, id) => [{ type: "Workspace", id: `${id}-status` }],
+    }),
+   
+   
+    loadGithubAst: builder.mutation<void, string>({
+      query: (id) => ({
+        command: "load_github_workspace_ast",
+        url: `/v1/workspaces/${id}/load`,
         method: "POST",
+        tauriArgs: { id },
       }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "Bundle", id: `LIST-${id}` },
+        {type: "Bundle", id: "graph"},
+        { type: "Workspace", id: `${id}-dir-root` },
+        "Workspace"],
+    }),
+   
+   
+    loadLocalAst: builder.mutation<void, string>({
+      query: (id) => ({
+        command: "load_local_workspace_ast",
+        url: `/v1/workspaces/${id}/load/local`,
+        method: "POST",
+        tauriArgs: { id },
+      }),
+    }),
+
+    getAllFilePaths: builder.query<string[], { id: string; query: FileQuery }>({
+      query: ({ id, query }) => ({
+        command: 'get_all_file_paths',
+        url: `/v1/workspaces/${id}/files${query.limit ? `?limit=${query.limit}` : ''}`,
+        method: 'GET',
+        tauriArgs: { id, query },
+      }),
+      providesTags: (_result, _error, arg) => [{ type: 'Workspace' as const, id: `ALL-${arg.id}` }],
+    }),
+    getFilePathsByDir: builder.query<string[], { id: string; query: DirQuery }>({
+      query: ({ id, query }) => ({
+        command: "get_file_paths_by_dir",
+        url: `/v1/workspaces/${id}/files/dir?path=${encodeURIComponent(query.path)}&recursive=${query.recursive}${query.limit ? `&limit=${query.limit}` : ""}`,
+        method: "GET",
+        tauriArgs: { id, query }, 
+      }),
+    }),
+    readFile: builder.query<string, { id: string; query: ReadFileReq }>({
+      query: ({ id, query }) => ({
+        command: "read_file",
+        url: `/v1/workspaces/${id}/files/read?path=${encodeURIComponent(query.path)}`,
+        method: "GET",
+        tauriArgs: { id, query },
+      }),
+    }),
+    listDirectory: builder.query<ExplorerEntry[], { id: string; query: ReadFileReq }>({
+      query: ({ id, query }) => ({
+        command: "list_directory",
+        url: `/v1/workspaces/${id}/explorer?path=${encodeURIComponent(query.path)}`,
+        method: "GET",
+        tauriArgs: { 
+            id, 
+            query
+        },
+      }),
+      // We tag this with the ID and the path so we can selectively invalidate specific folders if needed
+      providesTags: (_result, _error, { id, query }) => [
+        { type: "Workspace", id: `${id}-dir-${query.path ?? "root"}` }
+      ],
     }),
   }),
 });
+
 export const {
-  useLoadWorkspaceMutation,
+  useCreateWorkspaceMutation,
+  useGetWorkspaceQuery,
+  useListWorkspacesQuery,
+  useUpdateWorkspaceMutation,
+  useTouchWorkspaceMutation,
+  useDeleteWorkspaceMutation,
+  useGetWorkspaceStatusQuery,
+  useLoadGithubAstMutation,
+  useLoadLocalAstMutation,
+  useGetAllFilePathsQuery,
   useLazyGetAllFilePathsQuery,
-  useReadFileContentQuery,
+  useGetFilePathsByDirQuery,
   useLazyGetFilePathsByDirQuery,
-  useGenerateBundleMutation,
+  useReadFileQuery,
+  useLazyReadFileQuery,
+  useListDirectoryQuery,
+  useLazyListDirectoryQuery,
 } = workspaceApi;

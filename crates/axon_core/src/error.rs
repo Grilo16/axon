@@ -1,7 +1,11 @@
 use crate::ids::{DirectoryId, FileId, SymbolId};
 use crate::path::RelativeAxonPath;
 use std::path::PathBuf;
+use axum::Json;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use serde::{Serialize, Serializer};
+use serde_json::json;
 use thiserror::Error;
 use ts_rs::TS;
 
@@ -137,4 +141,38 @@ where
     S: Serializer,
 {
     serializer.serialize_str(&err.to_string())
+}
+
+
+impl IntoResponse for AxonError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            AxonError::NotFound { entity, id } => (
+                StatusCode::NOT_FOUND,
+                format!("{} '{}' not found", entity, id),
+            ),
+            AxonError::InvalidRange { .. } => (
+                StatusCode::BAD_REQUEST,
+                "Invalid text range provided".to_string(),
+            ),
+            AxonError::Backend(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                msg,
+            ),
+            // Map any other core errors here...
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An unexpected internal error occurred".to_string(),
+            ),
+        };
+
+        let body = Json(json!({
+            "error": {
+                "message": error_message,
+                "code": status.as_u16()
+            }
+        }));
+
+        (status, body).into_response()
+    }
 }

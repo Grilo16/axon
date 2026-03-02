@@ -1,0 +1,39 @@
+[package]
+name = "axon-server"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+publish = false 
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+axon_core = { workspace = true }
+
+# Async & Web
+tokio.workspace = true
+axum.workspace = true
+async-trait.workspace = true
+moka.workspace = true
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+chrono.workspace = true
+uuid.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Observability (Replacing the `log` crate for async-aware logging)
+tracing.workspace = true
+tracing-subscriber.workspace = true
+
+# Environment Variables
+dotenvy = "0.15.7"
+
+# Database (Ready for your Postgres integration!)
+sqlx.workspace = true
+
+tempfile.workspace = true
+axum-keycloak-auth = "0.6.0"

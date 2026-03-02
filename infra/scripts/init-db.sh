@@ -1,13 +1,14 @@
 #!/bin/bash
+
+# Exit immediately if a command exits with a non-zero status
 set -e
 
-# This script creates multiple databases for our different services
-# It uses the default POSTGRES_USER to create the isolated DBs
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    CREATE DATABASE keycloak_db;
+# Run SQL commands as the superuser to create our domain databases
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_USER" <<-EOSQL
     CREATE DATABASE axon_db;
-    
-    -- Optional: Create a specific user for the Axon Server
-    CREATE USER axon_user WITH PASSWORD 'axon_pass';
-    GRANT ALL PRIVILEGES ON DATABASE axon_db TO axon_user;
+    CREATE DATABASE keycloak_db;
+    GRANT ALL PRIVILEGES ON DATABASE axon_db TO admin;
+    GRANT ALL PRIVILEGES ON DATABASE keycloak_db TO admin;
 EOSQL
+
+echo "✅ Databases axon_db and keycloak_db created successfully!"

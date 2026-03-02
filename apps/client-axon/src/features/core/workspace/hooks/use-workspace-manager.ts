@@ -1,93 +1,90 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAppDispatch, useAppSelector } from '@app/hooks';
-import { 
-  selectAllWorkspaces, 
-  createWorkspace, 
-  deleteWorkspace, 
-  setActiveWorkspace,
-  selectActiveWorkspace,
-} from '../workspace-slice';
-import { useLoadWorkspaceMutation } from '../api/workspace-api';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
-/**
- * Global Workspace Manager
- * Handles the lifecycle of projects: Creating, Opening, Booting Rust, and Deleting.
- */
+import { setActiveWorkspaceId, selectActiveWorkspaceId } from '../workspace-slice';
+import { useListWorkspacesQuery } from '../api/workspace-api'; 
+import { useWorkspaceActions } from './use-workspace-actions';
+
+const isTauri = "__TAURI_INTERNALS__" in window;
+
 export const useWorkspaceManager = () => {
   const dispatch = useAppDispatch();
-  
-  // State
-  const workspaces = useAppSelector(selectAllWorkspaces);
-  const activeWorkspace = useAppSelector(selectActiveWorkspace);
-  const isActive = !!activeWorkspace;
+  const activeId = useAppSelector(selectActiveWorkspaceId);
 
-  const [triggerLoad, { isLoading: isBooting }] = useLoadWorkspaceMutation();
+  // 1. GET DATA: Subscribed to the workspace list
+  const { data: workspaces = [], isLoading: isFetching } = useListWorkspacesQuery({});
 
+  // 2. ACTIONS: Grab our wrapped factory handles
+  const { 
+    createWorkspace, 
+    deleteWorkspace, 
+    touchWorkspace, 
+    loadLocalAst, 
+    loadGithubAst 
+  } = useWorkspaceActions();
+
+  const engine = isTauri ? loadLocalAst : loadGithubAst;
+
+  const activeWorkspace = useMemo(() => 
+    workspaces.find(ws => ws.id === activeId), 
+    [workspaces, activeId]
+  );
 
   /**
-   * Creates a new workspace entry.
-   * (Note: The bundles-slice automatically intercepts this to create a Main Bundle!)
-   */
-  const create = useCallback((name: string, root: string) => {
-    dispatch(createWorkspace(name, root));
-  }, [dispatch]);
-
-  /**
-   * Boots up the Rust backend engine for the given workspace ID.
+   * OPEN / SWITCH: 
+   * Updates Redux, touches the 'lastOpened' timestamp in DB, and boots AST into RAM.
    */
   const open = useCallback(async (id: string) => {
-    const targetWorkspace = workspaces.find(ws => ws.id === id);
-    if (!targetWorkspace) return;
-
-    try {
-      // 1. Tell Rust to parse the ASTs and load into RAM
-      await triggerLoad({ path: targetWorkspace.projectRoot }).unwrap();
-      
-      // 2. Tell React we are officially inside the workspace
-      dispatch(setActiveWorkspace(id));
-      
-    } catch (error) {
-      console.error("Failed to boot workspace:", error);
-    }
-  }, [dispatch, workspaces, triggerLoad]);
+    dispatch(setActiveWorkspaceId(id));
+    touchWorkspace.handle(id); 
+    await engine.handle(id);
+  }, [dispatch, touchWorkspace, engine]);
 
   /**
-   * Deletes a workspace from the library.
+   * CREATE:
+   * Stashes in DB, then automatically triggers the 'open' flow for the new workspace.
    */
-  const remove = useCallback((id: string) => {
-    dispatch(deleteWorkspace(id));
-  }, [dispatch]);
+  const create = useCallback(async (name: string, root: string) => {
+    const newWs = await createWorkspace.handle({ name, projectRoot: root });
+    await open(newWs.id);
+  }, [createWorkspace, open]);
 
-
-  const triggerPickAndCreate = useCallback(async () => {
-    try {
-      const selectedPath = await openDialog({
-        directory: true,
-        multiple: false,
-        title: "Select Project Root for Axon",
-      });
-
-      if (selectedPath && typeof selectedPath === "string") {
-        const finalName = selectedPath.split(/[/\\]/).pop() || "Untitled Project";
-        create(finalName, selectedPath);
-        // We can automatically open it right after creating!
-        const newWs = workspaces.find(w => w.projectRoot === selectedPath);
-        if (newWs) {
-          open(newWs.id)
-        }
-      }
-    } catch (err) {
-      console.error("Failed to pick directory:", err);
+  /**
+   * REMOVE:
+   * Deletes from DB and clears active selection if it was the one deleted.
+   */
+  const remove = useCallback(async (id: string) => {
+    await deleteWorkspace.handle(id);
+    if (activeId === id) {
+      dispatch(setActiveWorkspaceId(null));
     }
-  }, [create, workspaces]);
+  }, [deleteWorkspace, activeId, dispatch]);
+
+  /**
+   * TAURI DIRECTORY PICKER:
+   * Native OS dialog -> Create -> Open.
+   */
+  const triggerPickAndCreate = useCallback(async () => {
+    const selectedPath = await openDialog({ directory: true, multiple: false });
+    if (selectedPath && typeof selectedPath === "string") {
+      const finalName = selectedPath.split(/[/\\]/).pop() || "Untitled Project";
+      await create(finalName, selectedPath);
+    }
+  }, [create]);
+
   return { 
+    // Data & Status
     workspaces, 
-    activeWorkspace,
-    isActive, 
-    isBooting,
+    activeWorkspace, 
+    activeId,
+    isActive: !!activeWorkspace, 
+    isBooting: engine.isLoading || isFetching,
+    isCreating: createWorkspace.isLoading,
+    
+    // Operations
     create, 
     open, 
-    remove,
-    triggerPickAndCreate, 
+    remove, 
+    triggerPickAndCreate 
   };
 };

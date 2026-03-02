@@ -1,22 +1,28 @@
 import { useCallback } from "react";
 import { useHistory } from "@shared/hooks/useHistory";
-import {
-  useListDirectoryQuery,
-  useLazyListDirectoryQuery,
-} from "../api/explorer-api";
 import { useWorkspaceSession } from "@features/core/workspace";
+import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
+import { useWorkspaceActions } from "@features/core/workspace/hooks/use-workspace-actions";
+import {  } from "@features/core/workspace/api/workspace-api";
+import { useListDirectoryQuery } from "@features/core/workspace/api/workspace-api";
 
 export const useExplorer = () => {
+  const { activeId } = useWorkspaceManager();
   const history = useHistory<string>("");
   const currentPath = history.state;
   const { clearAllSelections } = useWorkspaceSession();
+  const { lazyListDir } = useWorkspaceActions();
 
   const {
     data: entries = [],
     isLoading,
     error,
-  } = useListDirectoryQuery({ path: currentPath });
-  const [triggerLazyFetch] = useLazyListDirectoryQuery();
+  } = useListDirectoryQuery({
+      id: activeId!,
+      query:{path: currentPath}
+    },{ skip: !activeId },
+  );
+
 
   const navigateTo = useCallback(
     (path: string) => {
@@ -28,9 +34,13 @@ export const useExplorer = () => {
 
   const fetchDir = useCallback(
     async (path: string) => {
-      return await triggerLazyFetch({ path }).unwrap();
+      if (!activeId) return undefined;
+      return await lazyListDir.handle({
+        id: activeId,
+        query: {path},
+      });
     },
-    [triggerLazyFetch],
+    [lazyListDir.handle, activeId],
   );
 
   const goBack = useCallback(() => {

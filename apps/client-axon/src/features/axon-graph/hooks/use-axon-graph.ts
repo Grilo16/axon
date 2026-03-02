@@ -1,20 +1,21 @@
 import { useMemo } from "react";
 import type { FocusNodeActions } from "../types";
-import { useGetFocusedGraphQuery } from "../api/graph-api";
 
+// ✨ IMPORT FROM THE NEW BUNDLES API
 import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
+import { useGetBundleGraphQuery } from "@features/core/bundles/api/bundles-api";
 
 export function useAxonGraph() {
-  const { activePaths, setPaths } = useBundleSession()
+  const { activeBundle, activePaths, setPaths } = useBundleSession();
 
   const { 
     data: graphData, 
     error, 
     isLoading, 
     isFetching 
-  } = useGetFocusedGraphQuery(
-    { requestedPaths: activePaths }, 
-    {  } 
+  } = useGetBundleGraphQuery(
+    activeBundle?.id ?? "", 
+    { skip: !activeBundle?.id } 
   );
 
   // 3. Update the actions to mutate the global state

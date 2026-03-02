@@ -7,14 +7,15 @@ import {
   Loader2,
   Plus,
   Check,
-  Minus, // <-- Added for partial state!
+  Minus, 
 } from "lucide-react";
 import type { ExplorerEntry as ExplorerEntryType } from "@shared/types/axon-core/explorer";
 import * as S from "../styles";
 import type { ExplorerOptions } from "../types";
-import { useLazyGetFilePathsByDirQuery } from "@features/core/workspace/api/workspace-api";
 import { useNodeSession, useWorkspaceSession } from "@features/core/workspace";
 import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
+import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
+import { useWorkspaceActions } from "@features/core/workspace/hooks/use-workspace-actions";
 
 interface Props {
   entry: ExplorerEntryType;
@@ -36,18 +37,20 @@ export const ExplorerEntry = memo((props: Props) => {
 
   // --- 2. Global Session & Backend Hooks ---
   const { hoverRelationship, isSelected } = useNodeSession(path);
+  const { activeId } = useWorkspaceManager();
   const { toggleSelection, setHovered } = useWorkspaceSession();
   const { activePaths, setPaths, toggleTarget } = useBundleSession();
-  const [triggerGetDirPaths, { isFetching }] = useLazyGetFilePathsByDirQuery();
-
-  const isFocused = hoverRelationship === "exact" || (hoverRelationship === "child-hovered" && !isOpen);
+  const {handle, isFetching} = useWorkspaceActions().lazyFilePathsByDir
+  const isFocused =
+    hoverRelationship === "exact" ||
+    (hoverRelationship === "child-hovered" && !isOpen);
 
   // --- 3. Derived Sync State ---
   const inGraph = !isFolder && activePaths.includes(path);
-  
+
   // Magic Check: Does this folder have ANY files currently in the graph?
-  const folderActiveFilesCount = isFolder 
-    ? activePaths.filter((p) => p.startsWith(path + '/')).length 
+  const folderActiveFilesCount = isFolder
+    ? activePaths.filter((p) => p.startsWith(path + "/")).length
     : 0;
   const hasFilesInGraph = folderActiveFilesCount > 0;
 
@@ -56,12 +59,12 @@ export const ExplorerEntry = memo((props: Props) => {
   const handleToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isFolder) return;
-    
+
     if (options.cascade === false) {
       onNavigate(path);
       return;
     }
-    
+
     if (!isOpen && children.length === 0) {
       setLoading(true);
       const result = await onFolderExpand(path);
@@ -80,7 +83,7 @@ export const ExplorerEntry = memo((props: Props) => {
   };
 
   const handleToggleFileGraph = (e: React.MouseEvent) => {
-   e.stopPropagation();
+    e.stopPropagation();
     toggleTarget(path);
   };
 
@@ -89,37 +92,40 @@ export const ExplorerEntry = memo((props: Props) => {
     if (!isFolder) return;
 
     try {
-      const folderFiles = await triggerGetDirPaths({
-        path: entry.data.path,
-        recursive: true,
-      }).unwrap();
+      const folderFiles = await handle({
+        id: activeId!,
+        query: {
+          limit: 100,
+          path: path,
+          recursive: true,
+        },
+      });
 
       if (!folderFiles || folderFiles.length === 0) return;
 
       const allInGraph = folderFiles.every((f) => activePaths.includes(f));
 
-     if (allInGraph) {
+      if (allInGraph) {
         const nextPaths = activePaths.filter((p) => !folderFiles.includes(p));
-        setPaths(nextPaths); 
+        setPaths(nextPaths);
       } else {
         const nextPaths = Array.from(new Set([...activePaths, ...folderFiles]));
-        setPaths(nextPaths); 
+        setPaths(nextPaths);
       }
     } catch (err) {
       console.error("Failed to toggle folder files", err);
     }
   };
 
-  // --- 5. Render ---
   return (
     <S.TreeItem>
       <S.ItemRow
         $depth={depth}
         $isSelected={isSelected}
-        $isFocused={isFocused} 
+        $isFocused={isFocused}
         onClick={(e) => {
           if (!isFolder) handleSelect(e);
-          if (isFolder) handleToggle(e); 
+          if (isFolder) handleToggle(e);
         }}
         onMouseEnter={() => setHovered(path)}
         onMouseLeave={() => setHovered(null)}
@@ -168,9 +174,13 @@ export const ExplorerEntry = memo((props: Props) => {
           <S.GraphToggleBtn
             className="graph-toggle-btn"
             // If the folder has files in the graph, we keep the button highlighted and visible!
-            $inGraph={hasFilesInGraph} 
+            $inGraph={hasFilesInGraph}
             onClick={handleToggleFolderGraph}
-            title={hasFilesInGraph ? "Sync folder with Graph (Add missing / Remove all)" : "Add all files to Graph"}
+            title={
+              hasFilesInGraph
+                ? "Sync folder with Graph (Add missing / Remove all)"
+                : "Add all files to Graph"
+            }
             disabled={isFetching}
           >
             {isFetching ? (

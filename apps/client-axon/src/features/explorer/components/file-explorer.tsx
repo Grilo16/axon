@@ -1,31 +1,25 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { FileCode, Plus, Check } from "lucide-react";
 import { ExplorerEntry } from "./explorer-entry";
 import { ExplorerLoader } from "./explorer-layout";
-import { ExplorerSearch } from "./explorer-search"; // ✨ The new search bar
+import { ExplorerSearch } from "./explorer-search"; 
 import * as S from "../styles";
 import { useExplorer } from "../hooks/use-explorer";
-import { useLazyGetAllFilePathsQuery } from "@features/core/workspace/api/workspace-api";
 import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
+import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
+import { useGetAllFilePathsQuery } from "@features/core/workspace/api/workspace-api";
 
 export const FileExplorer: React.FC = () => {
   const { entries, isLoading, fetchDir } = useExplorer();
+  const { activeId} = useWorkspaceManager()
   const { activePaths, setPaths, toggleTarget } = useBundleSession();
-  
+  const {data: allPaths} = useGetAllFilePathsQuery({id: activeId!, query: {limit: 100}}, {skip: !activeId})
   const [searchQuery, setSearchQuery] = useState("");
-  const [triggerGetAll, { data: allPaths }] = useLazyGetAllFilePathsQuery();
-
-  useEffect(() => {
-    if (searchQuery && !allPaths) {
-      triggerGetAll({});
-    }
-  }, [searchQuery, allPaths, triggerGetAll]);
 
   // Fuzzy filter
   const searchResults = useMemo(() => {
     if (!searchQuery || !allPaths) return [];
     const lowerQuery = searchQuery.toLowerCase();
-    // Exclude node_modules or standard noise if you want, and limit to 100 for performance
     return allPaths.filter(p => p.toLowerCase().includes(lowerQuery)).slice(0, 100);
   }, [searchQuery, allPaths]);
 

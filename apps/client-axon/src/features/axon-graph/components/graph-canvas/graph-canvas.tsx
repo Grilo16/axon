@@ -193,10 +193,7 @@ export const GraphCanvas: React.FC<Props> = ({
               <BundleCenterer activeBundleId={activeBundle?.id} />
               <ZoomSizeResetter />
               <GraphToolbar
-                isLayouting={isLayouting}
-                onRelayout={() => {
-                  applyLayout(nodes, edges, true);
-                }}
+               
               />
               <Background
                 variant={BackgroundVariant.Dots}

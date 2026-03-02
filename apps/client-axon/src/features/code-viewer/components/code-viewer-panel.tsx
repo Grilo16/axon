@@ -5,8 +5,9 @@ import { toast } from 'sonner';
 
 import * as S from './styles';
 import { useWorkspaceSession } from '@features/core/workspace';
-import { useReadFileContentQuery } from '@features/core/workspace/api/workspace-api';
-import { useBundleSession } from '@features/core/bundles/hooks/use-bundle-session'; // ✨ Bring this in!
+import { useBundleSession } from '@features/core/bundles/hooks/use-bundle-session'; 
+import { useReadFileQuery } from '@features/core/workspace/api/workspace-api';
+import { useWorkspaceManager } from '@features/core/workspace/hooks/use-workspace-manager';
 
 const getLanguageFromPath = (path: string) => {
   if (path.endsWith('.ts') || path.endsWith('.tsx')) return 'typescript';
@@ -20,14 +21,15 @@ const getLanguageFromPath = (path: string) => {
 };
 
 export const CodeViewerPanel = () => {
-  const { viewedFilePath, viewedBundleContent, closeViewer } = useWorkspaceSession();
+  const {activeId} = useWorkspaceManager()
+  const {  viewedFilePath, viewedBundleContent, closeViewer } = useWorkspaceSession();
   const { activeBundle } = useBundleSession(); // Grab the active bundle for the filename!
   
   const isBundle = !!viewedBundleContent;
 
-  const { data: fileContent, isLoading, isFetching } = useReadFileContentQuery(
-    { path: viewedFilePath || '' },
-    { skip: !viewedFilePath || isBundle }
+  const { data: fileContent, isLoading, isFetching } = useReadFileQuery(
+    { id: activeId!, query: {path: viewedFilePath!} },
+    { skip: !activeId || !viewedFilePath || isBundle }
   );
 
   const language = useMemo(() => {

@@ -1,17 +1,22 @@
 import React, { useState } from "react";
-import { FolderOpen, Plus, Clock, Trash2, ArrowLeft, ChevronRight, X } from "lucide-react";
+import { FolderOpen, Plus, Clock, Trash2, ArrowLeft, ChevronRight, X, Github } from "lucide-react";
 import * as S from "./workspace-loader.styles";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useWorkspaceManager } from "../hooks/use-workspace-manager";
 
 interface Props {
-  onClose?: () => void; // ✨ Make it act as a closeable modal!
+  onClose?: () => void;
 }
+
+const isTauri = '__TAURI_INTERNALS__' in window;
 
 export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
   const { workspaces, create, open: openWorkspace, remove } = useWorkspaceManager();
   const [mode, setMode] = useState<"list" | "create">(workspaces.length > 0 ? "list" : "create");
+  
+  // Form State
   const [newName, setNewName] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
 
   const sortedWorkspaces = [...workspaces].sort(
     (a, b) => new Date(b.lastOpened).getTime() - new Date(a.lastOpened).getTime()
@@ -19,26 +24,40 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const selectedPath = await open({
-        directory: true,
-        multiple: false,
-        title: "Select Project Root for Axon",
-      });
 
-      if (selectedPath && typeof selectedPath === "string") {
-        const finalName = newName.trim() || selectedPath.split(/[/\\]/).pop() || "Untitled Project";
-        create(finalName, selectedPath);
-        onClose?.(); // Close modal after creating
+    if (isTauri) {
+      // --- DESKTOP LOGIC (Tauri) ---
+      try {
+        const selectedPath = await open({
+          directory: true,
+          multiple: false,
+          title: "Select Project Root for Axon",
+        });
+
+        if (selectedPath && typeof selectedPath === "string") {
+          const finalName = newName.trim() || selectedPath.split(/[/\\]/).pop() || "Untitled Project";
+          create(finalName, selectedPath); // projectRoot becomes the local path
+          onClose?.();
+        }
+      } catch (err) {
+        console.error("Failed to pick directory:", err);
       }
-    } catch (err) {
-      console.error("Failed to pick directory:", err);
+    } else {
+      // --- WEB LOGIC (Axum/GitHub) ---
+      if (!githubUrl.trim()) return;
+      
+      const urlParts = githubUrl.trim().split('/');
+      const repoName = urlParts.pop() || "GitHub Repository";
+      const finalName = newName.trim() || repoName;
+      
+      create(finalName, githubUrl.trim()); // projectRoot becomes the GitHub URL
+      onClose?.();
     }
   };
 
   const handleOpenWorkspace = (id: string) => {
     openWorkspace(id);
-    onClose?.(); // Close modal after opening
+    onClose?.();
   };
 
   return (
@@ -55,7 +74,6 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
                 <ArrowLeft size={16} /> Back
               </S.ButtonGhost>
             )}
-            {/* ✨ The Close Button */}
             {onClose && (
               <S.ButtonGhost type="button" onClick={onClose}>
                 <X size={18} />
@@ -68,6 +86,7 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
           {mode === "list" && (
             <>
               <S.List>
+                {/* ... existing List render logic ... */}
                 {sortedWorkspaces.map((ws) => (
                   <S.Row key={ws.id} onClick={() => handleOpenWorkspace(ws.id)}>
                     <S.RowIcon><FolderOpen size={16} /></S.RowIcon>
@@ -75,14 +94,13 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
                       <S.RowName>{ws.name}</S.RowName>
                       <S.RowPath>{ws.projectRoot}</S.RowPath>
                     </S.RowInfo>
-                    <S.DeleteButton onClick={(e) => { e.stopPropagation(); remove(ws.id); }} title="Remove from history">
+                    <S.DeleteButton onClick={(e) => { e.stopPropagation(); remove(ws.id); }}>
                       <Trash2 size={16} />
                     </S.DeleteButton>
                     <ChevronRight size={16} className="text-gray-600" />
                   </S.Row>
                 ))}
               </S.List>
-              
               <div style={{ marginTop: "24px", paddingTop: "24px", borderTop: "1px solid #2b2b2b" }}>
                 <S.ButtonMain onClick={() => setMode("create")}>
                   <Plus size={18} /> New Workspace
@@ -92,14 +110,41 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
           )}
 
           {mode === "create" && (
-            <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", flex: 1, gap: "16px" }}>
               <S.InputGroup>
-                <S.Label>Workspace Name</S.Label>
-                <S.Input autoFocus type="text" placeholder="e.g. Frontend Architecture" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                <S.Label>Workspace Name (Optional)</S.Label>
+                <S.Input 
+                  autoFocus 
+                  type="text" 
+                  placeholder="e.g. Frontend Architecture" 
+                  value={newName} 
+                  onChange={(e) => setNewName(e.target.value)} 
+                />
               </S.InputGroup>
-              <S.HelperText>Clicking continue will open your native file browser. Select the root folder of your project.</S.HelperText>
+
+              {/* ✨ CONDITIONAL RENDERING MAGIC ✨ */}
+              {!isTauri && (
+                <S.InputGroup>
+                  <S.Label>GitHub Repository URL</S.Label>
+                  <S.Input 
+                    type="url" 
+                    required 
+                    placeholder="https://github.com/facebook/react" 
+                    value={githubUrl} 
+                    onChange={(e) => setGithubUrl(e.target.value)} 
+                  />
+                </S.InputGroup>
+              )}
+
+              <S.HelperText>
+                {isTauri 
+                  ? "Clicking continue will open your native file browser to select a project folder." 
+                  : "We will clone this repository into a secure, temporary environment for analysis."}
+              </S.HelperText>
+
               <S.ButtonMain type="submit">
-                <FolderOpen size={18} /> Choose Directory...
+                {isTauri ? <FolderOpen size={18} /> : <Github size={18} />}
+                {isTauri ? " Choose Directory..." : " Clone Repository"}
               </S.ButtonMain>
             </form>
           )}

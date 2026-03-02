@@ -1,8 +1,7 @@
 import styled from "styled-components";
 import { X, Play, HardDrive } from "lucide-react";
 import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
-import { useAppSelector } from "@app/hooks";
-import { selectAllBundles } from "@features/core/bundles/bundles-slice";
+import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
 
 const Overlay = styled.div`
   position: fixed; inset: 0; z-index: 100;
@@ -35,8 +34,7 @@ const WorkspaceCard = styled.div`
 
 export const LibraryHubModal = ({ onClose }: { onClose: () => void }) => {
   const { workspaces, activeWorkspace, open } = useWorkspaceManager();
-  const allBundles = useAppSelector(selectAllBundles); // Grab all bundles across all workspaces!
-
+  const {allBundles} = useBundleSession()
   return (
     <Overlay onClick={onClose}>
       <ModalCard onClick={(e) => e.stopPropagation()}>

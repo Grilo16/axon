@@ -1,32 +1,97 @@
+# --------------------------------- Service Anchors --------------------------------------
+x-env-core: &env-core
+  TZ: ${TZ:-UTC}
+  RUST_LOG: ${RUST_LOG}
+  MODE: ${MODE}
+
+x-env-postgres: &env-postgres
+  POSTGRES_USER: ${POSTGRES_USE}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB}
+
+x-env-keycloak: &env-keycloak
+  KC_DB: postgres
+  KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+  KC_DB_USERNAME: ${POSTGRES_USER}
+  KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+  KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER}
+  KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+
+x-env-axon-server: &env-axon-server
+  PORT: ${AXON_PORT}
+  DATABASE_URL: ${DATABASE_URL}
+  KEYCLOAK_URL: ${KEYCLOAK_URL}
+  ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+  GITHUB_PAT: ${GITHUB_PAT}
+
+x-service-template: &service-template
+  restart: unless-stopped
+  networks:
+    - axon-network
+
+# ----------------------------- Services -------------------------------
 services:
   postgres:
+    <<: *service-template
     image: postgres:16-alpine
-    container_name: axon-db-server
+    container_name: axon-postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: postgres 
+      <<: *env-postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ../scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     ports:
-      - "5432:5432"
+      - "5432:5432" 
 
   keycloak:
+    <<: *service-template
     image: quay.io/keycloak/keycloak:latest
-    container_name: axon-auth
-    command: start-dev
+    container_name: axon-keycloak
+    command: start-dev 
     environment:
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_db
-      KC_DB_USERNAME: admin
-      KC_DB_PASSWORD: password
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      <<: *env-keycloak
     ports:
       - "8080:8080"
     depends_on:
       - postgres
 
+  axon-server:
+    <<: *service-template
+    container_name: axon-server
+    build:
+      context: ..
+      dockerfile: ./apps/axon-server/Dockerfile
+    environment:
+      <<: 
+        - *env-core
+        - *env-axon-server
+    ports:
+      - "${AXON_PORT}:${AXON_PORT}"
+    depends_on:
+      - postgres
+      - keycloak
+
+  caddy:
+    image: caddy:latest
+    container_name: axon-proxy
+    <<: *service-template
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - axon-server
+      - keycloak
+
+# ----------------------------- Top-Level Config -------------------------------
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  axon-network:
+    driver: bridge

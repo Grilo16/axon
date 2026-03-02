@@ -1,0 +1,1 @@
+ALTER TABLE workspaces ADD COLUMN owner_id VARCHAR(255) NOT NULL DEFAULT 'unassigned';
