@@ -8,6 +8,10 @@ on:
       - 'apps/axon-server/**'
       - 'infra/**'
       - '.github/workflows/**'
+      
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   changes:
