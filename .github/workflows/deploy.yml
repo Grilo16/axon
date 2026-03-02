@@ -35,7 +35,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./frontend/Dockerfile
+          file: ./apps/client-axon/Dockerfile
           push: true
           tags: ghcr.io/${{ env.REPO_LOWER }}/axon-frontend:latest
 
