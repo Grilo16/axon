@@ -22,11 +22,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Build and Push Axon Frontend
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./apps/client-axon
           file: ./apps/client-axon/Dockerfile
           push: true
           tags: ghcr.io/${{ env.REPO_LOWER }}/client-axon:latest
