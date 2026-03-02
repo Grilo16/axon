@@ -3,9 +3,8 @@ import ReactDOM from "react-dom/client";
 import { AuthProvider, useAuth } from "react-oidc-context";
 import { Provider } from "react-redux";
 import App from "./App";
-import { store } from "@app/store";
-// persistor, 
-// import { PersistGate } from "redux-persist/integration/react";
+import { persistor, store } from "@app/store";
+import { PersistGate } from "redux-persist/integration/react";
 
 // 1. Detect if we are running inside Tauri
 const isTauri = "__TAURI_INTERNALS__" in window;
@@ -52,7 +51,7 @@ const WebAuthWrapper = ({ children }: { children: React.ReactNode }) => {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Provider store={store}>
-      {/* <PersistGate loading={null} persistor={persistor}> */}
+      <PersistGate loading={null} persistor={persistor}>
         {isTauri ? (
           <App />
         ) : (
@@ -62,7 +61,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             </WebAuthWrapper>
           </AuthProvider>
         )}
-      {/* </PersistGate> */}
+      </PersistGate>
     </Provider>
   </React.StrictMode>
 );

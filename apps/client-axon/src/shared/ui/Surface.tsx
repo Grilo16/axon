@@ -9,7 +9,7 @@ interface SurfaceProps {
 
 export const Surface = styled.div<SurfaceProps>`
   background-color: ${({ theme, $variant = "surface" }) =>
-    theme.colors.bg[$variant]};
+    theme.colors.bg?.[$variant]};
   padding: ${({ theme, $padding = 2 }) => theme.spacing($padding)};
   border-radius: ${({ theme, $radius = "md" }) =>
     $radius === "none" ? "0" : theme.borderRadius[$radius]};
