@@ -22,6 +22,15 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and Push Axon Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./apps/client-axon/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/client-axon:latest
+ 
 
       - name: Build and Push Axon Server
         uses: docker/build-push-action@v5
@@ -31,14 +40,7 @@ jobs:
           push: true
           tags: ghcr.io/${{ env.REPO_LOWER }}/axon-server:latest
 
-      - name: Build and Push Axon Frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./apps/client-axon/Dockerfile
-          push: true
-          tags: ghcr.io/${{ env.REPO_LOWER }}/client-axon:latest
-
+  
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
