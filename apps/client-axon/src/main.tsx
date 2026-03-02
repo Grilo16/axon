@@ -12,9 +12,9 @@ const isTauri = "__TAURI_INTERNALS__" in window;
 // 2. Configure Keycloak
 // NOTE: "Axon" must have a capital A, and client_id must match perfectly!
 const oidcConfig = {
-  authority: "http://localhost:8080/realms/axon",
+  authority: "https://auth.tom-britton.com/realms/axon",
   client_id: "axon-client",
-  redirect_uri: "http://localhost:5173",
+  redirect_uri: "http://localhost:5173/",
   scope: "openid profile email",
 };
 

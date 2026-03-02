@@ -31,6 +31,14 @@ jobs:
           push: true
           tags: ghcr.io/${{ env.REPO_LOWER }}/axon-server:latest
 
+      - name: Build and Push Axon Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/axon-frontend:latest
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -44,5 +52,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
             cd /root/axon-project
-            docker compose pull
+            # Pull the specific new images
+            docker compose -f ./infra/docker-compose.prod.yaml pull
+            # Apply changes
             docker compose -f ./infra/docker-compose.prod.yaml up -d --remove-orphans

@@ -86,4 +86,12 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
+// docker compose -f /root/axon-project/infra/docker-compose.prod.yaml logs -f
+// docker compose -f /root/axon-project/infra/docker-compose.prod.yaml down
+// docker compose -f /root/axon-project/infra/docker-compose.prod.yaml up -d 
+
+// nano /root/axon-project/infra/docker-compose.prod.yaml
+// nano /root/axon-project/infra/Caddyfile
+// nano /root/axon-project/infra/.env
+
 
