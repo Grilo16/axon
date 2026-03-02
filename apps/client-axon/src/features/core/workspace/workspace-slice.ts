@@ -1,7 +1,16 @@
+import type { RootState } from "@app/state-types";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { type RootState } from "@app/store";
 
-const initialState = {
+// workspace-slice.ts
+export interface WorkspacesState {
+  activeId: string | null;
+  selectedPaths: string[];
+  hoveredPath: string | null;
+  viewedFilePath: string | null;
+  viewedBundleContent: string | null;
+}
+
+const initialState : WorkspacesState = {
   activeId: null as string | null,
   selectedPaths: [] as string[],
   hoveredPath: null as string | null,

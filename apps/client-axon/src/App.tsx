@@ -1,11 +1,12 @@
 import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
-import { AxonThemeProvider } from "@features/core/theme";
+// import { AxonThemeProvider } from "@features/core/theme";
 import { AppRoutes } from "@app/AppRoutes";
 
 function App() {
   return (
-    <AxonThemeProvider>
+    // <AxonThemeProvider>
+    <>
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>
@@ -15,9 +16,10 @@ function App() {
         toastOptions={{
           style: { background: '#1e1e1e', border: '1px solid #333', color: '#fff' }
         }} 
-      />
-    </AxonThemeProvider>
+        />
+        </>
   );
 }
 
 export default App;
+{/* </AxonThemeProvider> */}

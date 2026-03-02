@@ -1,5 +1,11 @@
+import type { RootState } from '@app/state-types';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '@app/store';
+
+
+// bundles-slice.ts
+export interface BundlesState {
+  activeBundleByWorkspace: Record<string, string>;
+}
 
 const initialState = {
   // Dictionary to remember which bundle was last active per workspace

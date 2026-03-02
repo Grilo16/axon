@@ -1,9 +1,9 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { type RootState } from '@app/store';
 import { darkTheme, lightTheme } from './themes';
 import type { AxonTheme } from './types';
+import type { RootState } from '@app/state-types';
 
-interface ThemeState {
+export interface ThemeState {
   mode: 'light' | 'dark';
 }
 
