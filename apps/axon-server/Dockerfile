@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/li
 COPY Cargo.toml Cargo.lock ./
 COPY crates/axon_core/Cargo.toml ./crates/axon_core/
 COPY apps/axon-server/Cargo.toml ./apps/axon-server/
-COPY apps/axon-server/.env ./apps/axon-server/
 
 
 # Dummy build to cache dependencies (Optional but pro move)
