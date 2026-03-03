@@ -1,0 +1,10 @@
+include:
+  - services/postgres.yml
+  - services/keycloak.yml
+
+networks:
+  axon-dev-network:
+    driver: bridge
+
+volumes:
+  postgres_dev_data:

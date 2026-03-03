@@ -111,7 +111,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
-            cd /root/axon-project
+            cd /root/axon-project/infra/prod
             # Docker pull only fetches images that actually updated
-            docker compose -f ./infra/docker-compose.prod.yaml pull
-            docker compose -f ./infra/docker-compose.prod.yaml up -d --remove-orphans
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f

@@ -1,0 +1,41 @@
+axon.tom-britton.com {
+    reverse_proxy client-axon:80
+}
+
+axon-api.tom-britton.com {
+    header {
+        Access-Control-Allow-Origin "https://axon.tom-britton.com"
+        Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization"
+        Access-Control-Allow-Credentials "true"
+        defer
+    }
+
+    @cors_preflight method OPTIONS
+    handle @cors_preflight {
+        respond "" 204
+    }
+
+    reverse_proxy axon-server:3000
+}
+
+auth.tom-britton.com {
+    header {
+        Access-Control-Allow-Origin "https://axon.tom-britton.com"
+        Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Content-Type, Authorization"
+        Access-Control-Allow-Credentials "true"
+        defer
+    }
+
+    @cors_preflight method OPTIONS
+    handle @cors_preflight {
+        respond "" 204
+    }
+
+    reverse_proxy axon-keycloak:8080 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+}

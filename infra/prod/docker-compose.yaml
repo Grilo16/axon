@@ -1,0 +1,15 @@
+include:
+  - services/postgres.yml
+  - services/keycloak.yml
+  - services/axon-server.yml
+  - services/client-axon.yml
+  - services/caddy.yml
+
+networks:
+  axon-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

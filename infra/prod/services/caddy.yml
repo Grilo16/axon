@@ -1,0 +1,19 @@
+services:
+  caddy:
+    image: caddy:2.7-alpine
+    container_name: axon-proxy
+    restart: unless-stopped
+    networks:
+      - axon-network
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      axon-server:
+        condition: service_started
+      client-axon:
+        condition: service_started

@@ -1,11 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { type BaseQueryFn } from "@reduxjs/toolkit/query/react";
 import type { AxonError } from "@shared/types/axon-core/error";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL;
-const AUTH_URL = import.meta.env.VITE_AUTH_URL;
-const REALM = import.meta.env.VITE_AUTH_REALM;
-const CLIENT_ID = import.meta.env.VITE_AUTH_CLIENT_ID;
+import { API_BASE_URL, AUTH_URL, KC_CLIENT_ID, IS_TAURI, REALM } from "@app/constants";
 
 export type AxonQueryArgs = {
   command: string;
@@ -20,9 +16,7 @@ export const dualBaseQuery: BaseQueryFn<
   unknown,
   AxonError
 > = async ({ command, url, method = "GET", body, tauriArgs }) => {
-  const isTauri = "__TAURI_INTERNALS__" in window;
-
-  if (isTauri) {
+  if (IS_TAURI) {
     // === 🖥️ TAURI EXECUTOR ===
     try {
       const result = await invoke(command, tauriArgs || body || {});
@@ -38,7 +32,7 @@ export const dualBaseQuery: BaseQueryFn<
         headers: { "Content-Type": "application/json" },
       };
 
-      const oidcStorageKey = `oidc.user:${AUTH_URL}/realms/${REALM}:${CLIENT_ID}`;
+      const oidcStorageKey = `oidc.user:${AUTH_URL}/realms/${REALM}:${KC_CLIENT_ID}`;
       const oidcStorage = sessionStorage.getItem(oidcStorageKey);
 
       if (oidcStorage) {
@@ -53,7 +47,7 @@ export const dualBaseQuery: BaseQueryFn<
         options.body = JSON.stringify(body);
       }
 
-      const response = await fetch(`${API_BASE_URL}${url}`, options);
+      const response = await fetch(`${API_BASE_URL}/api${url}`, options);
 
       if (!response.ok) {
         const errorData = await response.json();

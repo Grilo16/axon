@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+# Use the variables passed from docker-compose
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    CREATE DATABASE $AXON_DB;
+    CREATE DATABASE $KEYCLOAK_DB;
+    GRANT ALL PRIVILEGES ON DATABASE $AXON_DB TO $POSTGRES_USER;
+    GRANT ALL PRIVILEGES ON DATABASE $KEYCLOAK_DB TO $POSTGRES_USER;
+EOSQL
+
+echo "✅ Created databases: $AXON_DB and $KEYCLOAK_DB"

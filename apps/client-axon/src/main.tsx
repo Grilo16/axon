@@ -5,15 +5,11 @@ import { Provider } from "react-redux";
 import App from "./App";
 import { persistor, store } from "@app/store";
 import { PersistGate } from "redux-persist/integration/react";
+import { AUTH_URL, IS_TAURI, KC_CLIENT_ID, REALM } from "@app/constants";
 
-// 1. Detect if we are running inside Tauri
-const isTauri = "__TAURI_INTERNALS__" in window;
-
-// 2. Configure Keycloak
 const oidcConfig = {
-  authority: "https://auth.tom-britton.com/realms/axon",
-  client_id: "axon-client",
-  // This MUST match the domain you are visiting
+  authority: `${AUTH_URL}/realms/${REALM}`,
+  client_id: KC_CLIENT_ID,
   redirect_uri: window.location.origin, 
   scope: "openid profile email",
 };
@@ -52,7 +48,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        {isTauri ? (
+        {IS_TAURI ? (
           <App />
         ) : (
           <AuthProvider {...oidcConfig}>

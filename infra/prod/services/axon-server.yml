@@ -1,0 +1,22 @@
+services:
+ axon-server:
+    image: ghcr.io/grilo16/axon-server:latest 
+    container_name: axon-server
+    restart: unless-stopped
+    networks:
+      - axon-network
+    environment:
+      RUN_MODE: production
+      DATABASE_URL: ${DATABASE_URL}
+      PORT_RUST_API: ${PORT_RUST_API}
+      KEYCLOAK_URL: ${KEYCLOAK_URL}
+      KC_REALM: ${KC_REALM}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 1500M

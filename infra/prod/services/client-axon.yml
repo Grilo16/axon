@@ -1,0 +1,11 @@
+services:
+  client-axon:
+    image: ghcr.io/grilo16/client-axon:latest
+    container_name: client-axon
+    restart: unless-stopped
+    networks:
+      - axon-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M

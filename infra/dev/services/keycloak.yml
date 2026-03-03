@@ -1,0 +1,27 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: axon-keycloak-dev
+    command: 
+      - "start-dev"
+      - "--import-realm"
+      - "--http-enabled=true"
+      - "--hostname-strict=false"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:${PORT_PG_INTERNAL}/${KEYCLOAK_DB}
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KEYCLOAK_IMPORT: /opt/keycloak/data/import/realm.json
+    volumes:
+      - ../keycloak:/opt/keycloak/data/import:ro
+    ports:
+      - "${PORT_KC_EXTERNAL}:${PORT_KC_INTERNAL}"
+    networks:
+      - axon-dev-network
+    depends_on:
+      postgres:
+        condition: service_healthy
