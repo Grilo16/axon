@@ -10,7 +10,7 @@ members = [
 version = "0.1.0"
 authors = ["Thomas Britton"] 
 edition = "2021"
-repository = "https://github.com/your-username/axon" # Placeholder
+repository = "https://github.com/Grilo16/axon"
 license = "MIT" 
 
 [workspace.dependencies]

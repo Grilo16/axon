@@ -18,7 +18,6 @@ impl AppState {
         bundle_repo: Arc<dyn BundleRepository>
     ) -> Self {
         let active_trees = Cache::builder()
-            // Desktop apps don't need 1000 trees in RAM, 10 is plenty!
             .time_to_idle(std::time::Duration::from_secs(30 * 60)) 
             .max_capacity(10)
             .build();
