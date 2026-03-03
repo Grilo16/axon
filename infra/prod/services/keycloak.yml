@@ -27,6 +27,7 @@ services:
       KEYCLOAK_IMPORT: /opt/keycloak/data/import/realm.json
     volumes:
       - ../keycloak:/opt/keycloak/data/import:ro
+      - ../keycloak/themes:/opt/keycloak/themes:ro
     networks:
       - axon-network
     depends_on:
