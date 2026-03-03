@@ -4,7 +4,7 @@ COPY package*.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
 
-ARG VITE_API_URL=https://axon-api.tom-britton.com/api
+ARG VITE_API_URL=https://axon-api.tom-britton.com
 ARG VITE_AUTH_URL=https://auth.tom-britton.com
 ARG VITE_AUTH_REALM=axon
 ARG VITE_AUTH_CLIENT_ID=axon-client
