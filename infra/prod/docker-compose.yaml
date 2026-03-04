@@ -4,12 +4,17 @@ include:
   - services/axon-server.yml
   - services/client-axon.yml
   - services/caddy.yml
+  - services/visibility.yml
 
 networks:
   axon-network:
     driver: bridge
+  caddy_net:
+    external: true
+
 
 volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  portainer_data:

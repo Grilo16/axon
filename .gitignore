@@ -19,3 +19,4 @@ dist/
 # Axon Specific
 .playground
 z_notes
+Caddyfile

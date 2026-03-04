@@ -39,3 +39,21 @@ auth.tom-britton.com {
         header_up X-Forwarded-Proto {scheme}
     }
 }
+
+portainer.tom-britton.com {
+    @blocked not remote_ip YOUR.HOME.IP.ADDRESS
+    respond @blocked "Access Denied. Nice try, bots." 403
+
+    reverse_proxy portainer:9000
+}
+
+netdata.tom-britton.com {
+    @blocked not remote_ip YOUR.HOME.IP.ADDRESS
+    respond @blocked "Access Denied. Nice try, bots." 403
+
+    basicauth {
+        tomadmin $2a$14$DA9OzEScuOkA3t1x.m1KjOuhV/26mfqbWjDwwKhjmJ0VSyBfDel6i
+    }
+    
+    reverse_proxy netdata:19999
+}
