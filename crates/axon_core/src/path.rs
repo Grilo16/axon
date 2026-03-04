@@ -153,6 +153,13 @@ impl fmt::Display for RelativeAxonPath {
     }
 }
 
+impl From<&std::string::String> for RelativeAxonPath {
+    fn from(s: &std::string::String) -> Self {
+        let normalized = s.replace('\\', "/");
+        let cleaned = normalized.trim_start_matches('/').trim_end_matches('/');
+        Self(cleaned.to_string())
+    }
+}
 impl From<&str> for RelativeAxonPath {
     fn from(s: &str) -> Self {
         let normalized = s.replace('\\', "/");

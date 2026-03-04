@@ -6,7 +6,7 @@ use oxc_parser::Parser;
 use oxc_span::SourceType;
 use visitor::SymbolVisitor;
 
-use crate::error::{AxonError, AxonResult};
+use crate::error::{AxonResult};
 use crate::parser::{AxonParser, ParseOutput};
 
 pub struct JsTsParser;
@@ -17,10 +17,10 @@ impl AxonParser for JsTsParser {
         let parser_ret = Parser::new(&allocator, source, source_type).parse();
 
         if !parser_ret.errors.is_empty() {
-            return Err(AxonError::Parse {
-                path: "unknown".into(),
-                message: format!("{:?}", parser_ret.errors),
-            });
+            tracing::warn!(
+                "⚠️ Oxc parser encountered syntax errors, but will attempt to recover. Errors: {:?}", 
+                parser_ret.errors
+            );
         }
 
         let mut visitor = SymbolVisitor::new(source, &parser_ret.trivias);

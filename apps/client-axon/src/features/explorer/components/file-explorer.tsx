@@ -11,12 +11,15 @@ import { useGetAllFilePathsQuery } from "@features/core/workspace/api/workspace-
 
 export const FileExplorer: React.FC = () => {
   const { entries, isLoading, fetchDir } = useExplorer();
-  const { activeId} = useWorkspaceManager()
+  const { activeId, isBooting } = useWorkspaceManager();
   const { activePaths, setPaths, toggleTarget } = useBundleSession();
-  const {data: allPaths} = useGetAllFilePathsQuery({id: activeId!, query: {limit: 100}}, {skip: !activeId})
+  const { data: allPaths } = useGetAllFilePathsQuery(
+    { id: activeId!, query: { limit: 100 } }, 
+    { skip: !activeId }
+  );
+  
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fuzzy filter
   const searchResults = useMemo(() => {
     if (!searchQuery || !allPaths) return [];
     const lowerQuery = searchQuery.toLowerCase();
@@ -29,6 +32,9 @@ export const FileExplorer: React.FC = () => {
     setSearchQuery(""); 
   };
 
+  // ✨ Strict Loading Lock: If booting OR fetching initial load without data, lock the UI.
+  const isExplorerWorking = isBooting || isLoading;
+
   return (
     <S.ExplorerContainer>
       <ExplorerSearch 
@@ -39,7 +45,7 @@ export const FileExplorer: React.FC = () => {
       />
 
       <S.ScrollArea>
-        {isLoading && entries.length === 0 ? (
+        {isExplorerWorking ? (
           <ExplorerLoader />
         ) : searchQuery ? (
           searchResults.map((path) => {

@@ -38,9 +38,12 @@ export const ExplorerEntry = memo((props: Props) => {
   // --- 2. Global Session & Backend Hooks ---
   const { hoverRelationship, isSelected } = useNodeSession(path);
   const { activeId } = useWorkspaceManager();
-  const { toggleSelection, setHovered } = useWorkspaceSession();
+  
+  const { toggleSelection, setHovered, openFileInViewer } = useWorkspaceSession();
+  
   const { activePaths, setPaths, toggleTarget } = useBundleSession();
-  const {handle, isFetching} = useWorkspaceActions().lazyFilePathsByDir
+  const { handle, isFetching } = useWorkspaceActions().lazyFilePathsByDir;
+  
   const isFocused =
     hoverRelationship === "exact" ||
     (hoverRelationship === "child-hovered" && !isOpen);
@@ -48,7 +51,6 @@ export const ExplorerEntry = memo((props: Props) => {
   // --- 3. Derived Sync State ---
   const inGraph = !isFolder && activePaths.includes(path);
 
-  // Magic Check: Does this folder have ANY files currently in the graph?
   const folderActiveFilesCount = isFolder
     ? activePaths.filter((p) => p.startsWith(path + "/")).length
     : 0;
@@ -127,6 +129,10 @@ export const ExplorerEntry = memo((props: Props) => {
           if (!isFolder) handleSelect(e);
           if (isFolder) handleToggle(e);
         }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          if (!isFolder) openFileInViewer(path);
+        }}
         onMouseEnter={() => setHovered(path)}
         onMouseLeave={() => setHovered(null)}
       >
@@ -173,7 +179,6 @@ export const ExplorerEntry = memo((props: Props) => {
         {isFolder ? (
           <S.GraphToggleBtn
             className="graph-toggle-btn"
-            // If the folder has files in the graph, we keep the button highlighted and visible!
             $inGraph={hasFilesInGraph}
             onClick={handleToggleFolderGraph}
             title={
@@ -186,7 +191,7 @@ export const ExplorerEntry = memo((props: Props) => {
             {isFetching ? (
               <Loader2 size={14} className="animate-spin" />
             ) : hasFilesInGraph ? (
-              <Minus size={14} /> // The universal "Partial/Mixed" icon
+              <Minus size={14} /> 
             ) : (
               <Plus size={14} />
             )}

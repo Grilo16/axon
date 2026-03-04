@@ -1,10 +1,15 @@
-import { Package, FileCode, ShieldAlert, Copy, Loader2 } from 'lucide-react';
+import { Package, FileCode, ShieldAlert, Copy, Loader2, EyeOff, Eye } from 'lucide-react';
 import * as S from './bundle-compact.styles';
 import { useBundleSession } from '@features/core/bundles/hooks/use-bundle-session';
 
 export const BundleCompact = () => {
-  // ✨ Grab the execution powers here!
-  const { activeBundle, generateAndCopyBundle, isGenerating } = useBundleSession();
+  const { 
+    activeBundle, 
+    generateAndCopyBundle, 
+    isGenerating, 
+    hideBarrelExports, 
+    toggleHideBarrelExports 
+  } = useBundleSession();
 
   if (!activeBundle) return null;
 
@@ -14,9 +19,27 @@ export const BundleCompact = () => {
 
   return (
     <S.Card>
-      <S.Title>
-        <Package size={16} className="text-blue-400" />
-        {activeBundle.name}
+      <S.Title style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Package size={16} className="text-blue-400" />
+          {activeBundle.name}
+        </div>
+        
+        <button
+          onClick={toggleHideBarrelExports}
+          title={hideBarrelExports ? "Show Index/Barrel Files" : "Hide Index/Barrel Files"}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            padding: '2px',
+            color: hideBarrelExports ? '#60a5fa' : '#6b7280',
+          }}
+        >
+          {hideBarrelExports ? <EyeOff size={14} /> : <Eye size={14} />}
+        </button>
       </S.Title>
       
       <S.StatsRow>

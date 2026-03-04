@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import type { FocusNodeActions } from "../types";
 
-// ✨ IMPORT FROM THE NEW BUNDLES API
 import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
 import { useGetBundleGraphQuery } from "@features/core/bundles/api/bundles-api";
+import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
 
 export function useAxonGraph() {
-  const { activeBundle, activePaths, setPaths } = useBundleSession();
+  // ✨ Grab hideBarrelExports
+  const { activeBundle, activePaths, setPaths, hideBarrelExports } = useBundleSession();
+  const { isBooting } = useWorkspaceManager();
 
   const { 
     data: graphData, 
@@ -14,11 +16,10 @@ export function useAxonGraph() {
     isLoading, 
     isFetching 
   } = useGetBundleGraphQuery(
-    activeBundle?.id ?? "", 
+    { id: activeBundle?.id ?? "", hideBarrelExports }, 
     { skip: !activeBundle?.id } 
   );
 
-  // 3. Update the actions to mutate the global state
   const actions = useMemo<FocusNodeActions>(() => ({
     addFile: (fileId) => {
       if (!activePaths.includes(fileId)) setPaths([...activePaths, fileId]);
@@ -38,7 +39,7 @@ export function useAxonGraph() {
   return {
     activeFiles: activePaths, 
     graphData,
-    isLoading,
+    isLoading: isLoading || isBooting, 
     error,
     isFetching,
     actions,

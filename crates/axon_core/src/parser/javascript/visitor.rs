@@ -229,6 +229,19 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
         walk::walk_import_declaration(self, decl);
     }
 
+// Catches dynamic imports: import('./routes/app/discussions')
+    fn visit_import_expression(&mut self, expr: &ast::ImportExpression<'a>) {
+        if let ast::Expression::StringLiteral(str_lit) = &expr.source {
+            self.imports.push(UnresolvedReference {
+                raw_path: str_lit.value.to_string(),
+                symbols: vec!["*".to_string()], 
+                is_type_only: false,
+            });
+        }
+
+        walk::walk_import_expression(self, expr);
+    }
+
     // Catches: export * from './module';
     fn visit_export_all_declaration(&mut self, decl: &ast::ExportAllDeclaration<'a>) {
         let raw_path = decl.source.value.to_string();

@@ -14,7 +14,14 @@ use axon_core::{
     error::{AxonError, AxonResult}, graph::{AxonGraph, AxonGraphView},
 };
 
+use serde::Deserialize;
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GraphParams {
+    #[serde(default)] 
+    pub hide_barrel_exports: bool,
+}
 
 pub async fn create_bundle(
     State(state): State<AppState>,
@@ -125,28 +132,26 @@ pub async fn delete_bundle(
 pub async fn get_bundle_graph(
     State(state): State<AppState>,
     Path(id): Path<String>, 
+    Query(params): Query<GraphParams>, // 🛠️ Use the struct here
 ) -> AxonResult<Json<AxonGraphView>> {
     info!("📊 Generating focused graph for bundle: {}", id);
 
-    // 1. Fetch Bundle Options from Postgres
     let bundle = state.bundle_repo.get_by_id(&id).await?
         .ok_or_else(|| AxonError::NotFound { entity: "Bundle".into(), id: id.clone() })?;
 
-    // 2. Fetch the corresponding Workspace AST from Moka cache
     let tree = state.active_trees.get(&bundle.workspace_id).await
         .ok_or_else(|| AxonError::Backend(format!("Workspace {} is not loaded in RAM!", bundle.workspace_id)))?;
 
-    // 3. Generate the Graph using the Bundle's target files
     let view = tokio::task::spawn_blocking(move || {
         let graph = AxonGraph::build(&tree);
-        // Extract the target_files directly from the DB record!
         let focus_refs: Vec<&str> = bundle.options.target_files.iter().map(|s| s.as_str()).collect();
-        graph.to_view(&tree, &focus_refs, true)
+        
+        // Use the value from the struct!
+        graph.to_view(&tree, &focus_refs, params.hide_barrel_exports)
     }).await.map_err(|_| AxonError::Backend("Graph builder panicked".into()))?;
 
     Ok(Json(view))
 }
-
 
 #[instrument(skip(state))]
 pub async fn generate_bundle_handler(

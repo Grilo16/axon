@@ -4,8 +4,8 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { setActiveWorkspaceId, selectActiveWorkspaceId } from '../workspace-slice';
 import { useListWorkspacesQuery } from '../api/workspace-api'; 
 import { useWorkspaceActions } from './use-workspace-actions';
+import { IS_TAURI } from '@app/constants';
 
-const isTauri = "__TAURI_INTERNALS__" in window;
 
 export const useWorkspaceManager = () => {
   const dispatch = useAppDispatch();
@@ -23,7 +23,7 @@ export const useWorkspaceManager = () => {
     loadGithubAst 
   } = useWorkspaceActions();
 
-  const engine = isTauri ? loadLocalAst : loadGithubAst;
+  const engine = IS_TAURI ? loadLocalAst : loadGithubAst;
 
   const activeWorkspace = useMemo(() => 
     workspaces.find(ws => ws.id === activeId), 

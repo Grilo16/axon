@@ -36,7 +36,6 @@ const BundleCenterer = ({ activeBundleId }: { activeBundleId?: string }) => {
 
   useEffect(() => {
     if (activeBundleId) {
-      // Give ElkJS 50ms to finish painting the nodes before zooming
       setTimeout(() => {
         fitView({ duration: 800, padding: 0.2 });
       }, 250);
@@ -50,15 +49,18 @@ type Props = {
   graphData: AxonGraphView | null;
   activeFiles: string[];
   actions: FocusNodeActions;
+  isLoading?: boolean;
+  isFetching?: boolean;
 };
 
 export const GraphCanvas: React.FC<Props> = ({
   graphData,
   activeFiles,
   actions,
+  isLoading = false,
+  isFetching = false,
 }) => {
-  const { toggleSelection, setHovered, clearAllSelections } =
-    useWorkspaceSession();
+  const { toggleSelection, setHovered, clearAllSelections } = useWorkspaceSession();
   const { activePaths, setPaths, activeBundle } = useBundleSession();
   const {
     nodes,
@@ -70,17 +72,11 @@ export const GraphCanvas: React.FC<Props> = ({
     applyLayout,
   } = useGraphLayout();
 
-  
-
   const handleNodesDelete = useCallback(
     (deletedNodes: AppNode[]) => {
       const idsToRemove = deletedNodes.map((n) => n.id);
-
-      // Filter them out of the global Redux array
       const nextPaths = activePaths.filter((p) => !idsToRemove.includes(p));
       setPaths(nextPaths);
-
-      // Clear selection so we don't have ghost selections
       clearAllSelections();
     },
     [activePaths, setPaths, clearAllSelections],
@@ -126,47 +122,36 @@ export const GraphCanvas: React.FC<Props> = ({
   }, [graphData, activeFiles, applyLayout]);
 
   const showEmpty = !graphData || nodes.length === 0;
+  const showLoader = isLayouting || isLoading || isFetching;
 
   return (
     <S.GraphContainer>
       <svg style={{ position: "absolute", width: 0, height: 0 }}>
         <defs>
-          <linearGradient
-            id="edge-gradient-down"
-            x1="0%"
-            y1="0%"
-            x2="0%"
-            y2="100%"
-          >
+          <linearGradient id="edge-gradient-down" x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor="#3b82f6" />
             <stop offset="100%" stopColor="#16a34a" />
           </linearGradient>
-
-          <linearGradient
-            id="edge-gradient-up"
-            x1="0%"
-            y1="100%"
-            x2="0%"
-            y2="0%"
-          >
+          <linearGradient id="edge-gradient-up" x1="0%" y1="100%" x2="0%" y2="0%">
             <stop offset="0%" stopColor="#3b82f6" />
             <stop offset="100%" stopColor="#16a34a" />
           </linearGradient>
         </defs>
       </svg>
 
-      {isLayouting && (
+      {showLoader && (
         <S.Overlay>
           <Loader2 size={32} className="animate-spin" />
-          <S.OverlayText>Computing Layout...</S.OverlayText>
+          <S.OverlayText>
+            {isLoading || isFetching ? "Loading Graph Data..." : "Computing Layout..."}
+          </S.OverlayText>
         </S.Overlay>
       )}
 
-      {layoutError && (
-        <S.ErrorBanner>Layout error: {layoutError}</S.ErrorBanner>
-      )}
+      {layoutError && <S.ErrorBanner>Layout error: {layoutError}</S.ErrorBanner>}
 
-      {!showEmpty && (
+      {/* ✨ Magic unmount: if isLoading is true, we kill the FlowChrome completely so the old canvas never shows. */}
+      {!showEmpty && !isLoading && (
         <S.FlowChrome>
           <GraphActionsProvider actions={actions}>
             <ReactFlow<AppNode, AppEdge>
@@ -178,9 +163,7 @@ export const GraphCanvas: React.FC<Props> = ({
               onEdgesChange={onEdgesChange}
               onNodeMouseEnter={(_, node) => setHovered(node.data.fileId)}
               onNodeMouseLeave={() => setHovered(null)}
-              onNodeClick={(e, node) =>
-                toggleSelection(node.data.fileId, e.shiftKey)
-              }
+              onNodeClick={(e, node) => toggleSelection(node.data.fileId, e.shiftKey)}
               onPaneClick={() => clearAllSelections()}
               onNodesDelete={handleNodesDelete}
               elementsSelectable={true}
@@ -189,18 +172,10 @@ export const GraphCanvas: React.FC<Props> = ({
               minZoom={0.05}
               maxZoom={1.8}
             >
-
               <BundleCenterer activeBundleId={activeBundle?.id} />
               <ZoomSizeResetter />
-              <GraphToolbar
-               
-              />
-              <Background
-                variant={BackgroundVariant.Dots}
-                gap={24}
-                size={2}
-                color="#222"
-              />
+              <GraphToolbar />
+              <Background variant={BackgroundVariant.Dots} gap={24} size={2} color="#222" />
               <Controls />
               <MiniMap nodeColor="#3b82f6" maskColor="rgba(0, 0, 0, 0.8)" />
             </ReactFlow>

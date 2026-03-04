@@ -9,7 +9,7 @@ use serde_json::json;
 use thiserror::Error;
 use ts_rs::TS;
 
-#[derive(Debug, Error, Serialize, TS)] // Add Serialize here
+#[derive(Debug, Error, Serialize, TS)] 
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 #[ts(export_to = "error.ts", rename_all = "camelCase")]
 pub enum AxonError {
@@ -161,9 +161,9 @@ impl IntoResponse for AxonError {
                 msg,
             ),
             // Map any other core errors here...
-            _ => (
+            err => (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                "An unexpected internal error occurred".to_string(),
+                err.to_string(),
             ),
         };
 

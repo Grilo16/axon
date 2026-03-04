@@ -1,4 +1,3 @@
-// --- FILE: graph/resolver.rs ---
 use crate::ids::FileId;
 use crate::path::RelativeAxonPath;
 use crate::tree::state::RegistryAccess;
@@ -83,7 +82,20 @@ impl<'a> ImportResolver<'a> {
         } else {
             let mut matched_alias = false;
             let tsconfig = &options.compiler_options;
+            let current_dir_str = current_dir.as_str();
 
+            let project_root = {
+                let parts: Vec<&str> = current_dir_str.split('/').collect();
+                if let Some(src_idx) = parts.iter().position(|&p| p == "src") {
+                    parts[..src_idx].join("/") // e.g. "apps/react-vite"
+                } else if parts.len() >= 2 && (parts[0] == "apps" || parts[0] == "packages") {
+                    parts[..2].join("/") // e.g. "packages/ui"
+                } else {
+                    "".to_string()
+                }
+            };
+
+            // 1. Check tsconfig.json explicitly defined paths
             for (alias, targets) in &tsconfig.paths {
                 if let Some(prefix) = alias.strip_suffix("/*") {
                     if let Some(suffix) = raw.strip_prefix(prefix) {
@@ -91,7 +103,8 @@ impl<'a> ImportResolver<'a> {
 
                         for target in targets {
                             if let Some(target_prefix) = target.as_str().strip_suffix("/*") {
-                                let target_prefix_clean = target_prefix.trim_end_matches('/');
+                                // Clean up the target (remove trailing slashes and leading "./")
+                                let target_prefix_clean = target_prefix.trim_end_matches('/').trim_start_matches("./");
 
                                 let candidate_str = if clean_suffix.is_empty() {
                                     target_prefix_clean.to_string()
@@ -99,25 +112,58 @@ impl<'a> ImportResolver<'a> {
                                     format!("{}/{}", target_prefix_clean, clean_suffix)
                                 };
 
-                                candidates.push(
-                                    RelativeAxonPath::from(candidate_str.as_str()).normalize(),
-                                );
+                                if !project_root.is_empty() && !candidate_str.starts_with(&project_root) {
+                                    candidates.push(RelativeAxonPath::from(&format!("{}/{}", project_root, candidate_str)).normalize());
+                                }
+                                candidates.push(RelativeAxonPath::from(candidate_str.as_str()).normalize());
                             }
                         }
                         matched_alias = true;
                     }
                 } else if alias == raw {
-                    candidates.extend(targets.iter().map(|p| p.normalize()));
+                    for target in targets {
+                        let target_clean = target.as_str().trim_start_matches("./");
+                        if !project_root.is_empty() && !target_clean.starts_with(&project_root) {
+                            candidates.push(RelativeAxonPath::from(&format!("{}/{}", project_root, target_clean)).normalize());
+                        }
+                        candidates.push(RelativeAxonPath::from(target_clean).normalize());
+                    }
                     matched_alias = true;
                 }
             }
 
+            // 2. Vite / Next.js Fallback Heuristics
             if !matched_alias {
                 if let Some(base_url) = &tsconfig.base_url {
                     let joined = base_url.join(&RelativeAxonPath::from(raw));
                     candidates.push(joined.normalize());
                 } else {
                     candidates.push(RelativeAxonPath::from(raw).normalize());
+                }
+
+                //Handle @/, ~/, AND bare @ (like @features/...)
+                let stripped_alias = if let Some(s) = raw.strip_prefix("@/") {
+                    Some(s)
+                } else if let Some(s) = raw.strip_prefix("~/") {
+                    Some(s)
+                } else if let Some(s) = raw.strip_prefix("@") {
+                    Some(s)
+                } else {
+                    None
+                };
+
+                if let Some(stripped) = stripped_alias {
+                    if !project_root.is_empty() {
+                        // We are in a monorepo sub-project! (e.g., apps/client-axon/src/features/...)
+                        candidates.push(RelativeAxonPath::from(&format!("{}/src/{}", project_root, stripped)).normalize());
+                    } else {
+                        // Standard flat repo fallback
+                        candidates.push(RelativeAxonPath::from(&format!("src/{}", stripped)).normalize());
+                    }
+
+                    // Global Absolute Fallbacks just in case
+                    candidates.push(RelativeAxonPath::from(&format!("src/{}", stripped)).normalize());
+                    candidates.push(RelativeAxonPath::from(stripped).normalize());
                 }
             }
         }

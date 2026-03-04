@@ -78,7 +78,6 @@ export const workspaceApi = axonApi.injectEndpoints({
       providesTags: (_result, _error, id) => [{ type: "Workspace", id: `${id}-status` }],
     }),
    
-   
     loadGithubAst: builder.mutation<void, string>({
       query: (id) => ({
         command: "load_github_workspace_ast",
@@ -93,7 +92,6 @@ export const workspaceApi = axonApi.injectEndpoints({
         "Workspace"],
     }),
    
-   
     loadLocalAst: builder.mutation<void, string>({
       query: (id) => ({
         command: "load_local_workspace_ast",
@@ -101,6 +99,13 @@ export const workspaceApi = axonApi.injectEndpoints({
         method: "POST",
         tauriArgs: { id },
       }),
+      // ✨ FIX: Match GitHub invalidations so local workspaces also clear their cache on boot!
+      invalidatesTags: (_result, _error, id) => [
+        { type: "Bundle", id: `LIST-${id}` },
+        { type: "Bundle", id: "graph" },
+        { type: "Workspace", id: `${id}-dir-root` },
+        "Workspace"
+      ],
     }),
 
     getAllFilePaths: builder.query<string[], { id: string; query: FileQuery }>({
@@ -138,7 +143,6 @@ export const workspaceApi = axonApi.injectEndpoints({
             query
         },
       }),
-      // We tag this with the ID and the path so we can selectively invalidate specific folders if needed
       providesTags: (_result, _error, { id, query }) => [
         { type: "Workspace", id: `${id}-dir-${query.path ?? "root"}` }
       ],

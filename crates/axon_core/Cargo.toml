@@ -22,6 +22,7 @@ ignore.workspace = true
 async-trait.workspace = true
 futures.workspace = true
 sqlx.workspace = true
+tracing.workspace = true
 
 # Parser Stack
 oxc_allocator.workspace = true

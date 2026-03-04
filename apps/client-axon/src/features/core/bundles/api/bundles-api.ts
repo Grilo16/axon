@@ -79,14 +79,14 @@ export const bundleApi = axonApi.injectEndpoints({
         { type: "Bundle", id: `LIST-${workspaceId}` },
       ],
     }),
-    getBundleGraph: builder.query<AxonGraphView, string>({ 
-      query: (id) => ({
+    getBundleGraph: builder.query<AxonGraphView, { id: string; hideBarrelExports: boolean }>({ 
+      query: ({ id, hideBarrelExports }) => ({
         command: "get_bundle_graph",
-        url: `/v1/bundles/${id}/graph`,
+        url: `/v1/bundles/${id}/graph${hideBarrelExports ? '?hideBarrelExports=true' : ''}`,
         method: "GET",
-        tauriArgs: { id },
+        tauriArgs: { id, hideBarrelExports },
       }),
-      providesTags: (_result, _error, id) => [{ type: "Bundle", id: `${id}-graph` }, {type: "Bundle", id: "graph"}],
+      providesTags: (_result, _error, arg) => [{ type: "Bundle", id: `${arg.id}-graph` }, {type: "Bundle", id: "graph"}],
     }),
     generateBundle: builder.mutation<Record<string, string>, string>({
       query: (id) => ({

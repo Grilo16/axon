@@ -26,7 +26,6 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
     e.preventDefault();
 
     if (IS_TAURI) {
-      // --- DESKTOP LOGIC (Tauri) ---
       try {
         const selectedPath = await open({
           directory: true,

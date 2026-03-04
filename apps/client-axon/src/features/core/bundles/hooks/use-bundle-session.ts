@@ -1,9 +1,11 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@app/hooks";
 import { toast } from "sonner";
 import {
   selectActiveBundleIdForWorkspace,
   setActiveBundleId,
+  selectHideBarrelExports,
+  setHideBarrelExports,
 } from "../bundles-slice";
 import {
   selectActiveWorkspaceId,
@@ -19,16 +21,25 @@ export const useBundleSession = () => {
   const dispatch = useAppDispatch();
   const workspaceId = useAppSelector(selectActiveWorkspaceId);
   const activeBundleId = useAppSelector(selectActiveBundleIdForWorkspace);
+  const hideBarrelExports = useAppSelector(selectHideBarrelExports); // ✨
 
   const { createBundle, updateBundle, generateBundle, deleteBundle } = useBundleActions();
 
-  // 1. Fetch data - simplified the query object
-  const { data: allBundles = [] } = useGetWorkspaceBundlesQuery(
+  const { 
+    data: allBundles = [], 
+    isLoading: isBundlesLoading,
+    isFetching: isBundlesFetching
+  } = useGetWorkspaceBundlesQuery(
     { id: workspaceId!, query: { limit: null, offset: null } },
     { skip: !workspaceId }
   );
 
-  // 2. Memoize derived state to prevent unnecessary re-renders
+  useEffect(() => {
+    if (workspaceId && allBundles.length > 0 && !activeBundleId) {
+      dispatch(setActiveBundleId({ workspaceId, bundleId: allBundles[0].id }));
+    }
+  }, [workspaceId, allBundles, activeBundleId, dispatch]);
+
   const activeBundle = useMemo(
     () => allBundles.find((b) => b.id === activeBundleId) || null,
     [allBundles, activeBundleId]
@@ -36,24 +47,64 @@ export const useBundleSession = () => {
 
   const activePaths = useMemo(() => activeBundle?.options.targetFiles || [], [activeBundle]);
 
-  // 3. CORE UPDATE LOGIC
-  // We explicitly return the promise so callers can await if needed
-  const updateActiveOptions =
-    async (newOptions: Partial<BundleRecord["options"]>) => {
-      if (!activeBundle || !workspaceId) return;
-      return await updateBundle.handle({
-        id: activeBundle.id,
-        workspaceId,
-        payload: {
-          // We merge with current activeBundle state
-          options: { ...activeBundle.options, ...newOptions},
-          name: activeBundle.name, // Pass the existing name instead of null
-        },
-      });
+  const updateActiveOptions = async (newOptions: Partial<BundleRecord["options"]>) => {
+    if (!activeBundle || !workspaceId) return;
+    return await updateBundle.handle({
+      id: activeBundle.id,
+      workspaceId,
+      payload: {
+        options: { ...activeBundle.options, ...newOptions},
+        name: activeBundle.name,
+      },
+    });
+  };
+
+  const renameActiveBundle = useCallback(async (newName: string) => {
+    if (!activeBundle || !workspaceId) return;
+    return await updateBundle.handle({
+      id: activeBundle.id,
+      workspaceId,
+      payload: {
+        options: activeBundle.options,
+        name: newName,
+      },
+    });
+  }, [activeBundle, workspaceId, updateBundle]);
+
+  const deleteActiveBundle = useCallback(async () => {
+    if (!activeBundle || !workspaceId) return;
+    
+    const idToDelete = activeBundle.id; 
+    const isLastBundle = allBundles.length <= 1;
+
+    try {
+      let nextBundleId: string | null = null;
+
+      if (isLastBundle) {
+        const fallbackBundle = await createBundle.handle({
+          workspaceId,
+          name: "Default Bundle",
+          options: { rules: [], targetFiles: [] },
+        });
+        nextBundleId = fallbackBundle.id;
+      } else {
+        const fallbackBundle = allBundles.find(b => b.id !== idToDelete);
+        if (fallbackBundle) {
+          nextBundleId = fallbackBundle.id;
+        }
+      }
+
+      if (nextBundleId) {
+        dispatch(setActiveBundleId({ workspaceId, bundleId: nextBundleId }));
+      }
+
+      await deleteBundle.handle({ id: idToDelete, workspaceId });
+      
+    } catch (e) {
+      console.error("Failed to delete bundle:", e);
     }
+  }, [activeBundle, workspaceId, allBundles, createBundle, deleteBundle, dispatch]);
 
-
-  // --- Target File Management ---
   const setPaths = useCallback(
     (files: string[]) => updateActiveOptions({ targetFiles: files }),
     [updateActiveOptions]
@@ -64,19 +115,15 @@ export const useBundleSession = () => {
       const nextFiles = activePaths.includes(filePath)
         ? activePaths.filter((f) => f !== filePath)
         : [...activePaths, filePath];
-      
       return updateActiveOptions({ targetFiles: nextFiles });
     },
     [activePaths, updateActiveOptions]
   );
 
-  // --- Rule Management ---
   const addRedaction = useCallback(
     (rule: RedactionRule) => {
       if (!activeBundle) return;
-      return updateActiveOptions({
-        rules: [...activeBundle.options.rules, rule],
-      });
+      return updateActiveOptions({ rules: [...activeBundle.options.rules, rule] });
     },
     [activeBundle, updateActiveOptions]
   );
@@ -90,7 +137,6 @@ export const useBundleSession = () => {
     [activeBundle, updateActiveOptions]
   );
 
-  // --- Bundle Lifecycle ---
   const switchBundle = useCallback(
     (bundleId: string) => {
       if (workspaceId) dispatch(setActiveBundleId({ workspaceId, bundleId }));
@@ -112,7 +158,10 @@ export const useBundleSession = () => {
     [workspaceId, createBundle, dispatch]
   );
 
-  // --- Execution ---
+  const toggleHideBarrelExports = useCallback(() => {
+    dispatch(setHideBarrelExports(!hideBarrelExports));
+  }, [dispatch, hideBarrelExports]);
+
   const generateAndCopyBundle = useCallback(async () => {
     if (!activeBundle || activePaths.length === 0) {
       toast.error("No files in the bundle to generate!");
@@ -124,7 +173,6 @@ export const useBundleSession = () => {
     try {
       const bundledFiles = await generateBundle.handle(activeBundle.id);
       
-      // Formatting the LLM context
       const fileEntries = Object.entries(bundledFiles);
       const llmContext = [
         `# BUNDLED CONTEXT: ${activeBundle.name}`,
@@ -146,13 +194,18 @@ export const useBundleSession = () => {
     activeBundle,
     allBundles,
     activePaths,
+    isBundlesLoading,
+    isBundlesFetching,
+    hideBarrelExports, 
+    toggleHideBarrelExports, 
     setPaths,
     toggleTarget,
     addRedaction,
     deleteRule: removeRule,
     switchBundle,
     createBundle: createAndSelect,
-    removeBundle: (id: string) => deleteBundle.handle({ id, workspaceId: workspaceId! }),
+    renameActiveBundle,
+    deleteActiveBundle,
     generateAndCopyBundle,
     isGenerating: generateBundle.isLoading,
     isUpdating: updateBundle.isLoading,
