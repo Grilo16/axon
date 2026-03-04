@@ -1,10 +1,10 @@
 const requireEnv = (value: string | undefined, name: string): string => {
-  if (!value) {
-    throw new Error(
-      `❌ Missing Environment Variable: ${name}. Check your infra/.env file or CI/CD secrets!`,
-    );
+if (value) return value;
+  if (typeof window === 'undefined') {
+    return "";
   }
-  return value;
+
+  throw new Error(`❌ Missing Environment Variable: ${name}.`);
 };
 
 export const API_BASE_URL = requireEnv(import.meta.env.VITE_API_URL, "VITE_API_URL");
