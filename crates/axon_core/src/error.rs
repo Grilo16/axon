@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::{Serialize, Serializer};
+use serde::{Serialize};
 use serde_json::json;
 use thiserror::Error;
 use ts_rs::TS;
@@ -14,29 +14,18 @@ use ts_rs::TS;
 #[ts(export_to = "error.ts", rename_all = "camelCase")]
 pub enum AxonError {
     // --- 1. IO & Filesystem (The "Standard" stuff) ---
-    #[error("IO failure at '{path}': {source}")]
+   #[error("IO failure at '{path}': {message}")]
     Io {
         path: PathBuf,
-        #[serde(serialize_with = "serialize_error_string")]
-        #[ts(as = "String")]
-        source: std::io::Error,
+        message: String, 
     },
 
     #[error("JSON error: {0}")]
-    Json(
-        #[from]
-        #[serde(serialize_with = "serialize_error_string")]
-        #[ts(as = "String")]
-        serde_json::Error
-    ),
+    Json(String), 
 
     #[error("walk error: {0}")]
-    Walk(
-        #[from]
-        #[serde(serialize_with = "serialize_error_string")]
-        #[ts(as = "String")]
-        ignore::Error
-    ),
+    Walk(String), 
+
 
     #[error("root path does not exist: {0}")]
     RootNotFound(PathBuf),
@@ -85,6 +74,15 @@ pub enum AxonError {
     // --- 4. Backend (The "OsSource" stuff) ---
     #[error("source backend error: {0}")]
     Backend(String),
+
+    #[error("authentication error: {0}")]
+    Auth(String),
+
+    #[error("network error: {0}")]
+    Network(String),
+
+    #[error("tauri ipc execution error: {0}")]
+    TauriIpc(String),
 }
 
 /// The default Result type for the entire Axon crate.
@@ -92,10 +90,10 @@ pub type AxonResult<T> = std::result::Result<T, AxonError>;
 
 impl AxonError {
     /// Ergonomic helper for IO errors with context.
-    pub fn io(source: std::io::Error, path: impl Into<PathBuf>) -> Self {
+    pub fn io(message: std::io::Error, path: impl Into<PathBuf>) -> Self {
         Self::Io {
             path: path.into(),
-            source,
+            message: message.to_string(),
         }
     }
 
@@ -128,19 +126,22 @@ impl AxonError {
 }
 
 /// Allows easy conversion from standard IO errors when the path isn't immediately critical
-/// or is handled elsewhere.
 impl From<std::io::Error> for AxonError {
     fn from(err: std::io::Error) -> Self {
         Self::Backend(err.to_string())
     }
 }
 
-fn serialize_error_string<E, S>(err: &E, serializer: S) -> Result<S::Ok, S::Error>
-where
-    E: std::fmt::Display,
-    S: Serializer,
-{
-    serializer.serialize_str(&err.to_string())
+impl From<serde_json::Error> for AxonError {
+    fn from(err: serde_json::Error) -> Self {
+        AxonError::Json(err.to_string())
+    }
+}
+
+impl From<ignore::Error> for AxonError {
+    fn from(err: ignore::Error) -> Self {
+        AxonError::Walk(err.to_string())
+    }
 }
 
 

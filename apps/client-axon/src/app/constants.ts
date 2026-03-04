@@ -1,19 +1,20 @@
-const getEnvVar = (key: string): string => {
-  const value = import.meta.env[key];
+const requireEnv = (value: string | undefined, name: string): string => {
   if (!value) {
     throw new Error(
-      `❌ Missing Environment Variable: ${key}. Check your infra/.env file!`,
+      `❌ Missing Environment Variable: ${name}. Check your infra/.env file or CI/CD secrets!`,
     );
   }
   return value;
 };
 
-export const API_BASE_URL = getEnvVar("VITE_API_URL");
-export const AUTH_URL = getEnvVar("VITE_AUTH_URL");
-export const REALM = getEnvVar("VITE_AUTH_REALM");
-export const KC_CLIENT_ID = getEnvVar("VITE_AUTH_CLIENT_ID");
-export const IS_TAURI =
-  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+export const API_BASE_URL = requireEnv(import.meta.env.VITE_API_URL, "VITE_API_URL");
+export const AUTH_URL = requireEnv(import.meta.env.VITE_AUTH_URL, "VITE_AUTH_URL");
+export const REALM = requireEnv(import.meta.env.VITE_AUTH_REALM, "VITE_AUTH_REALM");
+export const KC_CLIENT_ID = requireEnv(import.meta.env.VITE_AUTH_CLIENT_ID, "VITE_AUTH_CLIENT_ID");
+export const APP_ENV = requireEnv(import.meta.env.VITE_APP_ENV, "VITE_APP_ENV");
+
+export const IS_TAURI = APP_ENV === 'tauri';
+export const IS_WEB = APP_ENV === 'web';
 
 if (import.meta.env.DEV) {
   console.log("🛠️ Axon Constants Loaded:", { API_BASE_URL, IS_TAURI });

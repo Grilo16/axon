@@ -15,7 +15,7 @@ services:
           --hostname-backchannel-dynamic=true
     environment:
       KC_DB: ${POSTGRES_DB}
-      KC_DB_URL: jdbc:postgresql://postgres:${PORT_PG_INTERNAL}/${KEYCLOAK_DB}
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${KEYCLOAK_DB}
       KC_DB_USERNAME: ${POSTGRES_USER}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
       KC_HOSTNAME: ${KC_HOSTNAME}

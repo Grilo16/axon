@@ -6,7 +6,7 @@ export type DirQuery = { path: string, recursive: boolean, limit: number | null,
 
 export type FileQuery = { limit: number | null, };
 
-export type ListWorkspacesQuery = { limit?: bigint | null, offset?: bigint | null, };
+export type ListWorkspacesQuery = { limit: bigint | null, offset: bigint | null, };
 
 export type ReadFileReq = { path: string, };
 

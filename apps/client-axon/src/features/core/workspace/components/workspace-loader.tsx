@@ -3,12 +3,12 @@ import { FolderOpen, Plus, Clock, Trash2, ArrowLeft, ChevronRight, X, Github } f
 import * as S from "./workspace-loader.styles";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useWorkspaceManager } from "../hooks/use-workspace-manager";
+import { IS_TAURI } from "@app/constants";
 
 interface Props {
   onClose?: () => void;
 }
 
-const isTauri = '__TAURI_INTERNALS__' in window;
 
 export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
   const { workspaces, create, open: openWorkspace, remove } = useWorkspaceManager();
@@ -25,7 +25,7 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isTauri) {
+    if (IS_TAURI) {
       // --- DESKTOP LOGIC (Tauri) ---
       try {
         const selectedPath = await open({
@@ -123,7 +123,7 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
               </S.InputGroup>
 
               {/* ✨ CONDITIONAL RENDERING MAGIC ✨ */}
-              {!isTauri && (
+              {!IS_TAURI && (
                 <S.InputGroup>
                   <S.Label>GitHub Repository URL</S.Label>
                   <S.Input 
@@ -137,14 +137,14 @@ export const WorkspaceLoader: React.FC<Props> = ({ onClose }) => {
               )}
 
               <S.HelperText>
-                {isTauri 
+                {IS_TAURI 
                   ? "Clicking continue will open your native file browser to select a project folder." 
                   : "We will clone this repository into a secure, temporary environment for analysis."}
               </S.HelperText>
 
               <S.ButtonMain type="submit">
-                {isTauri ? <FolderOpen size={18} /> : <Github size={18} />}
-                {isTauri ? " Choose Directory..." : " Clone Repository"}
+                {IS_TAURI ? <FolderOpen size={18} /> : <Github size={18} />}
+                {IS_TAURI ? " Choose Directory..." : " Clone Repository"}
               </S.ButtonMain>
             </form>
           )}

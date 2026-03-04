@@ -9,4 +9,4 @@ export type CreateBundleReq = { workspaceId: string, name: string, options: Bund
 
 export type ListBundlesQuery = { limit: bigint | null, offset: bigint | null, };
 
-export type UpdateBundlePayload = { name?: string | null, options: BundleOptions | null, };
+export type UpdateBundlePayload = { name: string | null, options: BundleOptions | null, };

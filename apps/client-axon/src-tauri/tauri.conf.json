@@ -5,9 +5,9 @@
   "identifier": "com.tauri.dev",
   "build": {
     "frontendDist": "../client-axon/dist",
-    "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run tauri:dev-ui",
+    "beforeBuildCommand": "npm run tauri:build-ui"
   },
   "app": {
     "windows": [
@@ -27,14 +27,17 @@
     "active": true,
     "targets": "all",
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+        "icons/apple-touch-icon.png",
+        "icons/favicon.ico",         
+        "icons/web-app-manifest-192x192.png",
+        "icons/favicon.svg",         
+        "icons/web-app-manifest-512x512.png",
+        "icons/favicon-96x96.png"
     ]
   },
   "plugins": {
 
 }
 }
+
+

@@ -72,9 +72,8 @@ async fn main() {
 
     let keycloak_instance = KeycloakAuthInstance::new(kc_config);
 
-    // Make sure this matches the client ID you created in Keycloak!
     let expected_audiences =
-        vec![std::env::var("KC_CLIENT_ID").unwrap_or_else(|_| "axon-server".into())];
+        vec![std::env::var("KC_CLIENT_ID").unwrap_or_else(|_| "axon-client".into())];
 
     let auth_layer = KeycloakAuthLayer::<String>::builder()
         .instance(keycloak_instance)
@@ -83,7 +82,6 @@ async fn main() {
         .build();
 
     // 3. Apply the layers
-    // Important: CORS MUST wrap the outside of Auth, or preflight requests will be blocked!
     let app = app_router(state).layer(auth_layer).layer(cors);
 
     let port = std::env::var("PORT_RUST_API").unwrap_or_else(|_| "3000".into());
