@@ -12,7 +12,7 @@ export const useWorkspaceManager = () => {
   const activeId = useAppSelector(selectActiveWorkspaceId);
 
   // 1. GET DATA: Subscribed to the workspace list
-  const { data: workspaces = [], isLoading: isFetching } = useListWorkspacesQuery({});
+  const { data: workspaces = [], isLoading: isFetching } = useListWorkspacesQuery({limit: null, offset: null});
 
   // 2. ACTIONS: Grab our wrapped factory handles
   const { 
