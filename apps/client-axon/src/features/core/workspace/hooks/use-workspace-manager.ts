@@ -36,8 +36,8 @@ export const useWorkspaceManager = () => {
    */
   const open = useCallback(async (id: string) => {
     dispatch(setActiveWorkspaceId(id));
-    touchWorkspace.handle(id); 
     await engine.handle(id);
+    touchWorkspace.handle(id); 
   }, [dispatch, touchWorkspace, engine]);
 
   /**
