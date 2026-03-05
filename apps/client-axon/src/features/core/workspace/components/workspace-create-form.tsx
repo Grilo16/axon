@@ -1,59 +1,22 @@
-import React, { useState } from "react";
+import React from "react";
 import { FolderOpen, Github, ArrowRight } from "lucide-react";
-import { open as openTauriDialog } from "@tauri-apps/plugin-dialog";
-
 import { Flex, Text, Button, Input, Box } from "@shared/ui";
-import { useWorkspaceManager } from "../../hooks/use-workspace-manager";
 import { IS_TAURI } from "@app/constants";
 
 interface WorkspaceCreateFormProps {
-  onDone?: () => void;
+  newName: string;
+  setNewName: (val: string) => void;
+  githubUrl: string;
+  setGithubUrl: (val: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
-export const WorkspaceCreateForm: React.FC<WorkspaceCreateFormProps> = ({ onDone }) => {
-  const { create } = useWorkspaceManager();
-  
-  // Form State
-  const [newName, setNewName] = useState("");
-  const [githubUrl, setGithubUrl] = useState("");
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (IS_TAURI) {
-      try {
-        const selectedPath = await openTauriDialog({
-          directory: true,
-          multiple: false,
-          title: "Select Project Root for Axon",
-        });
-
-        if (selectedPath && typeof selectedPath === "string") {
-          const finalName = newName.trim() || selectedPath.split(/[/\\]/).pop() || "Untitled Project";
-          create(finalName, selectedPath);
-          onDone?.();
-        }
-      } catch (err) {
-        console.error("Failed to pick directory:", err);
-      }
-    } else {
-      // --- WEB LOGIC (GitHub) ---
-      if (!githubUrl.trim()) return;
-      
-      const urlParts = githubUrl.trim().split('/');
-      const repoName = urlParts.pop() || "GitHub Repository";
-      const finalName = newName.trim() || repoName;
-      
-      create(finalName, githubUrl.trim());
-      onDone?.();
-    }
-  };
-
+export const WorkspaceCreateForm: React.FC<WorkspaceCreateFormProps> = ({ 
+  newName, setNewName, githubUrl, setGithubUrl, onSubmit 
+}) => {
   return (
-    <form onSubmit={handleCreate}>
+    <form onSubmit={onSubmit}>
       <Flex $direction="column" $gap="lg">
-        
-        {/* Workspace Name Input */}
         <Flex $direction="column" $gap="xs">
           <Text $size="xs" $weight="bold" $color="muted" $uppercase>
             Workspace Name (Optional)
@@ -68,7 +31,6 @@ export const WorkspaceCreateForm: React.FC<WorkspaceCreateFormProps> = ({ onDone
           />
         </Flex>
 
-        {/* GitHub Input - Only shown in Web Mode */}
         {!IS_TAURI && (
           <Flex $direction="column" $gap="xs">
             <Text $size="xs" $weight="bold" $color="muted" $uppercase>
@@ -85,7 +47,6 @@ export const WorkspaceCreateForm: React.FC<WorkspaceCreateFormProps> = ({ onDone
           </Flex>
         )}
 
-        {/* Information Box */}
         <Box $p="md" $bg="bg.overlay" $radius="md" style={{ border: '1px solid rgba(255,255,255,0.05)' }}>
           <Text $size="xs" $color="muted" style={{ lineHeight: 1.6 }}>
             {IS_TAURI 
@@ -94,7 +55,6 @@ export const WorkspaceCreateForm: React.FC<WorkspaceCreateFormProps> = ({ onDone
           </Text>
         </Box>
 
-        {/* Submit Action */}
         <Button type="submit" $variant="primary" $fill $p="lg">
           <Flex $align="center" $gap="sm">
             {IS_TAURI ? <FolderOpen size={18} /> : <Github size={18} />}
@@ -104,7 +64,6 @@ export const WorkspaceCreateForm: React.FC<WorkspaceCreateFormProps> = ({ onDone
             <ArrowRight size={16} />
           </Flex>
         </Button>
-
       </Flex>
     </form>
   );
