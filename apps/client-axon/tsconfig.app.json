@@ -19,12 +19,10 @@
     "baseUrl": ".",
     "paths": {
       "@app/*": ["src/app/*"],
-      "@axon-types/*": ["src/components/CreateWorkspaceCard/types/*"],
       "@features/*": ["src/features/*"],
       "@components/*": ["src/components/*"],
       "@pages/*": ["src/pages/*"],
       "@shared/*": ["src/shared/*"],
-      "@theme/*": ["src/theme/*"]
     },
 
     /* Linting */

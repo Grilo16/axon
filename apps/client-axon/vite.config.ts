@@ -10,12 +10,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@app': path.resolve(__dirname, 'src/app'),
-        '@axon-types': path.resolve(__dirname, 'src/types'),
         '@features': path.resolve(__dirname, 'src/features'),
         '@components': path.resolve(__dirname, 'src/components'),
         '@pages': path.resolve(__dirname, 'src/pages'),
         '@shared': path.resolve(__dirname, 'src/shared'),
-        '@theme': path.resolve(__dirname, 'src/theme'),
       },
     },
   }
