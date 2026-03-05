@@ -5,6 +5,7 @@ import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspac
 import { useWorkspaceActions } from "@features/core/workspace/hooks/use-workspace-actions";
 import { useListDirectoryQuery } from "@features/core/workspace/api/workspace-api";
 
+
 export const useExplorer = () => {
   const { activeId } = useWorkspaceManager();
   const history = useHistory<string>("");

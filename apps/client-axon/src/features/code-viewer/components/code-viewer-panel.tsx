@@ -3,32 +3,38 @@ import Editor from '@monaco-editor/react';
 import { X, FileCode, Package, Loader2, Copy, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
-import * as S from './styles';
+// UI Primitives
+import { Flex, Text, Button, Box, PanelSection, PanelHeader } from '@shared/ui';
 import { useWorkspaceSession } from '@features/core/workspace';
 import { useBundleSession } from '@features/core/bundles/hooks/use-bundle-session'; 
 import { useReadFileQuery } from '@features/core/workspace/api/workspace-api';
 import { useWorkspaceManager } from '@features/core/workspace/hooks/use-workspace-manager';
 
 const getLanguageFromPath = (path: string) => {
-  if (path.endsWith('.ts') || path.endsWith('.tsx')) return 'typescript';
-  if (path.endsWith('.js') || path.endsWith('.jsx')) return 'javascript';
-  if (path.endsWith('.rs')) return 'rust';
-  if (path.endsWith('.json')) return 'json';
-  if (path.endsWith('.css')) return 'css';
-  if (path.endsWith('.html')) return 'html';
-  if (path.endsWith('.md')) return 'markdown';
-  return 'plaintext';
+  const ext = path.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'ts':
+    case 'tsx': return 'typescript';
+    case 'js':
+    case 'jsx': return 'javascript';
+    case 'rs': return 'rust';
+    case 'json': return 'json';
+    case 'css': return 'css';
+    case 'html': return 'html';
+    case 'md': return 'markdown';
+    default: return 'plaintext';
+  }
 };
 
 export const CodeViewerPanel = () => {
-  const {activeId} = useWorkspaceManager()
-  const {  viewedFilePath, viewedBundleContent, closeViewer } = useWorkspaceSession();
-  const { activeBundle } = useBundleSession(); // Grab the active bundle for the filename!
+  const { activeId } = useWorkspaceManager();
+  const { viewedFilePath, viewedBundleContent, closeViewer } = useWorkspaceSession();
+  const { activeBundle } = useBundleSession();
   
   const isBundle = !!viewedBundleContent;
 
   const { data: fileContent, isLoading, isFetching } = useReadFileQuery(
-    { id: activeId!, query: {path: viewedFilePath!} },
+    { id: activeId!, query: { path: viewedFilePath! } },
     { skip: !activeId || !viewedFilePath || isBundle }
   );
 
@@ -40,7 +46,6 @@ export const CodeViewerPanel = () => {
   const title = isBundle ? "Generated Context Bundle" : viewedFilePath?.split(/[/\\]/).pop();
   const editorValue = isBundle ? viewedBundleContent : fileContent;
 
-  // ✨ THE SUPERPOWERS
   const handleCopy = async () => {
     if (!editorValue) return;
     await navigator.clipboard.writeText(editorValue);
@@ -54,7 +59,6 @@ export const CodeViewerPanel = () => {
     const a = document.createElement('a');
     a.href = url;
     
-    // Format a nice, safe filename
     const safeName = (activeBundle?.name || "bundle").replace(/[^a-z0-9]/gi, '_').toLowerCase();
     a.download = isBundle ? `${safeName}_context.md` : (title || 'file.txt');
     
@@ -66,33 +70,47 @@ export const CodeViewerPanel = () => {
   };
 
   return (
-    <S.PanelContainer>
-      <S.Header>
-        <S.FileInfo>
-          {isBundle ? <Package size={16} className="text-purple-400" /> : <FileCode size={16} className="text-blue-400" />}
-          <span>{title || "No file selected"}</span>
-        </S.FileInfo>
+    <PanelSection $bg="bg.main">
+      <PanelHeader>
+        <Flex $align="center" $gap="sm" style={{ minWidth: 0 }}>
+          {isBundle ? (
+            <Package size={16} color="#c084fc" /> 
+          ) : (
+            <FileCode size={16} color="#60a5fa" />
+          )}
+          <Text $size="sm" $weight="semibold" $truncate title={title}>
+            {title || "No file selected"}
+          </Text>
+        </Flex>
         
-        {/* ✨ PRETTIER BUTTONS */}
-        <S.HeaderActions>
-          <S.IconButton onClick={handleCopy} title="Copy to Clipboard">
+        <Flex $align="center" $gap="xs">
+          <Button $variant="icon" onClick={handleCopy} title="Copy to Clipboard">
             <Copy size={14} />
-          </S.IconButton>
-          <S.IconButton onClick={handleDownload} title="Download File">
+          </Button>
+          <Button $variant="icon" onClick={handleDownload} title="Download File">
             <Download size={14} />
-          </S.IconButton>
-          <div style={{ width: '1px', height: '16px', background: '#444', margin: '0 4px' }} />
-          <S.IconButton onClick={closeViewer} title="Close Panel">
+          </Button>
+          
+          {/* Using a styled Box as a separator */}
+          <Box $bg="border.subtle" style={{ width: 1, height: 16, margin: '0 4px' }} />
+          
+          <Button $variant="icon" onClick={closeViewer} title="Close Panel">
             <X size={16} />
-          </S.IconButton>
-        </S.HeaderActions>
-      </S.Header>
+          </Button>
+        </Flex>
+      </PanelHeader>
 
-      <S.EditorWrapper>
+      <Box $fill style={{ position: 'relative', minHeight: 0 }}>
+        {/* Simplified Loader Overlay */}
         {(!isBundle && (isLoading || isFetching)) && (
-          <S.LoaderOverlay>
-            <Loader2 className="animate-spin" size={32} />
-          </S.LoaderOverlay>
+          <Flex 
+            $fill 
+            $align="center" 
+            $justify="center" 
+            style={{ position: 'absolute', zIndex: 10, background: 'rgba(18, 18, 18, 0.7)' }}
+          >
+            <Loader2 className="animate-spin" size={32} color="#3b82f6" />
+          </Flex>
         )}
 
         {editorValue && (
@@ -108,10 +126,12 @@ export const CodeViewerPanel = () => {
               wordWrap: 'on',
               scrollBeyondLastLine: false,
               smoothScrolling: true,
+              // Match our theme's dark background exactly
+              padding: { top: 16 }
             }}
           />
         )}
-      </S.EditorWrapper>
-    </S.PanelContainer>
+      </Box>
+    </PanelSection>
   );
 };

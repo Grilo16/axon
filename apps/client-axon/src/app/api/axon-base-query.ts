@@ -1,4 +1,3 @@
-// src/api/baseQuery.ts
 import { invoke } from "@tauri-apps/api/core";
 import { type BaseQueryFn } from "@reduxjs/toolkit/query/react";
 import type { AxonError } from "@shared/types/axon-core/error";

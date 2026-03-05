@@ -1,8 +1,12 @@
 import { memo, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { MinusCircle, PlusCircle, ChevronDown, Plus } from "lucide-react";
-import * as S from "./file-node.styles";
 import { useGraphActions } from "../../context/graph-actions";
 import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
+
+import { 
+  Grid, Flex, Text, SplitButtonGroup, SplitButtonMain, 
+  SplitButtonChevron, PopoverMenu, MenuItem 
+} from "@shared/ui";
 
 function stopPropagationOnly(evt: ReactMouseEvent) {
   evt.stopPropagation();
@@ -19,7 +23,6 @@ type Props = {
 
 export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
   const { addFile, batchUpdateFiles } = useGraphActions();
-  
   const { activePaths } = useBundleSession();
   
   const [outMenuOpen, setOutMenuOpen] = useState(false);
@@ -29,67 +32,73 @@ export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
   const inactiveUsedBy = usedBy.filter((ub) => !activePaths.includes(ub));
 
   return (
-    <S.NodeActionGrid className="nodrag">
+    <Grid className="nodrag nowheel" $columns="1fr 1fr" $gap="sm" $p="sm" style={{ borderBottom: '1px solid #2b2b2b' }}>
       
       {/* OUTGOING (Imports) */}
-      <S.ActionGroup $active={inactiveImports.length < imports.length} $tone="green">
-        <S.ActionMainButton 
-          disabled={inactiveImports.length === 0}
-          onClick={() => batchUpdateFiles(inactiveImports, [])}
-          title={inactiveImports.length === 0 ? "All imports added" : `Add ${inactiveImports.length} imports`}
-        >
-          {inactiveImports.length === 0 ? <MinusCircle size={12} /> : <PlusCircle size={12} />}
-          Imports ({inactiveImports.length === 0 ? "All" : inactiveImports.length})
-        </S.ActionMainButton>
-        
-        <S.ActionChevron 
-          disabled={inactiveImports.length === 0} 
-          onClick={() => { setOutMenuOpen(!outMenuOpen); setInMenuOpen(false); }}
-        >
-          <ChevronDown size={12} />
-        </S.ActionChevron>
+      <Flex $direction="column" style={{ position: 'relative' }}>
+        <SplitButtonGroup $active={inactiveImports.length < imports.length} $tone="success">
+          <SplitButtonMain 
+            disabled={inactiveImports.length === 0}
+            onClick={() => batchUpdateFiles(inactiveImports, [])}
+            title={inactiveImports.length === 0 ? "All imports added" : `Add ${inactiveImports.length} imports`}
+          >
+            {inactiveImports.length === 0 ? <MinusCircle size={12} /> : <PlusCircle size={12} />}
+            <Text $size="sm">Imports ({inactiveImports.length === 0 ? "All" : inactiveImports.length})</Text>
+          </SplitButtonMain>
+          
+          <SplitButtonChevron 
+            disabled={inactiveImports.length === 0} 
+            onClick={() => { setOutMenuOpen(!outMenuOpen); setInMenuOpen(false); }}
+          >
+            <ChevronDown size={12} />
+          </SplitButtonChevron>
+        </SplitButtonGroup>
 
         {outMenuOpen && inactiveImports.length > 0 && (
-          <S.ActionPopover onMouseDown={stopPropagationOnly} onClick={stopPropagationOnly}>
+          <PopoverMenu onMouseDown={stopPropagationOnly} onClick={stopPropagationOnly} style={{ width: '100%' }}>
             {inactiveImports.map((path) => (
-              <S.ActionRow key={path} title={path} onClick={() => { addFile(path); setOutMenuOpen(false); }}>
-                <Plus size={12} /> {getFileName(path)}
-              </S.ActionRow>
+              <MenuItem key={path} title={path} onClick={() => { addFile(path); setOutMenuOpen(false); }}>
+                <Plus size={12} />
+                <span>{getFileName(path)}</span>
+              </MenuItem>
             ))}
-          </S.ActionPopover>
+          </PopoverMenu>
         )}
-      </S.ActionGroup>
+      </Flex>
 
       {/* INCOMING (Used By) */}
-      <S.ActionGroup $active={inactiveUsedBy.length < usedBy.length} $tone="blue">
-        <S.ActionMainButton 
-          disabled={inactiveUsedBy.length === 0}
-          onClick={() => batchUpdateFiles(inactiveUsedBy, [])}
-          title={inactiveUsedBy.length === 0 ? "All users added" : `Add ${inactiveUsedBy.length} users`}
-        >
-          {inactiveUsedBy.length === 0 ? <MinusCircle size={12} /> : <PlusCircle size={12} />}
-          Used By ({inactiveUsedBy.length === 0 ? "All" : inactiveUsedBy.length})
-        </S.ActionMainButton>
-        
-        <S.ActionChevron 
-          disabled={inactiveUsedBy.length === 0} 
-          onClick={() => { setInMenuOpen(!inMenuOpen); setOutMenuOpen(false); }}
-        >
-          <ChevronDown size={12} />
-        </S.ActionChevron>
+      <Flex $direction="column" style={{ position: 'relative' }}>
+        <SplitButtonGroup $active={inactiveUsedBy.length < usedBy.length} $tone="primary">
+          <SplitButtonMain 
+            disabled={inactiveUsedBy.length === 0}
+            onClick={() => batchUpdateFiles(inactiveUsedBy, [])}
+            title={inactiveUsedBy.length === 0 ? "All users added" : `Add ${inactiveUsedBy.length} users`}
+          >
+            {inactiveUsedBy.length === 0 ? <MinusCircle size={12} /> : <PlusCircle size={12} />}
+            <Text $size="sm">Used By ({inactiveUsedBy.length === 0 ? "All" : inactiveUsedBy.length})</Text>
+          </SplitButtonMain>
+          
+          <SplitButtonChevron 
+            disabled={inactiveUsedBy.length === 0} 
+            onClick={() => { setInMenuOpen(!inMenuOpen); setOutMenuOpen(false); }}
+          >
+            <ChevronDown size={12} />
+          </SplitButtonChevron>
+        </SplitButtonGroup>
 
         {inMenuOpen && inactiveUsedBy.length > 0 && (
-          <S.ActionPopover onMouseDown={stopPropagationOnly} onClick={stopPropagationOnly}>
+          <PopoverMenu onMouseDown={stopPropagationOnly} onClick={stopPropagationOnly} style={{ width: '100%' }}>
             {inactiveUsedBy.map((path) => (
-              <S.ActionRow key={path} title={path} onClick={() => { addFile(path); setInMenuOpen(false); }}>
-                <Plus size={12} /> {getFileName(path)}
-              </S.ActionRow>
+              <MenuItem key={path} title={path} onClick={() => { addFile(path); setInMenuOpen(false); }}>
+                <Plus size={12} />
+                <span>{getFileName(path)}</span>
+              </MenuItem>
             ))}
-          </S.ActionPopover>
+          </PopoverMenu>
         )}
-      </S.ActionGroup>
+      </Flex>
 
-    </S.NodeActionGrid>
+    </Grid>
   );
 });
 

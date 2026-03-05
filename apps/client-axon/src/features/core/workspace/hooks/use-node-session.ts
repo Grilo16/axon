@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useAppSelector } from '@app/hooks';
+import { useAppSelector } from '@app/store';
 import { 
   makeSelectHoverRelationship, 
   makeSelectIsPathSelected,

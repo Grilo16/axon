@@ -1,37 +1,59 @@
 import { memo, useEffect } from "react";
-import { Position, type NodeProps, useStore, NodeResizeControl, useUpdateNodeInternals } from "@xyflow/react";
+import styled, { css } from "styled-components";
+import { Position, type NodeProps, useStore, NodeResizeControl, useUpdateNodeInternals, Handle } from "@xyflow/react";
 
-import * as S from "./file-node.styles";
 import type { AppFileNode } from "../../types";
 import { FileNodeHeader } from "./file-node-header";
 import { FileNodeActions } from "./file-node-actions";
+import { FileNodeSymbols } from "./file-node-symbols"; // <-- Import extracted component
 import { useNodeSession, useWorkspaceSession } from "@features/core/workspace";
 import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
-import { EyeOff, Trash2 } from "lucide-react";
+import { Flex, Text } from "@shared/ui";
+
+// --- XYFlow Specific Styled Components ---
+const NodeCardWrapper = styled.div<{ $selected?: boolean; $isSeed?: boolean; $isZoomedOut?: boolean; $isHovered?: boolean; }>`
+  background: ${({ theme, $isSeed }) => ($isSeed ? "#1b1f24" : theme.colors.bg.surface)};
+  border: 1px solid ${({ theme, $selected }) => ($selected ? theme.colors.palette.primary.main : theme.colors.border.default)};
+  border-radius: ${({ theme }) => theme.radii.lg};
+  position: relative;
+  width: 100%;
+  min-width: 300px;
+  height: ${({ $isZoomedOut }) => ($isZoomedOut ? "max-content" : "100%")};
+  box-shadow: ${({ theme }) => theme.shadows.sm};
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  ${({ $isHovered, theme }) => $isHovered && css`
+    border-color: ${theme.colors.palette.primary.light};
+    box-shadow: 0 0 0 1px ${theme.colors.palette.primary.main}, 0 0 24px rgba(59, 130, 246, 0.4);
+    z-index: 1000;
+  `}
+`;
+
+const StyledHandle = styled(Handle)`
+  width: 8px;
+  height: 8px;
+  border: 1px solid #111;
+`;
 
 export const FileNode = memo(({ id, data, selected }: NodeProps<AppFileNode>) => {
   const zoom = useStore((s) => s.transform[2]);
   const isZoomedOut = zoom < 0.65;
   const updateNodeInternals = useUpdateNodeInternals();
 
-
   const { activeBundle, addRedaction, deleteRule } = useBundleSession();
   const rules = activeBundle?.options.rules || [];
-  // We only pull hover state from Redux now. 
-  // Selection is handled beautifully by our layout engine.
   const { hoverRelationship } = useNodeSession(data.fileId);
-  const { openFileInViewer} = useWorkspaceSession()
-  // The Graph Hover Algorithm
+  const { openFileInViewer } = useWorkspaceSession();
+  
   const isHovered = hoverRelationship === "exact" || hoverRelationship === "parent-hovered";
+  const symbols = data.symbols ?? [];
 
   useEffect(() => { updateNodeInternals(id); }, [isZoomedOut, updateNodeInternals, id]);
 
-  const symbols = data.symbols ?? [];
-
-const handleToggleRule = (e: React.MouseEvent, symId: number, actionType: "hideImplementation" | "removeEntirely") => {
+  const handleToggleRule = (e: React.MouseEvent, symId: number, actionType: "hideImplementation" | "removeEntirely") => {
     e.stopPropagation();
-
-    // 1. Check if a rule already exists for this exact symbol
     const existingIndex = rules.findIndex(r =>
       'specificSymbol' in r.target &&
       r.target.specificSymbol.file_path === data.path &&
@@ -40,104 +62,57 @@ const handleToggleRule = (e: React.MouseEvent, symId: number, actionType: "hideI
 
     if (existingIndex >= 0) {
       const existingRule = rules[existingIndex];
-      
-      // 2. If clicking the EXACT same action, it's a toggle OFF (remove rule)
       if (existingRule.action === actionType) {
         deleteRule(existingIndex);
         return;
       } 
-      
-      // 3. If clicking the OTHER action, swap them (delete old, add new)
       deleteRule(existingIndex);
-      addRedaction({
-        target: { specificSymbol: { file_path: data.path, symbol_id: symId } },
-        action: actionType
-      });
+      addRedaction({ target: { specificSymbol: { file_path: data.path, symbol_id: symId } }, action: actionType });
       return;
     }
 
-    // 4. No rule existed, just add it!
-    addRedaction({
-      target: { specificSymbol: { file_path: data.path, symbol_id: symId } },
-      action: actionType
-    });
+    addRedaction({ target: { specificSymbol: { file_path: data.path, symbol_id: symId } }, action: actionType });
   };
 
   return (
-    <S.NodeCard 
+    <NodeCardWrapper 
       $selected={!!selected} 
       $isZoomedOut={isZoomedOut} 
       $isHovered={isHovered} 
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-        openFileInViewer(data.fileId);
-      }}
+      onDoubleClick={(e) => { e.stopPropagation(); openFileInViewer(data.fileId); }}
     >
-      
       {!isZoomedOut && (
         <NodeResizeControl minWidth={300} minHeight={110} style={{ border: 'none', background: 'transparent' }}>
-          <S.ResizeHandle />
+          <div style={{ position: 'absolute', right: 4, bottom: 4, width: 10, height: 10, cursor: 'nwse-resize', background: 'linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.3) 50%)' }} />
         </NodeResizeControl>
       )}
 
-      <S.TopTargetHandle id="top-in" type="target" position={Position.Top} />
+      <StyledHandle id="top-in" type="target" position={Position.Top} style={{ top: -4, background: '#3b82f6' }} />
 
       <FileNodeHeader fileId={data.fileId} label={data.label} isZoomedOut={isZoomedOut} />
       
-      {!isZoomedOut && <S.NodePath title={data.path}>{data.path}</S.NodePath>}
+      {!isZoomedOut && (
+        // ✨ FIX 3: Added minWidth: 0 to the flex container so the Text truncation can calculate boundaries!
+        <Flex $p="sm md" style={{ borderBottom: '1px solid #2b2b2b', minWidth: 0 }}>
+          <Text $size="xs" $color="muted" $truncate title={data.path} style={{ flex: 1 }}>
+            {data.path}
+          </Text>
+        </Flex>
+      )}
 
       <FileNodeActions imports={data.imports} usedBy={data.usedBy} />
 
-   {!isZoomedOut && symbols.length > 0 && (
-        <S.SymbolList className="nodrag">
-        {symbols.map((sym) => {
-            const existingRule = rules.find(r =>
-              'specificSymbol' in r.target &&
-              r.target.specificSymbol.file_path === data.path &&
-              r.target.specificSymbol.symbol_id === sym.id
-            );
-
-            const isHidden = existingRule?.action === "hideImplementation";
-            const isRemoved = existingRule?.action === "removeEntirely";
-
-            return (
-              <S.SymbolItem key={sym.id}>
-                
-                <S.SymbolDetails>
-                  <S.SymbolKindBadge $kind={sym.kind}>{sym.kind.slice(0, 3)}</S.SymbolKindBadge>
-                  <S.SymbolName title={sym.name} $isHidden={isHidden} $isRemoved={isRemoved}>
-                    {sym.name}
-                  </S.SymbolName>
-                </S.SymbolDetails>
-
-                <S.SymbolActions $forceVisible={isHidden || isRemoved}>
-                  <S.ActionButton 
-                    $variant="hide"
-                    $isActive={isHidden}
-                    title={isHidden ? "Restore Implementation" : "Hide Implementation"}
-                    onClick={(e) => handleToggleRule(e, sym.id, "hideImplementation")}
-                  >
-                    <EyeOff size={12} />
-                  </S.ActionButton>
-
-                  <S.ActionButton 
-                    $variant="remove"
-                    $isActive={isRemoved}
-                    title={isRemoved ? "Restore Symbol" : "Remove Symbol Entirely"}
-                    onClick={(e) => handleToggleRule(e, sym.id, "removeEntirely")}
-                  >
-                    <Trash2 size={12} />
-                  </S.ActionButton>
-                </S.SymbolActions>
-
-              </S.SymbolItem>
-            );
-          })}
-        </S.SymbolList>
+      {!isZoomedOut && (
+        <FileNodeSymbols 
+          symbols={symbols} 
+          filePath={data.path} 
+          rules={rules} 
+          onToggleRule={handleToggleRule} 
+        />
       )}
 
-      <S.BottomSourceHandle id="bottom-out" type="source" position={Position.Bottom} />
-    </S.NodeCard>
+      <StyledHandle id="bottom-out" type="source" position={Position.Bottom} style={{ bottom: -4, background: '#16a34a' }} />
+    </NodeCardWrapper>
   );
 });
 

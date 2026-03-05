@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@app/hooks";
+import { useAppDispatch, useAppSelector } from "@app/store";
 import { toast } from "sonner";
 import {
   selectActiveBundleIdForWorkspace,

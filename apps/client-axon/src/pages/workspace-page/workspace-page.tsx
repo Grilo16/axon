@@ -1,19 +1,14 @@
 import { Panel, Group, Separator } from "react-resizable-panels"; 
 
 import { GraphCanvas } from "@features/axon-graph/components/graph-canvas/graph-canvas";
-import { FileExplorer } from "@features/explorer/components/file-explorer";
-import { useAxonGraph } from "@features/axon-graph/hooks/use-axon-graph";
-import { WorkspaceLoader } from "@features/core/workspace";
 import { CodeViewerPanel } from "@features/code-viewer/components/code-viewer-panel";
+import { useAxonGraph } from "@features/axon-graph/hooks/use-axon-graph";
+import { WorkspaceLoader, useWorkspaceSession } from "@features/core/workspace";
 import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
-import { useWorkspaceSession } from "@features/core/workspace";
 
-// Bundler UI
-import { BundleCompact } from "@features/core/bundles/components/bundle-compact/bundle-compact";
-import { BundleSelector } from "@features/core/bundles/components/bundle-selector/bundle-selector";
-import { BundleDetails } from "@features/core/bundles/components/bundle-details/bundle-details";
-
-import * as S from "./workspace-page.styles";
+// UI & Layout
+import { Flex, Text, CanvasArea, PanelSection, ResizeHandle } from "@shared/ui";
+import { WorkspaceLeftSidebar } from "./components/workspace-left-sidebar";
 
 export const WorkspacePage = () => {
   const { activeWorkspace, isActive } = useWorkspaceManager();
@@ -24,79 +19,52 @@ export const WorkspacePage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-[#121212] text-blue-400">
-        <div className="flex flex-col items-center gap-4">
-          <span className="animate-spin text-4xl">⟳</span>
-          <span className="animate-pulse tracking-widest uppercase text-sm font-bold">
-            Parsing AST & Building Workspace...
-          </span>
-        </div>
-      </div>
+      <Flex $fill $align="center" $justify="center" $bg="bg.main" $direction="column" $gap="md">
+        <Text $color="palette.primary.light" $size="sm" $weight="bold" $uppercase $letterSpacing="0.1em">
+          Parsing AST & Building Workspace...
+        </Text>
+      </Flex>
     );
   }
 
   return (
-    <S.PageContainer>
-      <Group orientation="horizontal" >
+    <Flex $fill $bg="bg.main">
+      <Group orientation="horizontal">
         
-        {/* ============================== */}
-        {/* 1. LEFT SIDEBAR (Explorer + Bundler) */}
-        {/* ============================== */}
+  
         <Panel defaultSize={"20%"} minSize={"15%"}>
-          <Group orientation="vertical" >
-            
-            {/* Top: Explorer */}
-            <Panel defaultSize={"60%"} minSize={"30%"}>
-              <S.LeftPanelContent>
-                <S.ExplorerSection>
-                  <FileExplorer/>
-                </S.ExplorerSection>
-              </S.LeftPanelContent>
-            </Panel>
-
-            <Separator><S.HorizontalResizeHandle /></Separator>
-
-            {/* Bottom: Bundler UI */}
-            <Panel defaultSize={"40%"} minSize={"30%"}>
-              <S.BundlerSection>
-                <BundleSelector />
-                <BundleCompact />
-                <BundleDetails />
-              </S.BundlerSection>
-            </Panel>
-
-          </Group>
+          <WorkspaceLeftSidebar />
         </Panel>
 
-        <Separator><S.VerticalResizeHandle /></Separator>
+        <Separator>
+          <ResizeHandle $orientation="vertical" />
+        </Separator>
 
-        {/* ============================== */}
-        {/* 2. CENTER STAGE (Graph Canvas) */}
-        {/* ============================== */}
         <Panel defaultSize={"80%"} minSize={"30%"}>
-          <S.CanvasSection>
+          <CanvasArea>
             <GraphCanvas
               graphData={graphData!}
               actions={actions}
               activeFiles={activeFiles}
             />
-          </S.CanvasSection>
+          </CanvasArea>
         </Panel>
-
-       {/* ============================== */}
-        {/* 3. RIGHT PANEL (Code Viewer)   */}
-        {/* ============================== */}
+  
         {(viewedFilePath || viewedBundleContent) && (
           <>
-            <Separator><S.VerticalResizeHandle /></Separator>
+            <Separator>
+              <ResizeHandle $orientation="vertical" />
+            </Separator>
             
             <Panel defaultSize={"35%"} minSize={"20%"}>
-              <CodeViewerPanel />
+              <PanelSection $bg="bg.surface">
+                <CodeViewerPanel />
+              </PanelSection>
             </Panel>
           </>
         )}
 
       </Group>
-    </S.PageContainer>
+    </Flex>
   );
 };

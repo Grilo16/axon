@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from 'react';
-import { useAppDispatch, useAppSelector } from '@app/hooks';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { setActiveWorkspaceId, selectActiveWorkspaceId } from '../workspace-slice';
 import { useListWorkspacesQuery } from '../api/workspace-api'; 
 import { useWorkspaceActions } from './use-workspace-actions';
 import { IS_TAURI } from '@app/constants';
+import { useAppDispatch, useAppSelector } from '@app/store';
 
 
 export const useWorkspaceManager = () => {

@@ -1,4 +1,4 @@
-import type { RootState } from "@app/state-types";
+import type { RootState } from "@app/store/state-types";
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 // workspace-slice.ts
