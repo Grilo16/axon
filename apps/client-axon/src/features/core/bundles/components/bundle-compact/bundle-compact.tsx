@@ -18,7 +18,7 @@ export const BundleCompact = () => {
   const hasFiles = fileCount > 0;
 
   return (
-    <S.Card>
+    <S.Card id="tour-bundle-compact">
       <S.Title style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Package size={16} className="text-blue-400" />

@@ -36,7 +36,7 @@ export const FileExplorer: React.FC = () => {
   const isExplorerWorking = isBooting || isLoading;
 
   return (
-    <S.ExplorerContainer>
+    <S.ExplorerContainer id="tour-file-explorer">
       <ExplorerSearch 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 

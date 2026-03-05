@@ -8,7 +8,6 @@
     "build": "tsc -b && vite build --mode prod",
     "lint": "eslint .",
     "preview": "vite preview",
-
     "tauri:dev-ui": "vite --mode tauri --port 1420 --strictPort",
     "tauri:build-ui": "tsc && vite build --mode tauri"
   },
@@ -25,6 +24,7 @@
     "@types/uuid": "^10.0.0",
     "@xyflow/react": "^12.10.0",
     "dagre": "^0.8.5",
+    "driver.js": "^1.4.0",
     "elkjs": "^0.11.0",
     "html-to-image": "^1.11.13",
     "lucide-react": "^0.563.0",

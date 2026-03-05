@@ -125,7 +125,7 @@ export const GraphCanvas: React.FC<Props> = ({
   const showLoader = isLayouting || isLoading || isFetching;
 
   return (
-    <S.GraphContainer>
+    <S.GraphContainer id="tour-graph-canvas">
       <svg style={{ position: "absolute", width: 0, height: 0 }}>
         <defs>
           <linearGradient id="edge-gradient-down" x1="0%" y1="0%" x2="0%" y2="100%">

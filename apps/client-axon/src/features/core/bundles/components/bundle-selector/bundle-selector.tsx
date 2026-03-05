@@ -79,7 +79,7 @@ export const BundleSelector = () => {
   }
 
   return (
-    <S.Container>
+    <S.Container id="tour-bundle-selector">
       <Layers size={16} className="text-blue-400" />
       
       <S.Select 

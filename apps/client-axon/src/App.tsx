@@ -5,6 +5,7 @@ import { AppRoutes } from "@app/AppRoutes";
 import { KeycloakAuthProvider } from "@app/auth/keycloak-auth-provider";
 import { IS_TAURI } from "@app/constants";
 import { TauriAuthProvider } from "@app/auth/tauri-auth-provider";
+import { TourProvider } from "@features/tour";
 
 function App() {
   const AuthWrapper = IS_TAURI ? TauriAuthProvider : KeycloakAuthProvider;
@@ -12,7 +13,9 @@ function App() {
     <AxonThemeProvider>
       <BrowserRouter>
         <AuthWrapper>
-          <AppRoutes />
+          <TourProvider>
+            <AppRoutes />
+          </TourProvider>
         </AuthWrapper>
       </BrowserRouter>
       <Toaster
