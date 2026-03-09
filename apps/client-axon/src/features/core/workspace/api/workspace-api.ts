@@ -1,12 +1,12 @@
 import { axonApi } from "@app/api/axon-api";
-import type { 
-  WorkspaceRecord, 
-  UpdateWorkspacePayload, 
-  CreateWorkspaceReq, 
-  DirQuery, 
-  ReadFileReq, 
+import type {
+  WorkspaceRecord,
+  UpdateWorkspacePayload,
+  CreateWorkspaceReq,
+  DirQuery,
+  ReadFileReq,
   ListWorkspacesQuery,
-  FileQuery
+  FileQuery,
 } from "@shared/types/axon-core/workspace-api";
 import type { ExplorerEntry } from "@shared/types/axon-core/explorer";
 
@@ -36,11 +36,14 @@ export const workspaceApi = axonApi.injectEndpoints({
         command: "list_workspaces",
         url: `/v1/workspaces?limit=${query.limit || 50}&offset=${query.offset || 0}`,
         method: "GET",
-        tauriArgs: { query }, 
+        tauriArgs: { query },
       }),
       providesTags: ["Workspace"],
     }),
-    updateWorkspace: builder.mutation<void, { id: string; payload: UpdateWorkspacePayload }>({
+    updateWorkspace: builder.mutation<
+      void,
+      { id: string; payload: UpdateWorkspacePayload }
+    >({
       query: ({ id, payload }) => ({
         command: "update_workspace",
         url: `/v1/workspaces/${id}`,
@@ -48,17 +51,12 @@ export const workspaceApi = axonApi.injectEndpoints({
         body: payload,
         tauriArgs: { id, payload },
       }),
-      invalidatesTags: (_result, _error, { id }) => [{ type: "Workspace", id }, "Workspace"],
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Workspace", id },
+        "Workspace",
+      ],
     }),
-    touchWorkspace: builder.mutation<void, string>({
-      query: (id) => ({
-        command: 'touch_workspace',
-        url: `/v1/workspaces/${id}/touch`,
-        method: 'POST',
-        tauriArgs: { id },
-      }),
-      invalidatesTags: (_result, _error, id) => [{ type: 'Workspace', id }],
-    }),
+
     deleteWorkspace: builder.mutation<void, string>({
       query: (id) => ({
         command: "delete_workspace",
@@ -68,63 +66,28 @@ export const workspaceApi = axonApi.injectEndpoints({
       }),
       invalidatesTags: ["Workspace"],
     }),
-    getWorkspaceStatus: builder.query<{ isLoaded: boolean; workspaceId: string }, string>({
-      query: (id) => ({
-        command: "workspace_status",
-        url: `/v1/workspaces/${id}/status`,
-        method: "GET",
-        tauriArgs: { id },
-      }),
-      providesTags: (_result, _error, id) => [{ type: "Workspace", id: `${id}-status` }],
-    }),
-   
-    loadGithubAst: builder.mutation<void, string>({
-      query: (id) => ({
-        command: "load_github_workspace_ast",
-        url: `/v1/workspaces/${id}/load`,
-        method: "POST",
-        tauriArgs: { id },
-      }),
-      invalidatesTags: (_result, _error, id) => [
-        { type: "Bundle", id: `LIST-${id}` },
-        {type: "Bundle", id: "graph"},
-        { type: "Workspace", id: `${id}-dir-root` },
-        "Workspace"],
-    }),
-   
-    loadLocalAst: builder.mutation<void, string>({
-      query: (id) => ({
-        command: "load_local_workspace_ast",
-        url: `/v1/workspaces/${id}/load/local`,
-        method: "POST",
-        tauriArgs: { id },
-      }),
-      // ✨ FIX: Match GitHub invalidations so local workspaces also clear their cache on boot!
-      invalidatesTags: (_result, _error, id) => [
-        { type: "Bundle", id: `LIST-${id}` },
-        { type: "Bundle", id: "graph" },
-        { type: "Workspace", id: `${id}-dir-root` },
-        "Workspace"
-      ],
-    }),
 
     getAllFilePaths: builder.query<string[], { id: string; query: FileQuery }>({
       query: ({ id, query }) => ({
-        command: 'get_all_file_paths',
-        url: `/v1/workspaces/${id}/files${query.limit ? `?limit=${query.limit}` : ''}`,
-        method: 'GET',
+        command: "get_all_file_paths",
+        url: `/v1/workspaces/${id}/files${query.limit ? `?limit=${query.limit}` : ""}`,
+        method: "GET",
         tauriArgs: { id, query },
       }),
-      providesTags: (_result, _error, arg) => [{ type: 'Workspace' as const, id: `ALL-${arg.id}` }],
+      providesTags: (_result, _error, arg) => [
+        { type: "Workspace" as const, id: `ALL-${arg.id}` },
+      ],
     }),
-    getFilePathsByDir: builder.query<string[], { id: string; query: DirQuery }>({
-      query: ({ id, query }) => ({
-        command: "get_file_paths_by_dir",
-        url: `/v1/workspaces/${id}/files/dir?path=${encodeURIComponent(query.path)}&recursive=${query.recursive}${query.limit ? `&limit=${query.limit}` : ""}`,
-        method: "GET",
-        tauriArgs: { id, query }, 
-      }),
-    }),
+    getFilePathsByDir: builder.query<string[], { id: string; query: DirQuery }>(
+      {
+        query: ({ id, query }) => ({
+          command: "get_file_paths_by_dir",
+          url: `/v1/workspaces/${id}/files/dir?path=${encodeURIComponent(query.path)}&recursive=${query.recursive}${query.limit ? `&limit=${query.limit}` : ""}`,
+          method: "GET",
+          tauriArgs: { id, query },
+        }),
+      },
+    ),
     readFile: builder.query<string, { id: string; query: ReadFileReq }>({
       query: ({ id, query }) => ({
         command: "read_file",
@@ -133,18 +96,18 @@ export const workspaceApi = axonApi.injectEndpoints({
         tauriArgs: { id, query },
       }),
     }),
-    listDirectory: builder.query<ExplorerEntry[], { id: string; query: ReadFileReq }>({
+    listDirectory: builder.query<
+      ExplorerEntry[],
+      { id: string; query: ReadFileReq }
+    >({
       query: ({ id, query }) => ({
         command: "list_directory",
         url: `/v1/workspaces/${id}/explorer?path=${encodeURIComponent(query.path)}`,
         method: "GET",
-        tauriArgs: { 
-            id, 
-            query
-        },
+        tauriArgs: { id, query },
       }),
       providesTags: (_result, _error, { id, query }) => [
-        { type: "Workspace", id: `${id}-dir-${query.path ?? "root"}` }
+        { type: "Workspace", id: `${id}-dir-${query.path ?? "root"}` },
       ],
     }),
   }),
@@ -155,11 +118,7 @@ export const {
   useGetWorkspaceQuery,
   useListWorkspacesQuery,
   useUpdateWorkspaceMutation,
-  useTouchWorkspaceMutation,
   useDeleteWorkspaceMutation,
-  useGetWorkspaceStatusQuery,
-  useLoadGithubAstMutation,
-  useLoadLocalAstMutation,
   useGetAllFilePathsQuery,
   useLazyGetAllFilePathsQuery,
   useGetFilePathsByDirQuery,

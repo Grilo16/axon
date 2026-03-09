@@ -76,9 +76,6 @@ fn main() {
             workspace::touch_workspace,
             workspace::delete_workspace,
             // Workspace Engine
-            workspace::workspace_status,
-            workspace::load_github_workspace_ast,
-            workspace::load_local_workspace_ast,
             workspace::get_all_file_paths,
             workspace::get_file_paths_by_dir,
             workspace::read_file,

@@ -1,16 +1,29 @@
-import { Package, FileCode, ShieldAlert, Copy, Loader2, EyeOff, Eye } from 'lucide-react';
-import { useBundleSession } from '@features/core/bundles/hooks/use-bundle-session';
-import { Flex, Card, Text, Button } from '@shared/ui';
-import { useTheme } from 'styled-components';
+import {
+  Package,
+  FileCode,
+  ShieldAlert,
+  Copy,
+  EyeOff,
+  Eye,
+} from "lucide-react";
+import { Flex, Card, Text, Button } from "@shared/ui";
+import { useTheme } from "styled-components";
+import { useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useActiveBundleQuery } from "../hooks/use-bundle-queries";
+import { useActiveBundleActions } from "../hooks/use-active-bundle-actions";
 
 export const BundleCompact = () => {
-  const { activeBundle, generateAndCopyBundle, isGenerating, hideBarrelExports, toggleHideBarrelExports } = useBundleSession();
   const theme = useTheme();
+  const { openBundleViewer } = useWorkspaceDispatchers();
+  const {toggleHideBarrelExports} = useActiveBundleActions()
+  const { activeBundle } = useActiveBundleQuery();
+  const options = activeBundle?.options;
 
+ 
   if (!activeBundle) return null;
 
-  const fileCount = activeBundle.options?.targetFiles?.length || 0;
-  const ruleCount = activeBundle.options?.rules?.length || 0;
+  const fileCount = options?.targetFiles?.length || 0;
+  const ruleCount = options?.rules?.length || 0;
 
   return (
     <Card id="tour-bundle-compact" $p="md" $bg="bg.surfaceHover">
@@ -18,34 +31,62 @@ export const BundleCompact = () => {
         <Flex $justify="space-between" $align="center">
           <Flex $align="center" $gap="sm">
             <Package size={16} color={theme.colors.palette.primary.light} />
-            <Text $weight="bold" $size="sm">{activeBundle.name}</Text>
+            <Text $weight="bold" $size="sm">
+              {activeBundle.name}
+            </Text>
           </Flex>
-          
-          <Button $variant="icon" onClick={toggleHideBarrelExports} title="Toggle Barrel Exports">
-            {hideBarrelExports ? <EyeOff size={14} color={theme.colors.palette.primary.main} /> : <Eye size={14} />}
+
+          <Button
+            $variant="icon"
+            onClick={toggleHideBarrelExports}
+            title="Toggle Barrel Exports"
+          >
+            {options?.hideBarrelExports ? (
+              <EyeOff size={14} color={theme.colors.palette.primary.main} />
+            ) : (
+              <Eye size={14} />
+            )}
           </Button>
         </Flex>
-        
+
         <Flex $gap="sm">
-          <Flex $bg="bg.overlay" $p="xs sm" $radius="sm" $gap="xs" $align="center" style={{ border: `1px solid ${theme.colors.border.subtle}` }}>
+          <Flex
+            $bg="bg.overlay"
+            $p="xs sm"
+            $radius="sm"
+            $gap="xs"
+            $align="center"
+            style={{ border: `1px solid ${theme.colors.border.subtle}` }}
+          >
             <FileCode size={12} color={theme.colors.palette.success.main} />
-            <Text $size="xs" $weight="bold">{fileCount} Files</Text>
+            <Text $size="xs" $weight="bold">
+              {fileCount} Files
+            </Text>
           </Flex>
-          <Flex $bg="bg.overlay" $p="xs sm" $radius="sm" $gap="xs" $align="center" style={{ border: `1px solid ${theme.colors.border.subtle}` }}>
+          <Flex
+            $bg="bg.overlay"
+            $p="xs sm"
+            $radius="sm"
+            $gap="xs"
+            $align="center"
+            style={{ border: `1px solid ${theme.colors.border.subtle}` }}
+          >
             <ShieldAlert size={12} color={theme.colors.palette.warning.main} />
-            <Text $size="xs" $weight="bold">{ruleCount} Rules</Text>
+            <Text $size="xs" $weight="bold">
+              {ruleCount} Rules
+            </Text>
           </Flex>
         </Flex>
 
-        <Button 
-          $variant="primary" 
-          $fill 
-          onClick={generateAndCopyBundle} 
-          disabled={isGenerating || fileCount === 0}
+        <Button
+          $variant="primary"
+          $fill
+          onClick={openBundleViewer}
+          disabled={fileCount === 0}
         >
           <Flex $align="center" $justify="center" $gap="sm">
-            {isGenerating ? <Loader2 size={14} className="animate-spin" /> : <Copy size={14} />}
-            <Text $weight="bold">{isGenerating ? "Bundling..." : "Generate Context"}</Text>
+            <Copy size={14} />
+            <Text $weight="bold">Generate Context</Text>
           </Flex>
         </Button>
       </Flex>

@@ -1,7 +1,9 @@
-import { FolderOpen, Trash2, ChevronRight, Plus } from "lucide-react";
+import { FolderOpen, Trash2, ChevronRight } from "lucide-react";
 import { Flex, Text, Button, Box } from "@shared/ui";
-import {type WorkspaceRecord } from "@shared/types/axon-core/workspace-api";
 import styled from "styled-components";
+import { useAllWorkspacesQuery } from "../hooks/use-workspace-queries";
+import { useWorkspaceDispatchers } from "../hooks/use-workspace-slice";
+import { useWorkspaceActions } from "../hooks/use-workspace-actions";
 
 const WorkspaceRow = styled(Flex)`
   cursor: pointer;
@@ -12,17 +14,12 @@ const WorkspaceRow = styled(Flex)`
   }
 `;
 
-export const WorkspaceList = ({ 
-  workspaces, 
-  onOpen, 
-  onRemove, 
-  onSwitchToCreate 
-}: { 
-  workspaces: WorkspaceRecord[], 
-  onOpen: (id: string) => void,
-  onRemove: (id: string) => void,
-  onSwitchToCreate: () => void
-}) => (
+export const WorkspaceList = () => {
+  const { workspaces } = useAllWorkspacesQuery();
+  const { switchWorkspace } = useWorkspaceDispatchers()
+  const { deleteWorkspace } = useWorkspaceActions()
+  
+  return (
   <Flex $direction="column" $gap="md">
     <Flex $direction="column" $gap="xs">
       {workspaces.map((ws) => (
@@ -32,7 +29,7 @@ export const WorkspaceList = ({
           $radius="md" 
           $align="center" 
           $gap="md"
-          onClick={() => onOpen(ws.id)}
+          onClick={() => switchWorkspace(ws.id)}
         >
           <Box $p="sm" $bg="bg.overlay" $radius="sm">
             <FolderOpen size={16} color="#60a5fa" />
@@ -41,18 +38,14 @@ export const WorkspaceList = ({
             <Text $weight="bold" $size="md">{ws.name}</Text>
             <Text $size="xs" $color="muted" $truncate>{ws.projectRoot}</Text>
           </Flex>
-          <Button $variant="icon" onClick={(e) => { e.stopPropagation(); onRemove(ws.id); }}>
+          <Button $variant="icon" onClick={(e) => { e.stopPropagation(); deleteWorkspace.handle(ws.id); }}>
             <Trash2 size={16} />
           </Button>
           <ChevronRight size={16} color="#444" />
         </WorkspaceRow>
       ))}
     </Flex>
-    
-    <Box $p="lg 0 0 0" style={{ borderTop: '1px solid #2b2b2b' }}>
-      <Button $variant="primary" $fill onClick={onSwitchToCreate}>
-        <Plus size={18} /> New Workspace
-      </Button>
-    </Box>
+   
   </Flex>
-);
+  )
+}

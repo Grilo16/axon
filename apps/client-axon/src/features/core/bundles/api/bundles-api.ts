@@ -64,7 +64,8 @@ export const bundleApi = axonApi.injectEndpoints({
         { type: "Bundle", id },
         { type: "Bundle", id: `LIST-${workspaceId}` },
         { type: "Bundle", id: `LIST-${id}` },
-        { type: "Bundle", id: `${id}-graph` }
+        { type: "Bundle", id: `${id}-graph` },
+        { type: "Bundle", id: `${id}-context` }
       ],
     }),
     deleteBundle: builder.mutation<void, { id: string; workspaceId: string }>({
@@ -79,22 +80,37 @@ export const bundleApi = axonApi.injectEndpoints({
         { type: "Bundle", id: `LIST-${workspaceId}` },
       ],
     }),
-    getBundleGraph: builder.query<AxonGraphView, { id: string; hideBarrelExports: boolean }>({ 
-      query: ({ id, hideBarrelExports }) => ({
-        command: "get_bundle_graph",
-        url: `/v1/bundles/${id}/graph${hideBarrelExports ? '?hideBarrelExports=true' : ''}`,
-        method: "GET",
-        tauriArgs: { id, hideBarrelExports },
-      }),
-      providesTags: (_result, _error, arg) => [{ type: "Bundle", id: `${arg.id}-graph` }, {type: "Bundle", id: "graph"}],
-    }),
-    generateBundle: builder.mutation<Record<string, string>, string>({
+    getBundleGraph: builder.query<AxonGraphView, string>({ 
       query: (id) => ({
-        command: "generate_bundle",
-        url: `/v1/bundles/${id}/generate`,
-        method: "POST",
+        command: "get_bundle_graph",
+        url: `/v1/bundles/${id}/graph`,
+        method: "GET",
         tauriArgs: { id },
       }),
+      providesTags: (_result, _error, id) => [
+        { type: "Bundle", id: `${id}-graph` }, 
+        { type: "Bundle", id: "graph" }
+      ],
+    }),
+    getGeneratedContext: builder.query<string, { id: string; name: string }>({
+      query: ({ id }) => ({
+        command: "generate_bundle",
+        url: `/v1/bundles/${id}/generate`,
+        method: "GET", 
+        tauriArgs: { id },
+      }),
+      transformResponse: (response: Record<string, string>, _meta, arg) => {
+        const fileEntries = Object.entries(response);
+        return [
+          `# BUNDLED CONTEXT: ${arg.name}`,
+          ...fileEntries.map(
+            ([path, content]) => `## File: ${path}\n\`\`\`typescript\n${content}\n\`\`\``
+          ),
+        ].join("\n\n");
+      },
+      providesTags: (_result, _error, { id }) => [
+        { type: "Bundle", id: `${id}-context` }
+      ],
     }),
   }),
 });
@@ -107,5 +123,5 @@ export const {
   useUpdateBundleMutation,
   useDeleteBundleMutation,
   useGetBundleGraphQuery,
-  useGenerateBundleMutation,
+  useGetGeneratedContextQuery,
 } = bundleApi;

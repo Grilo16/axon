@@ -1,12 +1,12 @@
 import { memo, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { MinusCircle, PlusCircle, ChevronDown, Plus } from "lucide-react";
-import { useGraphActions } from "../../context/graph-actions";
-import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
+import { useGraphInteractions } from "../../hooks/use-graph-interactions";
 
 import { 
   Grid, Flex, Text, SplitButtonGroup, SplitButtonMain, 
   SplitButtonChevron, PopoverMenu, MenuItem 
 } from "@shared/ui";
+import { useActiveBundleQuery } from "@features/core/bundles/hooks/use-bundle-queries";
 
 function stopPropagationOnly(evt: ReactMouseEvent) {
   evt.stopPropagation();
@@ -22,8 +22,11 @@ type Props = {
 };
 
 export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
-  const { addFile, batchUpdateFiles } = useGraphActions();
-  const { activePaths } = useBundleSession();
+  // 🌟 Directly consume the interaction hook
+  const { addNodeToBundle, batchUpdateNodesInBundle } = useGraphInteractions();
+  
+  const {activeBundle} = useActiveBundleQuery()
+  const activePaths = activeBundle?.options.targetFiles || []
   
   const [outMenuOpen, setOutMenuOpen] = useState(false);
   const [inMenuOpen, setInMenuOpen] = useState(false);
@@ -39,7 +42,7 @@ export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
         <SplitButtonGroup $active={inactiveImports.length < imports.length} $tone="success">
           <SplitButtonMain 
             disabled={inactiveImports.length === 0}
-            onClick={() => batchUpdateFiles(inactiveImports, [])}
+            onClick={() => batchUpdateNodesInBundle(inactiveImports, [])} // 🌟 Updated FSD call
             title={inactiveImports.length === 0 ? "All imports added" : `Add ${inactiveImports.length} imports`}
           >
             {inactiveImports.length === 0 ? <MinusCircle size={12} /> : <PlusCircle size={12} />}
@@ -57,7 +60,7 @@ export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
         {outMenuOpen && inactiveImports.length > 0 && (
           <PopoverMenu onMouseDown={stopPropagationOnly} onClick={stopPropagationOnly} style={{ width: '100%' }}>
             {inactiveImports.map((path) => (
-              <MenuItem key={path} title={path} onClick={() => { addFile(path); setOutMenuOpen(false); }}>
+              <MenuItem key={path} title={path} onClick={() => { addNodeToBundle(path); setOutMenuOpen(false); }}>
                 <Plus size={12} />
                 <span>{getFileName(path)}</span>
               </MenuItem>
@@ -66,12 +69,11 @@ export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
         )}
       </Flex>
 
-      {/* INCOMING (Used By) */}
       <Flex $direction="column" style={{ position: 'relative' }}>
         <SplitButtonGroup $active={inactiveUsedBy.length < usedBy.length} $tone="primary">
           <SplitButtonMain 
             disabled={inactiveUsedBy.length === 0}
-            onClick={() => batchUpdateFiles(inactiveUsedBy, [])}
+            onClick={() => batchUpdateNodesInBundle(inactiveUsedBy, [])} // 🌟 Updated FSD call
             title={inactiveUsedBy.length === 0 ? "All users added" : `Add ${inactiveUsedBy.length} users`}
           >
             {inactiveUsedBy.length === 0 ? <MinusCircle size={12} /> : <PlusCircle size={12} />}
@@ -89,7 +91,7 @@ export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
         {inMenuOpen && inactiveUsedBy.length > 0 && (
           <PopoverMenu onMouseDown={stopPropagationOnly} onClick={stopPropagationOnly} style={{ width: '100%' }}>
             {inactiveUsedBy.map((path) => (
-              <MenuItem key={path} title={path} onClick={() => { addFile(path); setInMenuOpen(false); }}>
+              <MenuItem key={path} title={path} onClick={() => { addNodeToBundle(path); setInMenuOpen(false); }}>
                 <Plus size={12} />
                 <span>{getFileName(path)}</span>
               </MenuItem>

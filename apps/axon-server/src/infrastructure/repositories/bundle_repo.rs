@@ -1,11 +1,13 @@
 use async_trait::async_trait;
 use sqlx::{PgPool, types::Json};
+use tracing::instrument;
+use chrono::Utc;
+
 use axon_core::{
     domain::bundle::{BundleRecord, BundleRepository, UpdateBundlePayload},
     error::{AxonError, AxonResult},
     bundler::rules::BundleOptions,
 };
-use chrono::Utc;
 
 pub struct PostgresBundleRepo {
     pool: PgPool,
@@ -19,6 +21,7 @@ impl PostgresBundleRepo {
 
 #[async_trait]
 impl BundleRepository for PostgresBundleRepo {
+    #[instrument(skip(self, bundle))]
     async fn create(&self, bundle: BundleRecord) -> AxonResult<()> {
         sqlx::query!(
             r#"
@@ -28,41 +31,42 @@ impl BundleRepository for PostgresBundleRepo {
             bundle.id,
             bundle.workspace_id,
             bundle.name,
-            Json(&bundle.options) as _, // JSONB wrapper!
+            Json(&bundle.options) as _, 
             bundle.created_at,
             bundle.updated_at
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Save Error: {}", e)))?;
+        .await?; // 🌟 Implicitly mapped via From trait
+        
         Ok(())
     }
 
+    #[instrument(skip(self))]
     async fn duplicate(&self, bundle_id: &str, new_id: &str, new_name: Option<String>) -> AxonResult<BundleRecord> {
-        // 1. Fetch the original
         let original = self.get_by_id(bundle_id).await?
             .ok_or_else(|| AxonError::NotFound {
                 entity: "Bundle",
                 id: bundle_id.to_string()
             })?;
+            
         let now = Utc::now().to_rfc3339();
         
-        // 2. Mutate it into the clone
         let cloned_record = BundleRecord {
             id: new_id.to_string(),
             workspace_id: original.workspace_id,
-            name: new_name.unwrap_or(format!("{} (Copy)", original.name)),
+            // 🌟 Use unwrap_or_else to prevent allocating the "(Copy)" string if a new_name IS provided
+            name: new_name.unwrap_or_else(|| format!("{} (Copy)", original.name)),
             options: original.options,
             created_at: now.clone(),
             updated_at: now,
         };
 
-        // 3. Save the clone
         self.create(cloned_record.clone()).await?;
 
         Ok(cloned_record)
     }
 
+    #[instrument(skip(self))]
     async fn get_by_id(&self, id: &str) -> AxonResult<Option<BundleRecord>> {
         let record = sqlx::query!(
             r#"
@@ -78,8 +82,7 @@ impl BundleRepository for PostgresBundleRepo {
             id
         )
         .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Fetch Error: {}", e)))?;
+        .await?;
 
         Ok(record.map(|r| BundleRecord {
             id: r.id,
@@ -91,6 +94,7 @@ impl BundleRepository for PostgresBundleRepo {
         }))
     }
 
+    #[instrument(skip(self))]
     async fn get_by_workspace_id(&self, workspace_id: &str, limit: i64, offset: i64) -> AxonResult<Vec<BundleRecord>> {
         let records = sqlx::query!(
             r#"
@@ -109,8 +113,7 @@ impl BundleRepository for PostgresBundleRepo {
             workspace_id, limit, offset
         )
         .fetch_all(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Fetch Error: {}", e)))?;
+        .await?;
 
         Ok(records.into_iter().map(|r| BundleRecord {
             id: r.id,
@@ -122,9 +125,10 @@ impl BundleRepository for PostgresBundleRepo {
         }).collect())
     }
 
+    #[instrument(skip(self, updates))]
     async fn update(&self, id: &str, updates: UpdateBundlePayload) -> AxonResult<()> {
         let now = Utc::now().to_rfc3339();
-        let options_json = updates.options.map(|opts| Json(opts));
+        let options_json = updates.options.map(Json);
 
         sqlx::query!(
             r#"
@@ -136,31 +140,30 @@ impl BundleRepository for PostgresBundleRepo {
             WHERE id = $4
             "#,
             updates.name,
-            options_json as _, // Let Postgres handle the Option<Json<T>> -> JSONB Coalesce
+            options_json as _, 
             now,
             id
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Update Error: {}", e)))?;
+        .await?;
 
         Ok(())
     }
 
+    #[instrument(skip(self))]
     async fn delete(&self, id: &str) -> AxonResult<bool> {
         let result = sqlx::query!("DELETE FROM bundles WHERE id = $1", id)
             .execute(&self.pool)
-            .await
-            .map_err(|e| AxonError::Backend(format!("DB Delete Error: {}", e)))?;
+            .await?;
             
         Ok(result.rows_affected() > 0)
     }
 
+    #[instrument(skip(self))]
     async fn delete_by_workspace_id(&self, workspace_id: &str) -> AxonResult<u64> {
         let result = sqlx::query!("DELETE FROM bundles WHERE workspace_id = $1", workspace_id)
             .execute(&self.pool)
-            .await
-            .map_err(|e| AxonError::Backend(format!("DB Delete Error: {}", e)))?;
+            .await?;
             
         Ok(result.rows_affected())
     }

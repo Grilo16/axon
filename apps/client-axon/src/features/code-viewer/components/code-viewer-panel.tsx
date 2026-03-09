@@ -5,10 +5,9 @@ import { toast } from 'sonner';
 
 // UI Primitives
 import { Flex, Text, Button, Box, PanelSection, PanelHeader } from '@shared/ui';
-import { useWorkspaceSession } from '@features/core/workspace';
-import { useBundleSession } from '@features/core/bundles/hooks/use-bundle-session'; 
-import { useReadFileQuery } from '@features/core/workspace/api/workspace-api';
-import { useWorkspaceManager } from '@features/core/workspace/hooks/use-workspace-manager';
+import { useViewedFilePath, useViewMode, useWorkspaceDispatchers } from '@features/core/workspace/hooks/use-workspace-slice';
+import { useReadWorkspaceFileQuery } from '@features/core/workspace/hooks/use-workspace-queries';
+import { useActiveBundleQuery, useReadBundleContextQuery } from '@features/core/bundles/hooks/use-bundle-queries';
 
 const getLanguageFromPath = (path: string) => {
   const ext = path.split('.').pop()?.toLowerCase();
@@ -27,23 +26,25 @@ const getLanguageFromPath = (path: string) => {
 };
 
 export const CodeViewerPanel = () => {
-  const { activeId } = useWorkspaceManager();
-  const { viewedFilePath, viewedBundleContent, closeViewer } = useWorkspaceSession();
-  const { activeBundle } = useBundleSession();
+  const { closeViewer } = useWorkspaceDispatchers()
+  const viewedFilePath = useViewedFilePath()
+  const {activeBundle} = useActiveBundleQuery()
   
-  const isBundle = !!viewedBundleContent;
+  const viewMode = useViewMode()
+  const isBundle = viewMode === "bundle-context";
 
-  const { data: fileContent, isLoading, isFetching } = useReadFileQuery(
-    { id: activeId!, query: { path: viewedFilePath! } },
-    { skip: !activeId || !viewedFilePath || isBundle }
-  );
-
+  const { data: fileContent, isLoading, isFetching } = useReadWorkspaceFileQuery()
+  const { data: viewedBundleContent} = useReadBundleContextQuery(activeBundle?.name || "DEFAULT")
+  
+  
   const language = useMemo(() => {
     if (isBundle) return 'markdown';
     return viewedFilePath ? getLanguageFromPath(viewedFilePath) : 'plaintext';
   }, [viewedFilePath, isBundle]);
 
   const title = isBundle ? "Generated Context Bundle" : viewedFilePath?.split(/[/\\]/).pop();
+
+
   const editorValue = isBundle ? viewedBundleContent : fileContent;
 
   const handleCopy = async () => {
@@ -126,7 +127,6 @@ export const CodeViewerPanel = () => {
               wordWrap: 'on',
               scrollBeyondLastLine: false,
               smoothScrolling: true,
-              // Match our theme's dark background exactly
               padding: { top: 16 }
             }}
           />

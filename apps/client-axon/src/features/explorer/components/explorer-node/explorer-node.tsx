@@ -1,77 +1,84 @@
-import { memo } from "react";
-import type { ExplorerEntry as ExplorerEntryType } from "@shared/types/axon-core/explorer";
-
+import { memo, useState } from "react";
 import { Flex } from "@shared/ui";
-import { NodeRow } from "./node-row";
-import { useExplorerNode } from "@features/explorer/hooks";
 
-export interface ExplorerOptions {
-  foldersSelectable?: boolean;
-  filesSelectable?: boolean;
-  multiSelect?: boolean;
-  cascade?: boolean;
-}
+import { NodeContainer } from "./node-container";
+import { NodeCaret } from "./node-caret";
+import { NodeIcon } from "./node-icon";
+import { NodeLabel } from "./node-label";
+import { NodeActions } from "./node-actions";
 
+import { useExplorerDirectory } from "@features/explorer/hooks/use-explorer-directory";
+import { useIsNodeHovered, useIsNodeSelected, useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
 
-interface Props {
-  entry: ExplorerEntryType;
+interface ExplorerNodeProps {
+  path: string;
+  name: string;
+  isFolder: boolean;
   depth: number;
-  options: ExplorerOptions;
-  onFolderExpand: (path: string) => Promise<ExplorerEntryType[] | undefined>;
-  onNavigate: (path: string) => void;
 }
 
-export const ExplorerNode = memo((props: Props) => {
-  const { entry, depth, options } = props;
-  
-  // 1. Grab all logic from our extracted hook
-  const nodeState = useExplorerNode(
-    entry, props.options, props.onFolderExpand, props.onNavigate
-  );
+export const ExplorerNode = memo(
+  ({ path, name, isFolder, depth }: ExplorerNodeProps) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const isHovered = useIsNodeHovered(path)
+    const isSelected = useIsNodeSelected(path)
+    const { children } = useExplorerDirectory(path, isOpen);
+    const { hoverNode, toggleSelection, openFileViewer } = useWorkspaceDispatchers();
 
-  return (
-    <Flex $direction="column">
-      <NodeRow
-        name={entry.data.name}
-        depth={depth}
-        isFolder={nodeState.isFolder}
-        isOpen={nodeState.isOpen}
-        loading={nodeState.loading}
-        isFocused={nodeState.isFocused}
-        isSelected={nodeState.isSelected}
-        inGraph={nodeState.inGraph}
-        hasFilesInGraph={nodeState.hasFilesInGraph}
-        isFetching={nodeState.isFetching}
-        cascade={options.cascade !== false}
-        onClick={(e) => {
-          if (!nodeState.isFolder) nodeState.handleSelect(e);
-          if (nodeState.isFolder) nodeState.handleToggle(e);
-        }}
-        onDoubleClick={(e) => {
-          e.stopPropagation();
-          if (!nodeState.isFolder) nodeState.openFileInViewer(nodeState.path);
-        }}
-        onMouseEnter={() => nodeState.setHovered(nodeState.path)}
-        onMouseLeave={() => nodeState.setHovered(null)}
-        onToggleGraph={nodeState.isFolder ? nodeState.handleToggleFolderGraph : nodeState.handleToggleFileGraph}
-        onToggleFolder={nodeState.handleToggle}
-      />
+    const handleToggleFolder = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsOpen((prev) => !prev);
+    };
 
-      {/* 2. Recursively render children if open */}
-      {nodeState.isOpen && (
-        <Flex $direction="column">
-          {nodeState.children.map((child) => (
-            <ExplorerNode
-              key={child.data.path}
-              {...props}
-              entry={child}
-              depth={depth + 1}
-            />
-          ))}
-        </Flex>
-      )}
-    </Flex>
-  );
-});
+    const handleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (isFolder) handleToggleFolder(e);
+      else toggleSelection(path);
+    };
+
+    return (
+      <Flex $direction="column">
+        <NodeContainer
+          $depth={depth}
+          $isFocused={isHovered}
+          $isSelected={isSelected}
+          $align="center"
+          $gap="xs"
+          onClick={handleClick}
+          onDoubleClick={(e) => {
+            e.stopPropagation();
+            if (!isFolder) openFileViewer(path);
+          }}
+          onMouseEnter={() => hoverNode(path)}
+          onMouseLeave={() => hoverNode(null)}
+        >
+          <NodeCaret
+            path={path}
+            isFolder={isFolder}
+            isOpen={isOpen}
+            onToggle={handleToggleFolder}
+          />
+          <NodeIcon path={path} isFolder={isFolder} isOpen={isOpen} />
+          <NodeLabel path={path} name={name} />
+          <NodeActions path={path} isFolder={isFolder} />
+        </NodeContainer>
+
+        {isOpen && children.length > 0 && (
+          <Flex $direction="column">
+            {children.map((child: any) => (
+              <ExplorerNode
+                key={child.data.path}
+                path={child.data.path}
+                name={child.data.name}
+                isFolder={child.type === "folder"}
+                depth={depth + 1}
+              />
+            ))}
+          </Flex>
+        )}
+      </Flex>
+    );
+  },
+);
 
 ExplorerNode.displayName = "ExplorerNode";

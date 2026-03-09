@@ -49,6 +49,7 @@ pub struct ListBundlesQuery {
 }
 
 
+
 #[async_trait]
 pub trait BundleRepository: Send + Sync {
     async fn create(&self, bundle: BundleRecord) -> AxonResult<()>;

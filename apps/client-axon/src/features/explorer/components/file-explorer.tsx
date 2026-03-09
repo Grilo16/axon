@@ -1,64 +1,58 @@
+// src/features/explorer/containers/PrivateExplorerContainer.tsx
+import { useState } from "react";
 import styled from "styled-components";
-import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
-
 import { Flex, Box } from "@shared/ui";
 import { customScrollbar } from "@shared/ui/theme/mixins";
 
-import { ExplorerSearchBar } from "./explorer-search-bar";
-import { ExplorerLoader } from "./explorer-states";
-import { ExplorerSearchResults } from "./explorer-search-results";
-import { ExplorerNode } from "./explorer-node";
-import { useExplorer, useExplorerSearch } from "../hooks";
+import { ExplorerSearchBar } from "../components/explorer-search-bar";
+import { ExplorerSearchResults } from "../components/explorer-search-results";
+import { ExplorerNode } from "../components/explorer-node";
+import { useExplorerSearch } from "../hooks/use-explorer-search";
+import { useExplorerDirectory } from "../hooks/use-explorer-directory";
 
-// Inject the sleek custom scrollbar!
 const ScrollableArea = styled(Box)`
   overflow-y: auto;
   overflow-x: hidden;
   ${customScrollbar}
 `;
 
-
-export const FileExplorer = () => {
-  const { entries, isLoading: isTreeLoading, fetchDir } = useExplorer();
-  const { isBooting } = useWorkspaceManager();
-  
-  const { 
-    searchQuery, setSearchQuery, searchResults, handleAddAll, 
-    toggleTarget, activePaths 
-  } = useExplorerSearch();
-
-  const isWorking = isBooting || isTreeLoading;
+export const FileExplorer = ({}) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const { children } = useExplorerDirectory("/", true);
+  const { results, addAllToGraph, toggleTarget } = useExplorerSearch(searchQuery);
 
   return (
     <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface">
       <ExplorerSearchBar 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
-        onAddAll={handleAddAll} 
-        resultCount={searchResults.length}
+        onAddAll={addAllToGraph} 
+        resultCount={results.length}
       />
 
       <ScrollableArea $fill>
-        {isWorking ? (
-          <ExplorerLoader />
-        ) : searchQuery ? (
+       {searchQuery ? (
           <ExplorerSearchResults 
-            results={searchResults} 
-            activePaths={activePaths} 
+            results={results} 
+            activePaths={[]}
             onToggle={toggleTarget} 
           />
         ) : (
-          entries.map((entry) => (
+        children.length > 0 && (
+        <Flex $direction="column">
+          {children.map((child: any) => (
             <ExplorerNode
-              key={entry.data.path}
-              entry={entry}
+              key={child.data.path}
+              path={child.data.path}
+              name={child.data.name}
+              isFolder={child.type === "folder"}
               depth={0}
-              options={{ cascade: true }}
-              onFolderExpand={fetchDir}
-              onNavigate={() => {}}
             />
-          ))
-        )}
+          ))}
+        </Flex>
+      ))}
+
+   
       </ScrollableArea>
     </Flex>
   );

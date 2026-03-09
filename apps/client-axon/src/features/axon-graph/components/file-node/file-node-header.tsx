@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { FileCode, X } from "lucide-react";
-import { useGraphActions } from "../../context/graph-actions";
+import { useGraphInteractions } from "../../hooks/use-graph-interactions";
 import { Flex, Text, Button } from "@shared/ui";
 
 type Props = {
@@ -10,7 +10,7 @@ type Props = {
 };
 
 export const FileNodeHeader = memo(({ fileId, label, isZoomedOut }: Props) => {
-  const { removeFile } = useGraphActions();
+  const { removeNodesFromBundle } = useGraphInteractions();
 
   return (
     <Flex 
@@ -41,7 +41,7 @@ export const FileNodeHeader = memo(({ fileId, label, isZoomedOut }: Props) => {
         <Button 
           $variant="icon" 
           title="Close Node" 
-          onClick={() => removeFile(fileId)}
+          onClick={() => removeNodesFromBundle([fileId])} // 🌟 Use the new FSD method
         >
           <X size={14} />
         </Button>

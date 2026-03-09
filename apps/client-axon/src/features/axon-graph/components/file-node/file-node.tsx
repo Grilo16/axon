@@ -5,21 +5,22 @@ import { Position, type NodeProps, useStore, NodeResizeControl, useUpdateNodeInt
 import type { AppFileNode } from "../../types";
 import { FileNodeHeader } from "./file-node-header";
 import { FileNodeActions } from "./file-node-actions";
-import { FileNodeSymbols } from "./file-node-symbols"; // <-- Import extracted component
-import { useNodeSession, useWorkspaceSession } from "@features/core/workspace";
-import { useBundleSession } from "@features/core/bundles/hooks/use-bundle-session";
+import { FileNodeSymbols } from "./file-node-symbols";
+
 import { Flex, Text } from "@shared/ui";
+import { useIsNodeHovered, useIsNodeSelected, useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
 
 // --- XYFlow Specific Styled Components ---
 const NodeCardWrapper = styled.div<{ $selected?: boolean; $isSeed?: boolean; $isZoomedOut?: boolean; $isHovered?: boolean; }>`
   background: ${({ theme, $isSeed }) => ($isSeed ? "#1b1f24" : theme.colors.bg.surface)};
+  /* Hijack standard border/shadow logic based purely on our Redux injected props */
   border: 1px solid ${({ theme, $selected }) => ($selected ? theme.colors.palette.primary.main : theme.colors.border.default)};
   border-radius: ${({ theme }) => theme.radii.lg};
   position: relative;
   width: 100%;
   min-width: 300px;
   height: ${({ $isZoomedOut }) => ($isZoomedOut ? "max-content" : "100%")};
-  box-shadow: ${({ theme }) => theme.shadows.sm};
+  box-shadow: ${({ theme, $selected }) => ($selected ? `0 0 0 1px ${theme.colors.palette.primary.main}, 0 0 12px rgba(59, 130, 246, 0.2)` : theme.shadows.sm)};
   display: flex;
   flex-direction: column;
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
@@ -37,49 +38,32 @@ const StyledHandle = styled(Handle)`
   border: 1px solid #111;
 `;
 
-export const FileNode = memo(({ id, data, selected }: NodeProps<AppFileNode>) => {
+export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
   const zoom = useStore((s) => s.transform[2]);
   const isZoomedOut = zoom < 0.65;
   const updateNodeInternals = useUpdateNodeInternals();
 
-  const { activeBundle, addRedaction, deleteRule } = useBundleSession();
-  const rules = activeBundle?.options.rules || [];
-  const { hoverRelationship } = useNodeSession(data.fileId);
-  const { openFileInViewer } = useWorkspaceSession();
+  // 1. Redux UI State (O(1) highly optimized!)
+    const isHovered = useIsNodeHovered(data.path)
+    const isSelected = useIsNodeSelected(data.path)
+  const {openFileViewer} = useWorkspaceDispatchers()
   
-  const isHovered = hoverRelationship === "exact" || hoverRelationship === "parent-hovered";
   const symbols = data.symbols ?? [];
 
-  useEffect(() => { updateNodeInternals(id); }, [isZoomedOut, updateNodeInternals, id]);
+  useEffect(() => { 
+    updateNodeInternals(id); 
+  }, [isZoomedOut, updateNodeInternals, id]);
 
-  const handleToggleRule = (e: React.MouseEvent, symId: number, actionType: "hideImplementation" | "removeEntirely") => {
-    e.stopPropagation();
-    const existingIndex = rules.findIndex(r =>
-      'specificSymbol' in r.target &&
-      r.target.specificSymbol.file_path === data.path &&
-      r.target.specificSymbol.symbol_id === symId
-    );
-
-    if (existingIndex >= 0) {
-      const existingRule = rules[existingIndex];
-      if (existingRule.action === actionType) {
-        deleteRule(existingIndex);
-        return;
-      } 
-      deleteRule(existingIndex);
-      addRedaction({ target: { specificSymbol: { file_path: data.path, symbol_id: symId } }, action: actionType });
-      return;
-    }
-
-    addRedaction({ target: { specificSymbol: { file_path: data.path, symbol_id: symId } }, action: actionType });
-  };
 
   return (
     <NodeCardWrapper 
-      $selected={!!selected} 
+      $selected={isSelected} 
       $isZoomedOut={isZoomedOut} 
       $isHovered={isHovered} 
-      onDoubleClick={(e) => { e.stopPropagation(); openFileInViewer(data.fileId); }}
+      onDoubleClick={(e) => { 
+        e.stopPropagation(); 
+        openFileViewer(data.path); 
+      }}
     >
       {!isZoomedOut && (
         <NodeResizeControl minWidth={300} minHeight={110} style={{ border: 'none', background: 'transparent' }}>
@@ -92,7 +76,6 @@ export const FileNode = memo(({ id, data, selected }: NodeProps<AppFileNode>) =>
       <FileNodeHeader fileId={data.fileId} label={data.label} isZoomedOut={isZoomedOut} />
       
       {!isZoomedOut && (
-        // ✨ FIX 3: Added minWidth: 0 to the flex container so the Text truncation can calculate boundaries!
         <Flex $p="sm md" style={{ borderBottom: '1px solid #2b2b2b', minWidth: 0 }}>
           <Text $size="xs" $color="muted" $truncate title={data.path} style={{ flex: 1 }}>
             {data.path}
@@ -106,8 +89,6 @@ export const FileNode = memo(({ id, data, selected }: NodeProps<AppFileNode>) =>
         <FileNodeSymbols 
           symbols={symbols} 
           filePath={data.path} 
-          rules={rules} 
-          onToggleRule={handleToggleRule} 
         />
       )}
 

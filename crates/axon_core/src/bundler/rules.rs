@@ -38,4 +38,6 @@ pub struct RedactionRule {
 pub struct BundleOptions {
     pub rules: Vec<RedactionRule>,
     pub target_files: Vec<String>,
+    #[serde(default)]
+    pub hide_barrel_exports: bool
 }

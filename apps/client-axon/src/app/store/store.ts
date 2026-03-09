@@ -1,40 +1,53 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
-import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist';
-import storage from 'redux-persist/lib/storage'; 
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from "redux-persist";
+import storage from "redux-persist/lib/storage";
 
-import workspacesReducer from '@features/core/workspace/workspace-slice'; 
-import bundlesReducer from '@features/core/bundles/bundles-slice';
-import { axonApi } from '../api/axon-api';
-
+import { axonApi } from "../api/axon-api";
+import workspaceUiReducer from "@features/core/workspace/workspace-ui-slice";
+import publicBundlesReducer from "@features/public/public-bundles-slice";
+import { listenerMiddleware } from "./listener-middleware";
 
 const rootReducer = combineReducers({
   [axonApi.reducerPath]: axonApi.reducer,
-  bundles: bundlesReducer,
-  workspaces: workspacesReducer,
+
+  workspaceUi: workspaceUiReducer,
+  publicBundles: publicBundlesReducer,
 });
 
 const persistConfig = {
-  key: 'axon-root',
+  key: "axon-root",
   version: 1,
   storage,
-  whitelist: ['workspaces', 'bundles'] 
+  whitelist: ["workspaces", "bundles"],
 };
 
-// We use "as any" only during the persist wrap because redux-persist 
+// We use "as any" only during the persist wrap because redux-persist
 // types can be messy, but the exported 'store' remains strictly typed.
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 export const store = configureStore({
   reducer: persistedReducer,
-  middleware: (getDefaultMiddleware) => 
+  middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(axonApi.middleware)
+    })
+    .prepend(listenerMiddleware.middleware)
+    .concat(axonApi.middleware),
 });
 
 export const persistor = persistStore(store);
 
 // Export Dispatch from the store, but RootState comes from state.types
 export type AppDispatch = typeof store.dispatch;
+export type RootState = ReturnType<typeof store.getState>;

@@ -1,22 +1,12 @@
-import React, { useState } from "react";
 import { VscAdd } from "react-icons/vsc";
 import { HelpCircle, LogOut } from "lucide-react";
-import { useAuth } from "react-oidc-context";
-
-import { useTour } from "@app/providers/tour-provider";
-import { WorkspaceLoader } from "@features/core/workspace";
-import { useWorkspaceManager } from "@features/core/workspace/hooks/use-workspace-manager";
-import { AXON_TOUR_STEPS } from "@features/core/tour/tour-steps";
-
 import { Flex, Box, Text } from "@shared/ui";
-import { SidebarIcon } from "./components/sidebar-icon";
-import { LibraryHubModal } from "./components/library-hub-modal";
+import { SidebarIcon } from "./sidebar-icon";
 
 /**
  * Extracts a 2-letter abbreviation for the workspace icon.
- * e.g., "Alpha Project" -> "AP", "axon-core" -> "AC"
  */
-function getInitials(name: string): string {
+export function getInitials(name: string): string {
   const clean = (name ?? "").trim();
   if (!clean) return "WS";
   
@@ -27,76 +17,71 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export const Sidebar = () => {
-  const { workspaces, activeWorkspace, open } = useWorkspaceManager();
-  const [isLoaderOpen, setIsLoaderOpen] = useState(false);
-  const [isHubOpen, setIsHubOpen] = useState(false);
-  const auth = useAuth();
-  const { startTour } = useTour();
+interface Workspace {
+  id: string;
+  name: string;
+}
 
-  const handleOpenWorkspace = (id: string) => (_e: React.MouseEvent<HTMLButtonElement>) => {
-    open(id);
-  };
+interface WorkspaceSidebarProps {
+  workspaces: Workspace[];
+  activeWorkspaceId: string | null;
+  onSelectWorkspace: (id: string) => void;
+  onCreateClick: () => void;
+  onTourClick: () => void;
+  onLogoutClick: () => void;
+}
 
-  const handleLogout = () => {
-    auth.signoutRedirect();
-  };
-
+export const WorkspaceSidebar = ({
+  workspaces,
+  activeWorkspaceId,
+  onSelectWorkspace,
+  onCreateClick,
+  onTourClick,
+  onLogoutClick,
+}: WorkspaceSidebarProps) => {
   return (
-    <>
-      <Flex
-        id="tour-sidebar-workspaces"
-        $direction="column"
-        $align="center"
-        $gap="md" 
-        $fill
-      >
-        {workspaces.map((ws) => (
-          <SidebarIcon
-            key={ws.id}
-            icon={<Text $size="lg" $weight="bold">{getInitials(ws.name)}</Text>}
-            title={ws.name}
-            $active={ws.id === activeWorkspace?.id}
-            onClick={handleOpenWorkspace(ws.id)}
-          />
-        ))}
-
-        {/* Subtle Divider */}
-        <Box
-          $bg="border.subtle"
-          style={{ width: 32, height: 2, borderRadius: 1 }}
-        />
-
+    <Flex
+      id="tour-sidebar-workspaces"
+      $direction="column"
+      $align="center"
+      $gap="md" 
+      $fill
+    >
+      {workspaces.map((ws) => (
         <SidebarIcon
-          title="Create New Workspace"
-          $active={isLoaderOpen}
-          onClick={() => setIsLoaderOpen(true)}
-          icon={<VscAdd size={18} />}
+          key={ws.id}
+          icon={<Text $size="lg" $weight="bold">{getInitials(ws.name)}</Text>}
+          title={ws.name}
+          $active={ws.id === activeWorkspaceId}
+          onClick={() => onSelectWorkspace(ws.id)}
         />
+      ))}
 
-        <Box $fill />
+      <Box
+        $bg="border.subtle"
+        style={{ width: 32, height: 2, borderRadius: 1 }}
+      />
 
-        <SidebarIcon
-          title="Take a Tour"
-          onClick={() => startTour(AXON_TOUR_STEPS)}
-          icon={<HelpCircle size={16} />}
-        />
+      <SidebarIcon
+        title="Create New Workspace"
+        onClick={onCreateClick}
+        icon={<VscAdd size={18} />}
+      />
 
-        <SidebarIcon
-          title="Log Out"
-          $isDanger
-          onClick={handleLogout}
-          icon={<LogOut size={16} />}
-        />
-      </Flex>
+      <Box style={{ flex: 1 }} />
 
-      {/* Modals */}
-      {isLoaderOpen && (
-        <WorkspaceLoader onClose={() => setIsLoaderOpen(false)} />
-      )}
-      {isHubOpen && (
-        <LibraryHubModal onClose={() => setIsHubOpen(false)} />
-      )}
-    </>
+      <SidebarIcon
+        title="Take a Tour"
+        onClick={onTourClick}
+        icon={<HelpCircle size={16} />}
+      />
+
+      <SidebarIcon
+        title="Log Out"
+        $isDanger
+        onClick={onLogoutClick}
+        icon={<LogOut size={16} />}
+      />
+    </Flex>
   );
 };

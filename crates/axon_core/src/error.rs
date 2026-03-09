@@ -1,31 +1,38 @@
 use crate::ids::{DirectoryId, FileId, SymbolId};
 use crate::path::RelativeAxonPath;
-use std::path::PathBuf;
-use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use serde::{Serialize};
+use axum::Json;
+use serde::Serialize;
 use serde_json::json;
+use std::path::PathBuf;
 use thiserror::Error;
 use ts_rs::TS;
 
-#[derive(Debug, Error, Serialize, TS)] 
+#[derive(Debug, Error, Serialize, TS)]
 #[serde(tag = "type", content = "data", rename_all = "camelCase")]
 #[ts(export_to = "error.ts", rename_all = "camelCase")]
 pub enum AxonError {
-    // --- 1. IO & Filesystem (The "Standard" stuff) ---
-   #[error("IO failure at '{path}': {message}")]
-    Io {
-        path: PathBuf,
-        message: String, 
-    },
+    // --- 0. Infrastructure & Bootstrapping ---
+    #[error("configuration error: {0}")]
+    Config(String),
+
+    #[error("database error: {0}")]
+    #[serde(skip)] // SQLx errors often contain sensitive DB info; hide from frontend
+    Database(String),
+
+    #[error("server startup error: {0}")]
+    Startup(String),
+
+    // --- 1. IO & Filesystem ---
+    #[error("IO failure at '{path}': {message}")]
+    Io { path: PathBuf, message: String },
 
     #[error("JSON error: {0}")]
-    Json(String), 
+    Json(String),
 
     #[error("walk error: {0}")]
-    Walk(String), 
-
+    Walk(String),
 
     #[error("root path does not exist: {0}")]
     RootNotFound(PathBuf),
@@ -33,7 +40,7 @@ pub enum AxonError {
     #[error("root path is not a directory: {0}")]
     RootNotDirectory(PathBuf),
 
-    // --- 2. Path & Integrity (The "Tree" stuff) ---
+    // --- 2. Path & Integrity ---
     #[error("path is not valid utf-8: {0}")]
     NonUtf8Path(PathBuf),
 
@@ -43,7 +50,7 @@ pub enum AxonError {
     #[error("invalid path segment: {0}")]
     InvalidPathSegment(String),
 
-    #[error("Unsupported path component '{component}' in path: {path}")]
+    #[error("unsupported path component '{component}' in path: {path}")]
     UnsupportedPath { component: String, path: PathBuf },
 
     #[error("too many items: {0}")]
@@ -52,7 +59,7 @@ pub enum AxonError {
     #[error("missing {entity} with ID: {id}")]
     NotFound { entity: &'static str, id: String },
 
-    // --- 3. Parsing & Semantic (The "Oxc/JS" stuff) ---
+    // --- 3. Parsing & Semantic ---
     #[error("failed to determine SourceType for {path}: {reason}")]
     UnknownSourceType {
         path: RelativeAxonPath,
@@ -71,7 +78,7 @@ pub enum AxonError {
     #[error("byte offset {offset} is out of bounds for source text")]
     OutOfBounds { offset: u32 },
 
-    // --- 4. Backend (The "OsSource" stuff) ---
+    // --- 4. Backend ---
     #[error("source backend error: {0}")]
     Backend(String),
 
@@ -85,11 +92,9 @@ pub enum AxonError {
     TauriIpc(String),
 }
 
-/// The default Result type for the entire Axon crate.
 pub type AxonResult<T> = std::result::Result<T, AxonError>;
 
 impl AxonError {
-    /// Ergonomic helper for IO errors with context.
     pub fn io(message: std::io::Error, path: impl Into<PathBuf>) -> Self {
         Self::Io {
             path: path.into(),
@@ -97,12 +102,10 @@ impl AxonError {
         }
     }
 
-    /// Quick check for "Not Found" style errors.
     pub fn is_not_found(&self) -> bool {
         matches!(self, Self::RootNotFound(_) | Self::NotFound { .. })
     }
 
-    /// Factory for Directory/File/Symbol lookup failures.
     pub fn missing_file(id: FileId) -> Self {
         Self::NotFound {
             entity: "File",
@@ -125,7 +128,6 @@ impl AxonError {
     }
 }
 
-/// Allows easy conversion from standard IO errors when the path isn't immediately critical
 impl From<std::io::Error> for AxonError {
     fn from(err: std::io::Error) -> Self {
         Self::Backend(err.to_string())
@@ -144,28 +146,30 @@ impl From<ignore::Error> for AxonError {
     }
 }
 
+impl From<sqlx::Error> for AxonError {
+    fn from(err: sqlx::Error) -> Self {
+        AxonError::Database(err.to_string())
+    }
+}
 
 impl IntoResponse for AxonError {
     fn into_response(self) -> Response {
-        let (status, error_message) = match self {
-            AxonError::NotFound { entity, id } => (
-                StatusCode::NOT_FOUND,
-                format!("{} '{}' not found", entity, id),
-            ),
-            AxonError::InvalidRange { .. } => (
-                StatusCode::BAD_REQUEST,
-                "Invalid text range provided".to_string(),
-            ),
-            AxonError::Backend(msg) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                msg,
-            ),
-            // Map any other core errors here...
-            err => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                err.to_string(),
-            ),
+        let (status, error_message) = match &self {
+            AxonError::NotFound { entity, id } => {
+                (StatusCode::NOT_FOUND, format!("{} '{}' not found", entity, id))
+            }
+            AxonError::InvalidRange { .. } => {
+                (StatusCode::BAD_REQUEST, "Invalid text range provided".to_string())
+            }
+            AxonError::Auth(msg) => (StatusCode::UNAUTHORIZED, msg.clone()),
+            AxonError::Config(_) | AxonError::Database(_) | AxonError::Startup(_) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, "Internal infrastructure error".to_string())
+            }
+            err => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
         };
+
+        // Log the actual internal error for telemetry, while returning a safe message to the client
+        tracing::error!("Request failed: {:?}", self);
 
         let body = Json(json!({
             "error": {

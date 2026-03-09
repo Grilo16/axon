@@ -4,13 +4,6 @@ import type { Symbol } from "@shared/types/axon-core/symbols";
 
 export type { AxonGraphView, FileEdgeView, FileNodeView, Symbol };
 
-export type FocusNodeActions = {
-  addFile: (fileId: string) => void;
-  removeFile: (fileId: string) => void;
-  batchUpdateFiles: (filesToAdd: string[], filesToRemove: string[]) => void;
-  reset: () => void;
-};
-
 export type FocusFileNodeData = {
   fileId: string;
   label: string;

@@ -1,63 +1,55 @@
 import { useMemo } from "react";
+import { useAppDispatch } from "@app/store";
+import { setBundle,  } from "@features/core/workspace/workspace-ui-slice";
 import { createActionHandler } from "@shared/utils/rtx-actions";
-import { 
-  useCloneBundleMutation, 
-  useCreateBundleMutation, 
-  useDeleteBundleMutation, 
-  useGenerateBundleMutation, 
-  useUpdateBundleMutation 
+import {
+  useCreateBundleMutation,
+  useUpdateBundleMutation,
+  useDeleteBundleMutation,
+  useCloneBundleMutation
 } from "../api/bundles-api";
+import type { CreateBundleReq } from "@shared/types/axon-core/bundle-api";
 
 export const useBundleActions = () => {
-  const [updateMut, updateState] = useUpdateBundleMutation();
+  const dispatch = useAppDispatch();
+  
   const [createMut, createState] = useCreateBundleMutation();
+  const [updateMut, updateState] = useUpdateBundleMutation();
   const [deleteMut, deleteState] = useDeleteBundleMutation();
-  const [generateMut, generateState] = useGenerateBundleMutation();
   const [cloneMut, cloneState] = useCloneBundleMutation();
 
-  const cloneBundle = useMemo(() => ({
-    handle: createActionHandler(cloneMut, { 
-      successMessage: "Bundle Cloned successfully",
-      errorMessage: "Failed to clone bundle."
-    }),
-    ...cloneState,
-  }), [cloneMut, cloneState]);
+  return useMemo(() => ({
+    selectBundle: (id: string) => dispatch(setBundle(id)),
+    
+    createBundle: {
+      handle: async (payload: CreateBundleReq) => {
+        const action = createActionHandler(createMut, { successMessage: "Bundle created!" });
+        const result = await action(payload);
+        dispatch(setBundle(result.id)); 
+        return result;
+      },
+      ...createState,
+    },
 
-  const generateBundle = useMemo(() => ({
-    handle: createActionHandler(generateMut, { 
-      successMessage: "Bundle generated successfully",
-      errorMessage: "Failed to generate bundle."
-    }),
-    ...generateState,
-  }), [generateMut, generateState]);
+    updateBundle: {
+      handle: createActionHandler(updateMut, { successMessage: "Bundle saved successfully!" }),
+      ...updateState,
+    },
 
-  const updateBundle = useMemo(() => ({
-    handle: createActionHandler(updateMut, { 
-      successMessage: "Bundle saved successfully!",
-      errorMessage: "Failed to save bundle."
-    }),
-    ...updateState,
-  }), [updateMut, updateState]);
+    cloneBundle: {
+      handle: createActionHandler(cloneMut, { successMessage: "Bundle cloned successfully!" }),
+      ...cloneState,
+    },
 
-  const createBundle = useMemo(() => ({
-    handle: createActionHandler(createMut, { 
-      successMessage: "Bundle created!" 
-    }),
-    ...createState,
-  }), [createMut, createState]);
-
-  const deleteBundle = useMemo(() => ({
-    handle: createActionHandler(deleteMut, { 
-      successMessage: "Bundle deleted!" 
-    }),
-    ...deleteState,
-  }), [deleteMut, deleteState]);
-
-  return {
-    createBundle,
-    updateBundle,
-    deleteBundle,
-    cloneBundle,
-    generateBundle,
-  };
+    deleteBundle: {
+      handle: createActionHandler(deleteMut, { successMessage: "Bundle deleted." }),
+      ...deleteState,
+    },
+  }), [
+    createMut, createState, 
+    updateMut, updateState, 
+    deleteMut, deleteState, 
+    cloneMut, cloneState, 
+    dispatch
+  ]);
 };

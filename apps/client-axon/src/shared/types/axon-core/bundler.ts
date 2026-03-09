@@ -2,7 +2,7 @@
 import type { SymbolId } from "./ids";
 import type { SymbolKind } from "./symbols";
 
-export type BundleOptions = { rules: Array<RedactionRule>, targetFiles: Array<string>, };
+export type BundleOptions = { rules: Array<RedactionRule>, targetFiles: Array<string>, hideBarrelExports: boolean, };
 
 export type RedactionRule = { target: TargetScope, action: RedactionType, };
 

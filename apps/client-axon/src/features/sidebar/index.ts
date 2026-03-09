@@ -1,1 +1,1 @@
-export {Sidebar} from "./sidebar"
+export {WorkspaceSidebar} from "./sidebar"

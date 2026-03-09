@@ -36,8 +36,7 @@ impl WorkspaceRepository for PostgresWorkspaceRepo {
             workspace.updated_at
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Create Error: {}", e)))?;
+        .await?; // 🌟 The `?` automatically converts sqlx::Error -> AxonError::Database
 
         Ok(())
     }
@@ -55,8 +54,7 @@ impl WorkspaceRepository for PostgresWorkspaceRepo {
             owner_id
         )
         .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Get Error: {}", e)))?;
+        .await?;
 
         Ok(record)
     }
@@ -77,17 +75,15 @@ impl WorkspaceRepository for PostgresWorkspaceRepo {
             offset
         )
         .fetch_all(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB List Error: {}", e)))?;
+        .await?;
 
         Ok(records)
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self, payload))]
     async fn update(&self, id: &str, owner_id: &str, payload: UpdateWorkspacePayload) -> AxonResult<()> {
         let now = Utc::now().to_rfc3339();
         
-        // COALESCE allows us to only update fields that were provided in the payload
         let result = sqlx::query!(
             r#"
             UPDATE workspaces
@@ -102,11 +98,10 @@ impl WorkspaceRepository for PostgresWorkspaceRepo {
             owner_id
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Update Error: {}", e)))?;
+        .await?;
 
         if result.rows_affected() == 0 {
-            return Err(AxonError::NotFound { entity: "Workspace".into(), id: id.to_string() });
+            return Err(AxonError::NotFound { entity: "Workspace", id: id.to_string() });
         }
 
         Ok(())
@@ -127,11 +122,10 @@ impl WorkspaceRepository for PostgresWorkspaceRepo {
             owner_id
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Touch Error: {}", e)))?;
+        .await?;
 
         if result.rows_affected() == 0 {
-            return Err(AxonError::NotFound { entity: "Workspace".into(), id: id.to_string() });
+            return Err(AxonError::NotFound { entity: "Workspace", id: id.to_string() });
         }
 
         Ok(())
@@ -148,8 +142,7 @@ impl WorkspaceRepository for PostgresWorkspaceRepo {
             owner_id
         )
         .execute(&self.pool)
-        .await
-        .map_err(|e| AxonError::Backend(format!("DB Delete Error: {}", e)))?;
+        .await?;
 
         Ok(result.rows_affected() > 0)
     }
