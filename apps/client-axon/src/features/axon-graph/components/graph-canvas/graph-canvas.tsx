@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import styled from "styled-components";
 import {
   Background, BackgroundVariant, Controls, MiniMap, ReactFlow
@@ -15,6 +15,8 @@ import { useGraphModel } from "../../hooks/use-graph-model";
 import { useGraphInteractions } from "../../hooks/use-graph-interactions";
 
 import { Flex, Text, Box } from "@shared/ui";
+// 🌟 Import our atomic Redux selector
+import { useHoveredPath, useSelectedPaths } from "@features/core/workspace/hooks/use-workspace-slice";
 
 const nodeTypes = { fileNode: FileNode };
 const edgeTypes = { biColorEdge: BiColorEdge };
@@ -22,17 +24,43 @@ const edgeTypes = { biColorEdge: BiColorEdge };
 const FlowChromeOverrides = styled(Box)`
   .react-flow__node {
     transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease;
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
   }
+  
+  .react-flow__node.selected {
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+  }
+  
   .react-flow__node.dragging, .react-flow__node.selected.dragging {
     transition: none !important;
   }
+  
+  .react-flow__node.dimmed-node { opacity: 0.15; filter: grayscale(100%); }
+  .react-flow__node.semi-dimmed-node { opacity: 0.55; filter: grayscale(40%); }
+  .react-flow__edge.dimmed-edge { opacity: 0.04 !important; filter: grayscale(100%); pointer-events: none; }
+  
+  .react-flow__node.hover-targeted-node {
+    opacity: 1 !important;
+    filter: none !important;
+    z-index: 1000;
+  }
+
+  .react-flow__node.hover-targeted-node > div {
+    border-color: #3b82f6 !important; 
+    box-shadow: 0 0 0 2px #3b82f6, 0 0 24px rgba(59, 130, 246, 0.4) !important;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  /* Controls Chrome */
   .react-flow__controls { background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; }
   .react-flow__controls-button { background: #222; border-bottom: 1px solid #333; color: #ccc; }
   .react-flow__controls-button:hover { background: #2a2a2a; }
   .react-flow__minimap { background: #111; border: 1px solid #2f2f2f; border-radius: 8px; overflow: hidden; }
 `;
-
-// 🌟 No more props needed! FSD purity achieved.
 export const GraphCanvas: React.FC = () => {
   const { 
     nodes, edges, onNodesChange, onEdgesChange, isWorking, isError, errorMessage, isEmpty 
@@ -42,10 +70,65 @@ export const GraphCanvas: React.FC = () => {
     hoverNode, toggleSelection, clearSelection, removeNodesFromBundle 
   } = useGraphInteractions();
 
+  // 1. Grab the current selection from Redux
+  const selectedPaths = useSelectedPaths();
+
   const handleNodesDelete = useCallback((deletedNodes: AppNode[]) => {
     removeNodesFromBundle(deletedNodes.map((n) => n.id));
   }, [removeNodesFromBundle]);
 
+  
+  const hoveredPath = useHoveredPath()
+
+  const { displayNodes, displayEdges } = useMemo(() => {
+    const selectedSet = new Set(selectedPaths);
+    const connectedSet = new Set<string>();
+
+    edges.forEach((edge) => {
+      if (selectedSet.has(edge.source)) connectedSet.add(edge.target);
+      if (selectedSet.has(edge.target)) connectedSet.add(edge.source);
+    });
+
+    const nextNodes = nodes.map((node) => {
+      const isSelected = selectedSet.has(node.id);
+      const isConnected = connectedSet.has(node.id);
+      
+      const isHoverTarget = hoveredPath && (node.data.path === hoveredPath || node.data.path.startsWith(hoveredPath + '/'));
+
+      let className = node.className ? node.className.replace(/dimmed-node|semi-dimmed-node|hover-targeted-node/g, '') : "";
+
+      // Prioritize the visual hierarchy
+      if (isHoverTarget) {
+        className += " hover-targeted-node"; // Overrides everything with a bright glow
+      } else if (selectedPaths.length > 0) {
+        if (isSelected) {
+          // Native selection handles border natively
+        } else if (isConnected) {
+          className += " semi-dimmed-node";
+        } else {
+          className += " dimmed-node";
+        }
+      }
+
+      return { ...node, className: className.trim() };
+    });
+
+    const nextEdges = edges.map((edge) => {
+      const isSourceSelected = selectedSet.has(edge.source);
+      const isTargetSelected = selectedSet.has(edge.target);
+      const isConnectedEdge = isSourceSelected || isTargetSelected;
+
+      let className = edge.className ? edge.className.replace(/dimmed-edge/g, '') : "";
+      
+      if (selectedPaths.length > 0 && !isConnectedEdge) {
+        className += " dimmed-edge";
+      }
+
+      return { ...edge, className: className.trim() };
+    });
+
+    return { displayNodes: nextNodes, displayEdges: nextEdges };
+  }, [nodes, edges, selectedPaths, hoveredPath]);
   return (
     <Box id="tour-graph-canvas" $fill $bg="bg.main" style={{ position: 'relative' }}>
       
@@ -80,8 +163,9 @@ export const GraphCanvas: React.FC = () => {
       {!isEmpty && (
         <FlowChromeOverrides $fill>
           <ReactFlow<AppNode, AppEdge>
-            nodes={nodes} 
-            edges={edges} 
+            nodes={displayNodes} 
+            edges={displayEdges} 
+            
             nodeTypes={nodeTypes} 
             edgeTypes={edgeTypes}
             onNodesChange={onNodesChange} 
@@ -89,7 +173,10 @@ export const GraphCanvas: React.FC = () => {
             
             onNodeMouseEnter={(_, node) => hoverNode(node.data.fileId)}
             onNodeMouseLeave={() => hoverNode(null)}
-            onNodeClick={(_, node) => toggleSelection(node.data.fileId)}
+            onNodeClick={(e, node) => {
+              const isMulti = e.shiftKey || e.metaKey || e.ctrlKey;
+              toggleSelection(node.data.fileId, isMulti);
+            }}
             onPaneClick={() => clearSelection()}
             onNodesDelete={handleNodesDelete}
             

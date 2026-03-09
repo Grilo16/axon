@@ -19,6 +19,7 @@ import {
   clearSelection,
 } from "../workspace-ui-slice";
 import { 
+  selectHoverRelationship,
   selectPrivateGraphPathsSet, 
   selectPublicGraphPathsSet 
 } from "../workspace-ui-selector";
@@ -35,9 +36,13 @@ export const useSelectedPaths = () => useAppSelector(selectSelectedPaths);
 // ==========================================
 // 🌟 ATOMIC NODE STATE (High Performance)
 // ==========================================
-
 export const useIsNodeHovered = (path: string) => 
   useAppSelector((state) => selectIsNodeHovered(state, path));
+
+export const useHoveredPath = () => useAppSelector(state => state.workspaceUi.hoveredPath);
+
+export const useNodeHoverRelationship = (path: string) => 
+  useAppSelector(state => selectHoverRelationship(state, path));
 
 export const useIsNodeSelected = (path: string) => 
   useAppSelector((state) => selectIsNodeSelected(state, path));
@@ -46,11 +51,8 @@ export const useIsNodeDimmed = (path: string) => {
   const selectedPaths = useSelectedPaths();
   const isSelected = useIsNodeSelected(path);
   const hasGlobalSelection = selectedPaths.length > 0;
-  
-  // If something is selected globally, and THIS node is not selected, it is dimmed.
   return hasGlobalSelection && !isSelected;
 };
-
 // --- Graph Topology State ---
 
 // Internal helper to seamlessly switch between public/private graph Sets
@@ -115,7 +117,7 @@ export const useWorkspaceDispatchers = () => {
       [dispatch],
     ),
     toggleSelection: useCallback(
-      (path: string) => dispatch(toggleNodeSelection({ path, multi: false })),
+      (path: string, multi: boolean = false) => dispatch(toggleNodeSelection({ path, multi })),
       [dispatch],
     ),
     clearSelection: useCallback(

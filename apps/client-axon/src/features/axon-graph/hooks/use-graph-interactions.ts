@@ -1,35 +1,28 @@
 import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
-import { useActiveBundleQuery } from "@features/core/bundles/hooks/use-bundle-queries";
 import { useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
 
 export const useGraphInteractions = () => {
   // Inherit the global Redux UI state interactions (hover, select, clear)
   const baseInteractions = useWorkspaceDispatchers();
-  const {activeBundle} = useActiveBundleQuery()  
-  const activePaths = activeBundle?.options.targetFiles || []
-  const {setTargetFiles} = useActiveBundleActions()
+  const bundleActions = useActiveBundleActions()
 
   return {
     ...baseInteractions,
 
-    // 🌟 Unified Graph Mutation API
-    addNodeToBundle: (nodeId: string) => {
-      if (!activePaths?.includes(nodeId)) {
-        setTargetFiles([...activePaths, nodeId]);
-      }
+   addNodeToBundle: (nodeId: string) => {
+      bundleActions.addTargetFiles([nodeId]);
     },
 
     removeNodesFromBundle: (nodeIds: string[]) => {
-      const nextPaths = activePaths.filter((path) => !nodeIds.includes(path));
-      setTargetFiles(nextPaths);
+      bundleActions.removeTargetFiles(nodeIds);
+      // Clear selection so we don't have "ghost" selections
       baseInteractions.clearSelection();
     },
 
     batchUpdateNodesInBundle: (toAdd: string[], toRemove: string[]) => {
-      const nextSet = new Set(activePaths);
-      toAdd.forEach((id) => nextSet.add(id));
-      toRemove.forEach((id) => nextSet.delete(id));
-      setTargetFiles(Array.from(nextSet));
+      // Safely fire only the mutations that actually have data
+      if (toAdd.length > 0) bundleActions.addTargetFiles(toAdd);
+      if (toRemove.length > 0) bundleActions.removeTargetFiles(toRemove);
     },
 
     triggerLayout: (direction: "TB" | "LR") => {

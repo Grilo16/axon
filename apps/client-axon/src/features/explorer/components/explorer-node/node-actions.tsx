@@ -1,8 +1,8 @@
 import styled, { useTheme } from "styled-components";
-import { Plus, Check, Minus } from "lucide-react";
+import { Plus, Check, Minus, Loader2 } from "lucide-react";
 import { Button } from "@shared/ui";
 import { useFolderHasFilesInGraph, useIsNodeInGraph } from "@features/core/workspace/hooks/use-workspace-slice";
-import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
+import { useExplorerActions } from "@features/explorer/hooks/use-explorer-actions";
 
 const ActionButton = styled(Button)`
   opacity: 0;
@@ -21,20 +21,30 @@ export const NodeActions = ({
   const theme = useTheme();
   const inGraph = useIsNodeInGraph(path);
   const hasFilesInGraph = useFolderHasFilesInGraph(path);
-  const {addTargetFiles} = useActiveBundleActions()
+  const { toggleFile, toggleFolder, isFolderToggling } = useExplorerActions();
 
   const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    addTargetFiles([path]);
+    e.stopPropagation(); 
+    if (isFolder) {
+      toggleFolder(path, hasFilesInGraph);
+    } else {
+      toggleFile(path);
+    }
   };
 
+ 
+
   return (
-    <ActionButton
+   <ActionButton
       className="node-actions"
       $variant="icon"
       onClick={handleToggle}
+      disabled={isFolderToggling}
+      title={isFolder ? (hasFilesInGraph ? "Remove all from graph" : "Add all to graph") : (inGraph ? "Remove from graph" : "Add to graph")}
     >
-      { isFolder ? (
+      {isFolderToggling ? (
+         <Loader2 size={14} className="animate-spin" color={theme.colors.palette.primary.main} />
+      ) : isFolder ? (
         hasFilesInGraph ? (
           <Minus size={14} color={theme.colors.palette.success.main} />
         ) : (

@@ -8,7 +8,11 @@ import { NodeLabel } from "./node-label";
 import { NodeActions } from "./node-actions";
 
 import { useExplorerDirectory } from "@features/explorer/hooks/use-explorer-directory";
-import { useIsNodeHovered, useIsNodeSelected, useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
+import { 
+  useNodeHoverRelationship, 
+  useIsNodeSelected, 
+  useWorkspaceDispatchers 
+} from "@features/core/workspace/hooks/use-workspace-slice";
 
 interface ExplorerNodeProps {
   path: string;
@@ -20,8 +24,10 @@ interface ExplorerNodeProps {
 export const ExplorerNode = memo(
   ({ path, name, isFolder, depth }: ExplorerNodeProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const isHovered = useIsNodeHovered(path)
-    const isSelected = useIsNodeSelected(path)
+    
+    const hoverRel = useNodeHoverRelationship(path);
+    const isSelected = useIsNodeSelected(path);
+    
     const { children } = useExplorerDirectory(path, isOpen);
     const { hoverNode, toggleSelection, openFileViewer } = useWorkspaceDispatchers();
 
@@ -32,15 +38,26 @@ export const ExplorerNode = memo(
 
     const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (isFolder) handleToggleFolder(e);
-      else toggleSelection(path);
+      if (isFolder) {
+        handleToggleFolder(e);
+      } else {
+        const isMulti = e.shiftKey || e.metaKey || e.ctrlKey;
+        toggleSelection(path, isMulti);
+      }
     };
+
+    // 🌟 THE MAGIC LOGIC: Highest Visible Folder!
+    const isHoverTarget = 
+      hoverRel === "exact" || // It is the exact file/folder hovered
+      hoverRel === "parent-hovered" || // The folder containing it is hovered
+      (hoverRel === "child-hovered" && !isOpen); // A child is hovered, but THIS folder is closed!
 
     return (
       <Flex $direction="column">
         <NodeContainer
           $depth={depth}
-          $isFocused={isHovered}
+          // Highlight this node if it meets our smart targeting criteria
+          $isFocused={isHoverTarget}
           $isSelected={isSelected}
           $align="center"
           $gap="xs"
@@ -49,6 +66,7 @@ export const ExplorerNode = memo(
             e.stopPropagation();
             if (!isFolder) openFileViewer(path);
           }}
+          // Register hover path to global Redux store
           onMouseEnter={() => hoverNode(path)}
           onMouseLeave={() => hoverNode(null)}
         >
