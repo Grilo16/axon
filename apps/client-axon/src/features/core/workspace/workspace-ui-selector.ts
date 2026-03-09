@@ -7,7 +7,7 @@ import { selectActiveBundleId, type HoverRelationship } from "./workspace-ui-sli
 // 1. Safely extract the Public Graph Payload from the local slice
 const selectPublicGraphReq = (state: RootState) => {
   const id = selectActiveBundleId(state);
-  return id ? state.publicBundles.bundles[id] : undefined;
+  return id ? state.publicBundles.entities[id] : undefined;
 };
 
 // 2. Extract the raw RTK Query Cache data WITHOUT triggering network requests

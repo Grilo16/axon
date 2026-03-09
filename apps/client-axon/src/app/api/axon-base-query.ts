@@ -6,7 +6,7 @@ import { userManager } from "@app/auth/user-manager";
 
 export type AxonQueryArgs = {
   command: string; // Tauri command name
-  url: string;     // Web endpoint
+  url: string; // Web endpoint
   method?: "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
   body?: Record<string, unknown>;
   tauriArgs?: Record<string, unknown>;
@@ -18,15 +18,15 @@ export type AxonQueryArgs = {
  */
 const executeTauriRequest = async (
   command: string,
-  args: Record<string, unknown> = {}
+  args: Record<string, unknown> = {},
 ) => {
   try {
     const result = await invoke(command, args);
     return { data: result };
   } catch (error) {
     // Standardize Tauri IPC errors
-    return { 
-      error: { type: "tauriIpc", data: error } as AxonError 
+    return {
+      error: { type: "tauriIpc", data: error } as AxonError,
     };
   }
 };
@@ -38,23 +38,27 @@ const executeTauriRequest = async (
 const executeWebRequest = async (
   url: string,
   method: string,
-  body?: Record<string, unknown>
+  body?: Record<string, unknown>,
 ) => {
   try {
     const headers = new Headers({
       "Content-Type": "application/json",
-      "Accept": "application/json",
+      Accept: "application/json",
     });
 
     // 1. Safe Token Retrieval via Singleton
     const user = await userManager.getUser();
-    
+
     // 2. Proactive Expiration Check
     if (user && !user.expired) {
       headers.append("Authorization", `Bearer ${user.access_token}`);
     } else {
-      console.warn("[Axon API] Request attempted without a valid, fresh token.");
-      // Optional: You could throw here if you strictly require auth for all requests
+      if (!url.includes("/public/")) {
+        console.warn(
+          "[Axon API] Private request attempted without a valid, fresh token. URL:",
+          url,
+        );
+      }
     }
 
     const options: RequestInit = {
@@ -69,11 +73,14 @@ const executeWebRequest = async (
     if (response.status === 401) {
       // Dispatch event to trigger global logout/redirect in the UI
       window.dispatchEvent(new Event("auth:unauthorized"));
-      return { 
-        error: { type: "auth", data: "Session expired or invalid" } as AxonError 
+      return {
+        error: {
+          type: "auth",
+          data: "Session expired or invalid",
+        } as AxonError,
       };
     }
-if (!response.ok) {
+    if (!response.ok) {
       const errorText = await response.text();
       let errorData = null;
       try {
@@ -82,13 +89,16 @@ if (!response.ok) {
         errorData = { message: errorText };
       }
 
-      return { 
-        error: (errorData || { type: "http", data: response.statusText }) as AxonError 
+      return {
+        error: (errorData || {
+          type: "http",
+          data: response.statusText,
+        }) as AxonError,
       };
     }
 
     const rawText = await response.text();
-    
+
     if (!rawText || rawText.trim() === "") {
       return { data: null };
     }
@@ -99,11 +109,14 @@ if (!response.ok) {
     } catch (e) {
       return { data: rawText };
     }
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown fetch error";
-    return { 
-      error: { type: "network", data: `Fetch failed: ${errorMessage}` } as AxonError 
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown fetch error";
+    return {
+      error: {
+        type: "network",
+        data: `Fetch failed: ${errorMessage}`,
+      } as AxonError,
     };
   }
 };
@@ -117,7 +130,6 @@ export const dualBaseQuery: BaseQueryFn<
   unknown,
   AxonError
 > = async ({ command, url, method = "GET", body, tauriArgs }) => {
-  
   if (IS_TAURI) {
     const payload = tauriArgs ?? body ?? {};
     return executeTauriRequest(command, payload);

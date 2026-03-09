@@ -1,14 +1,20 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { useAuth } from "react-oidc-context";
 import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
 import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
-import { useWorkspaceActions } from "@features/core/workspace/hooks/use-workspace-actions";
+
+// 🌟 2. Import both Private and Public lazy triggers
+import { useLazyGetFilePathsByDirQuery } from "@features/core/workspace/api/workspace-api";
+import { useLazyGetPublicFilePathsByDirQuery } from "@features/public/api/public-api";
 
 export const useExplorerActions = () => {
   const activeWorkspaceId = useActiveWorkspaceId();
-  const { handle, isFetching } = useWorkspaceActions().lazyFilePathsByDir;
-  const { toggleTargetFile, addTargetFiles, removeTargetFiles } =
-    useActiveBundleActions();
+  const { isAuthenticated } = useAuth();
+  const { toggleTargetFile, addTargetFiles, removeTargetFiles } = useActiveBundleActions();
+
+  const [triggerPrivate, privateMeta] = useLazyGetFilePathsByDirQuery();
+  const [triggerPublic, publicMeta] = useLazyGetPublicFilePathsByDirQuery();
 
   const toggleFolder = useCallback(
     async (path: string, currentlyHasFiles: boolean) => {
@@ -17,14 +23,18 @@ export const useExplorerActions = () => {
       const loadingToast = toast.loading(`Scanning ${path}...`);
 
       try {
-        const files = await handle({
+        const payload = {
           id: activeWorkspaceId,
           query: {
             path,
             recursive: true,
             limit: null,
           },
-        });
+        };
+
+        const files = isAuthenticated 
+          ? await triggerPrivate(payload).unwrap() 
+          : await triggerPublic(payload).unwrap();
 
         if (!files || files.length === 0) {
           toast.dismiss(loadingToast);
@@ -49,12 +59,19 @@ export const useExplorerActions = () => {
         console.error("[Explorer] Failed to toggle folder:", error);
       }
     },
-    [activeWorkspaceId, handle, addTargetFiles, removeTargetFiles],
+    [
+      activeWorkspaceId, 
+      isAuthenticated, 
+      triggerPrivate, 
+      triggerPublic, 
+      addTargetFiles, 
+      removeTargetFiles
+    ],
   );
 
   return {
     toggleFile: toggleTargetFile,
     toggleFolder,
-    isFolderToggling: isFetching,
+    isFolderToggling: isAuthenticated ? privateMeta.isFetching : publicMeta.isFetching,
   };
 };

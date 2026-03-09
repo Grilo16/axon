@@ -1,29 +1,31 @@
 import { useAuth } from "react-oidc-context";
-import { useAppSelector } from "@app/store";
-import { useListDirectoryQuery } from "@features/core/workspace/api/workspace-api";
-import { useListPublicDirectoryQuery } from "@features/public/api/public-api";
+import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
 
-export const useExplorerDirectory = (path: string, isOpen: boolean) => {
+import { useListDirectoryQuery } from "@features/core/workspace/api/workspace-api"; 
+import { useListPublicDirectoryQuery } from "@features/public/api/public-api"; 
+
+export const useExplorerDirectory = (path: string, isFolder: boolean = false, isOpen: boolean) => {
+  const activeWorkspaceId = useActiveWorkspaceId();
   const { isAuthenticated } = useAuth();
-  const activeWorkspaceId = useAppSelector((state) => state.workspaceUi.activeWorkspaceId);
 
+  // 1. Private Query (Skips if anonymous)
   const privateQuery = useListDirectoryQuery(
     { id: activeWorkspaceId!, query: { path } },
-    { skip: !activeWorkspaceId || !isOpen || !isAuthenticated } 
+    { skip: !isOpen || !isFolder || !activeWorkspaceId || !isAuthenticated }
   );
 
+  // 2. Public Query (Skips if authenticated)
   const publicQuery = useListPublicDirectoryQuery(
     { id: activeWorkspaceId!, query: { path } },
-    { skip: !activeWorkspaceId || !isOpen || isAuthenticated }
+    { skip: !isOpen || !isFolder || !activeWorkspaceId || isAuthenticated }
   );
 
-  const isFetching = isAuthenticated ? privateQuery.isFetching : publicQuery.isFetching;
-  const isError = isAuthenticated ? privateQuery.isError : publicQuery.isError;
-  const children = isAuthenticated ? privateQuery.data : publicQuery.data;
+  // 3. The Switchboard
+  const activeQuery = isAuthenticated ? privateQuery : publicQuery;
 
   return {
-    children: children ?? [],
-    isLoading: isFetching,
-    isError,
+    children: activeQuery.data ?? [],
+    isLoading: activeQuery.isLoading,
+    isError: activeQuery.isError,
   };
 };

@@ -28,7 +28,7 @@ export const ExplorerNode = memo(
     const hoverRel = useNodeHoverRelationship(path);
     const isSelected = useIsNodeSelected(path);
     
-    const { children } = useExplorerDirectory(path, isOpen);
+    const { children } = useExplorerDirectory(path, isFolder, isOpen);
     const { hoverNode, toggleSelection, openFileViewer } = useWorkspaceDispatchers();
 
     const handleToggleFolder = (e: React.MouseEvent) => {

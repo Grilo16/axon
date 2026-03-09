@@ -1,46 +1,47 @@
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { StatelessGraphReq } from "@shared/types/axon-core/public-api";
+import { createEntityAdapter, createSlice, createSelector } from "@reduxjs/toolkit";
+import type { RootState } from "@app/store";
+import type { BundleRecord } from "@shared/types/axon-core/bundle-api";
 
-const LOCAL_STORAGE_KEY = "axon_public_bundles";
+// 🌟 Use your actual types! 
 
-// Synchronous hydration to prevent UI flicker
-const loadLocalBundles = (): Record<string, StatelessGraphReq> => {
-  try {
-    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : {};
-  } catch (error) {
-    console.error("Failed to parse local bundles", error);
-    return {};
-  }
-};
 
-export interface PublicBundlesState {
-  bundles: Record<string, StatelessGraphReq>;
-}
-
-const initialState: PublicBundlesState = {
-  bundles: loadLocalBundles(),
-};
+// 🌟 1. Create the Elite Entity Adapter
+const publicBundlesAdapter = createEntityAdapter<BundleRecord>({
+  sortComparer: (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+});
 
 export const publicBundlesSlice = createSlice({
   name: "publicBundles",
-  initialState,
+  initialState: publicBundlesAdapter.getInitialState(),
   reducers: {
-    savePublicBundle: (
-      state,
-      action: PayloadAction<{ id: string; req: StatelessGraphReq }>
-    ) => {
-      const { id, req } = action.payload;
-      state.bundles[id] = req;
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.bundles));
-    },
-    deletePublicBundle: (state, action: PayloadAction<string>) => {
-      delete state.bundles[action.payload];
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state.bundles));
-    },
+    // 🌟 2. Adapter handles all the complex immutable logic!
+    addPublicBundle: publicBundlesAdapter.addOne,
+    
+    // updateOne expects { id: string, changes: Partial<BundleRecord> }
+    updatePublicBundle: publicBundlesAdapter.updateOne,
+    
+    removePublicBundle: publicBundlesAdapter.removeOne,
   },
 });
 
-export const { savePublicBundle, deletePublicBundle } = publicBundlesSlice.actions;
-
+export const { addPublicBundle, updatePublicBundle, removePublicBundle } = publicBundlesSlice.actions;
 export default publicBundlesSlice.reducer;
+
+// ==========================================
+// 🧠 DATA ACCESS LAYER (SELECTORS)
+// ==========================================
+
+// Auto-generated selectors
+export const { 
+  selectAll: selectAllPublicBundles, 
+  selectById: selectPublicBundleById 
+} = publicBundlesAdapter.getSelectors((state: RootState) => state.publicBundles);
+
+// 🌟 Custom Memoized Selector to filter by Workspace ID
+export const selectPublicBundlesByWorkspace = createSelector(
+  [selectAllPublicBundles, (_state: RootState, workspaceId: string | null) => workspaceId],
+  (allBundles, workspaceId) => {
+    if (!workspaceId) return [];
+    return allBundles.filter(bundle => bundle.workspaceId === workspaceId);
+  }
+);

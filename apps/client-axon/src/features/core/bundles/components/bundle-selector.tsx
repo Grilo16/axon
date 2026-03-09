@@ -25,8 +25,6 @@ export const BundleSelector = () => {
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState("");
 
-  // 🌟 THE USE-EFFECT IS GONE. REDUX MIDDLEWARE HANDLES AUTO-SELECTION NOW.
-
   // 4. Handlers
   const handleSave = async () => {
     const trimmedName = newName.trim();

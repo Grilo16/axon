@@ -2,9 +2,11 @@ import type { RootState } from "@app/store";
 import {
   createSelector,
   createSlice,
+  isAnyOf,
   type PayloadAction,
 } from "@reduxjs/toolkit";
 import { workspaceApi } from "./api/workspace-api";
+import { publicApi } from "@features/public/api/public-api";
 
 export type ViewMode = "none" | "file" | "bundle-context";
 export type HoverRelationship =
@@ -98,9 +100,12 @@ export const workspaceUiSlice = createSlice({
     },
   },
 
-  extraReducers: (builder) => {
+ extraReducers: (builder) => {
     builder.addMatcher(
-      workspaceApi.endpoints.listWorkspaces.matchFulfilled,
+      isAnyOf(
+        workspaceApi.endpoints.listWorkspaces.matchFulfilled,
+        publicApi.endpoints.listPublicWorkspaces.matchFulfilled
+      ),
       (state, action) => {
         const workspaces = action.payload;
         if (!state.activeWorkspaceId && workspaces && workspaces.length > 0) {

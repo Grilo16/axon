@@ -1,11 +1,6 @@
-import { VscAdd } from "react-icons/vsc";
-import { HelpCircle, LogOut } from "lucide-react";
 import { Flex, Box, Text } from "@shared/ui";
 import { SidebarIcon } from "./sidebar-icon";
 
-/**
- * Extracts a 2-letter abbreviation for the workspace icon.
- */
 export function getInitials(name: string): string {
   const clean = (name ?? "").trim();
   if (!clean) return "WS";
@@ -26,18 +21,15 @@ interface WorkspaceSidebarProps {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
   onSelectWorkspace: (id: string) => void;
-  onCreateClick: () => void;
-  onTourClick: () => void;
-  onLogoutClick: () => void;
+  // 🌟 THE ELITE FIX: Accept any ReactNode for the bottom actions!
+  bottomActions?: React.ReactNode; 
 }
 
 export const WorkspaceSidebar = ({
   workspaces,
   activeWorkspaceId,
   onSelectWorkspace,
-  onCreateClick,
-  onTourClick,
-  onLogoutClick,
+  bottomActions,
 }: WorkspaceSidebarProps) => {
   return (
     <Flex
@@ -57,31 +49,15 @@ export const WorkspaceSidebar = ({
         />
       ))}
 
-      <Box
-        $bg="border.subtle"
-        style={{ width: 32, height: 2, borderRadius: 1 }}
-      />
-
-      <SidebarIcon
-        title="Create New Workspace"
-        onClick={onCreateClick}
-        icon={<VscAdd size={18} />}
-      />
-
       <Box style={{ flex: 1 }} />
 
-      <SidebarIcon
-        title="Take a Tour"
-        onClick={onTourClick}
-        icon={<HelpCircle size={16} />}
-      />
-
-      <SidebarIcon
-        title="Log Out"
-        $isDanger
-        onClick={onLogoutClick}
-        icon={<LogOut size={16} />}
-      />
+      {/* 🌟 Render the injected actions at the bottom */}
+      {bottomActions && (
+        <>
+          <Box $bg="border.subtle" style={{ width: 32, height: 2, borderRadius: 1, marginBottom: 8 }} />
+          {bottomActions}
+        </>
+      )}
     </Flex>
   );
 };

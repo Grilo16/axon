@@ -1,34 +1,26 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useAuth } from "react-oidc-context";
-import { useAppSelector } from "@app/store"; 
-import { bundleApi } from "@features/core/bundles/api/bundles-api";
-import { useGetPublicGraphQuery, publicApi } from "@features/public/api/public-api";
-import { createSelector } from "@reduxjs/toolkit";
 import { Position } from "@xyflow/react";
-import type { AppNode, AppEdge, FocusFileNodeData } from "../types";
-import { useGraphLayout } from "./use-graph-layout";
+
+import { useActiveBundleId } from "@features/core/workspace/hooks/use-workspace-slice";
 import { useActiveBundleGraphQuery } from "@features/core/bundles/hooks/use-bundle-queries";
+import { useGraphLayout } from "./use-graph-layout";
 
-// --- Pure Selectors for Deriving Topology ---
-const selectRawGraphData = (state: any, activeBundleId: string | null, isAuthenticated: boolean) => {
-  if (!activeBundleId) return null;
-  if (isAuthenticated) {
-    return bundleApi.endpoints.getBundleGraph.select(activeBundleId)(state)?.data;
-  } else {
-    const req = state.publicBundles.bundles[activeBundleId];
-    return req ? publicApi.endpoints.getPublicGraph.select(req)(state)?.data : null;
-  }
-};
+import type { AppNode, AppEdge, FocusFileNodeData } from "../types";
 
-const selectGraphTopology = createSelector(
-  [selectRawGraphData],
-  (graphData) => {
-    // If there is no graph data, we return a stable default object
-    if (!graphData) return { nodes: [], edges: [] };
+// --- The Master Facade Hook ---
+export const useGraphModel = () => {
+  const activeBundleId = useActiveBundleId();
 
-    const useBiColorEdges = graphData.edges.length <= 320;
+  // 🌟 THE ELITE FIX: Just read the data directly from your switchboard!
+  const { data: rawGraphData, isFetching, isError } = useActiveBundleGraphQuery();
 
-    const nodes: AppNode[] = graphData.nodes.map((node) => ({
+  // Derive structural topology instantly via useMemo
+  const topology = useMemo(() => {
+    if (!rawGraphData) return { nodes: [], edges: [] };
+
+    const useBiColorEdges = rawGraphData.edges.length <= 320;
+
+    const nodes: AppNode[] = rawGraphData.nodes.map((node) => ({
       id: node.id, 
       type: "fileNode", 
       position: { x: 0, y: 0 },
@@ -45,7 +37,7 @@ const selectGraphTopology = createSelector(
       } satisfies FocusFileNodeData,
     }));
 
-    const edges: AppEdge[] = graphData.edges.map((edge) => ({
+    const edges: AppEdge[] = rawGraphData.edges.map((edge) => ({
       id: edge.id, 
       source: edge.source, 
       target: edge.target,
@@ -57,28 +49,7 @@ const selectGraphTopology = createSelector(
     }));
 
     return { nodes, edges };
-  }
-);
-
-// --- The Master Facade Hook ---
-export const useGraphModel = () => {
-  const { isAuthenticated } = useAuth();
-  const activeBundleId = useAppSelector((state) => state.workspaceUi.activeBundleId);
-  const publicGraphReq = useAppSelector((state) => activeBundleId ? state.publicBundles.bundles[activeBundleId] : undefined);
-
-  // Network Queries (Declarative)
-  const privateQuery = useActiveBundleGraphQuery()
-  
-  const publicQuery = useGetPublicGraphQuery(
-    publicGraphReq!,
-    { skip: isAuthenticated || !activeBundleId || !publicGraphReq }
-  );
-
-  const isFetching = isAuthenticated ? privateQuery.isFetching : publicQuery.isFetching;
-  const isError = isAuthenticated ? privateQuery.isError : publicQuery.isError;
-
-  // Derive structural topology instantly
-  const topology = useAppSelector((state) => selectGraphTopology(state, activeBundleId, isAuthenticated));
+  }, [rawGraphData]);
   
   // Layout Engine
   const layout = useGraphLayout();

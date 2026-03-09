@@ -33,7 +33,7 @@ export const CodeViewerPanel = () => {
   const viewMode = useViewMode()
   const isBundle = viewMode === "bundle-context";
 
-  const { data: fileContent, isLoading, isFetching } = useReadWorkspaceFileQuery()
+  const { data: fileContent, isLoading } = useReadWorkspaceFileQuery()
   const { data: viewedBundleContent} = useReadBundleContextQuery(activeBundle?.name || "DEFAULT")
   
   
@@ -103,7 +103,7 @@ export const CodeViewerPanel = () => {
 
       <Box $fill style={{ position: 'relative', minHeight: 0 }}>
         {/* Simplified Loader Overlay */}
-        {(!isBundle && (isLoading || isFetching)) && (
+        {(!isBundle && isLoading) && (
           <Flex 
             $fill 
             $align="center" 

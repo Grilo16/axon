@@ -15,7 +15,7 @@ export const NodeCaret = ({
   onToggle: (e: React.MouseEvent) => void;
 }) => {
   const theme = useTheme();
-  const { isLoading } = useExplorerDirectory(path, isOpen);
+  const { isLoading } = useExplorerDirectory(path, isFolder, isOpen);
 
   if (!isFolder)
     return (

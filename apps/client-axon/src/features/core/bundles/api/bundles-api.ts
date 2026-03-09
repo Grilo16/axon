@@ -8,6 +8,13 @@ import type {
   ListBundlesQuery,
 } from "@shared/types/axon-core/bundle-api";
 
+export interface UpdateBundleReq {
+        id: string;
+        workspaceId: string;
+        payload: UpdateBundlePayload;
+        intent: "name" | "graph" | "context" | "all";
+}
+
 export const bundleApi = axonApi.injectEndpoints({
   endpoints: (builder) => ({
     createBundle: builder.mutation<BundleRecord, CreateBundleReq>({
@@ -65,12 +72,7 @@ export const bundleApi = axonApi.injectEndpoints({
 
     updateBundle: builder.mutation<
       void,
-      {
-        id: string;
-        workspaceId: string;
-        payload: UpdateBundlePayload;
-        intent: "name" | "graph" | "context" | "all";
-      }
+      UpdateBundleReq
     >({
       query: ({ id, payload }) => ({
         command: "update_bundle",

@@ -38,6 +38,7 @@ pub fn app_router(state: AppState, auth_layer: KeycloakAuthLayer<String>) -> Rou
         .route("/workspaces/:id/files/dir", get(public::get_file_paths_by_dir))
         .route("/workspaces/:id/files/read", get(public::read_file))
         .route("/workspaces/:id/explorer", get(public::list_directory))
+        .route("/workspaces/:id/search", get(public::search_public_files))
         .route("/bundles/validate", post(public::validate_public_options))
         .route("/bundles/graph", post(public::generate_public_graph))
         .route("/bundles/generate", post(public::generate_public_code));

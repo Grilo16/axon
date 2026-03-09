@@ -19,9 +19,8 @@ const ScrollableArea = styled(Box)`
 export const FileExplorer = () => {
   const activeWorkspaceId = useActiveWorkspaceId();
   const [searchQuery, setSearchQuery] = useState("");
-  const { children } = useExplorerDirectory("/", true);
+  const { children } = useExplorerDirectory("/", true, true);
   
-  // Grab your fully built actions!
   const { results, activePathsSet, addAllToGraph, removeAllFromGraph, toggleTarget } = useExplorerSearch(searchQuery);
 
   return (
@@ -45,6 +44,7 @@ export const FileExplorer = () => {
           children.length > 0 && (
             <Flex $direction="column">
               {children.map((child: any) => (
+                
                 <ExplorerNode
                   key={child.data.path}
                   path={child.data.path}

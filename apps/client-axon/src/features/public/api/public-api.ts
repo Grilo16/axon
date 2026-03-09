@@ -1,10 +1,11 @@
 import { axonApi } from "@app/api/axon-api";
 import type { 
-  WorkspaceRecord, DirQuery, ReadFileReq, FileQuery 
+  WorkspaceRecord, DirQuery, ReadFileReq, FileQuery, 
+  SearchQuery
 } from "@shared/types/axon-core/workspace-api";
 import type { ExplorerEntry } from "@shared/types/axon-core/explorer";
 import type { AxonGraphView } from "@features/axon-graph/types";
-import type { StatelessGraphReq, StatelessGenerateReq } from "@shared/types/axon-core/public-api"; 
+import type { StatelessGraphReq } from "@shared/types/axon-core/public-api"; 
 
 export const publicApi = axonApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -57,14 +58,33 @@ export const publicApi = axonApi.injectEndpoints({
       }),
     }),
 
-    generatePublicCode: builder.mutation<Record<string, string>, StatelessGenerateReq>({
-      query: (payload) => ({
+   getPublicGeneratedContext: builder.query<string, {name: string, payload: StatelessGraphReq}>({
+      query: ({payload}) => ({
         command: "generate_public_code",
         url: `/v1/public/bundles/generate`,
-        method: "POST",
+        // 🌟 ELITE FIX: Use POST in a query to support massive payload bodies!
+        method: "POST", 
         body: payload,
       }),
+      transformResponse: (response: Record<string, string>, _meta, arg) => {
+        const fileEntries = Object.entries(response);
+        return [
+          `# BUNDLED CONTEXT: ${arg.name}`, 
+          ...fileEntries.map(
+            ([path, content]) =>
+              `## File: ${path}\n\`\`\`typescript\n${content}\n\`\`\``,
+          ),
+        ].join("\n\n");
+      },
     }),
+    searchPublicFiles: builder.query<string[], { id: string; query: SearchQuery }>({
+        query: ({ id, query }) => ({
+          command: "search_files",
+          url: `/v1/public/workspaces/${id}/search?value=${encodeURIComponent(query.value)}${query.limit ? `&limit=${query.limit}`: ""}`,
+          method: "GET",
+          tauriArgs: { id, query },
+        }),
+      }),
   }),
 });
 
@@ -79,5 +99,6 @@ export const {
   useListPublicDirectoryQuery,
   useLazyListPublicDirectoryQuery,
   useGetPublicGraphQuery,
-  useGeneratePublicCodeMutation,
+  useGetPublicGeneratedContextQuery,
+  useSearchPublicFilesQuery,
 } = publicApi;

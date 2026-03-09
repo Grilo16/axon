@@ -16,7 +16,7 @@ export const KeycloakAuthProvider: React.FC<KeycloakAuthProviderProps> = ({
 
   const onSigninCallback = (user: User | void) => {
     window.history.replaceState({}, document.title, window.location.pathname);
-    const targetUrl = typeof user?.state === "string" ? user.state : "/";
+    const targetUrl = typeof user?.state === "string" ? user.state : "/app";
     navigate(targetUrl, { replace: true });
   };
 

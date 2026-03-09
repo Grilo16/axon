@@ -2,8 +2,10 @@ use std::collections::{HashMap, HashSet};
 use crate::api::prelude::*;
 use crate::api::engine::resolve_active_tree;
 use axon_core::{
-    bundler::rules::BundleOptions, domain::{public::{StatelessGraphReq}, workspace::{DirQuery, FileQuery, ReadFileReq, WorkspaceRecord}}, explorer::{ExplorerEntry, TreeExplorer}, graph::AxonGraph
+    bundler::rules::BundleOptions, domain::{public::StatelessGraphReq, workspace::{DirQuery, FileQuery, ReadFileReq, SearchQuery, WorkspaceRecord}}, explorer::{ExplorerEntry, TreeExplorer}, graph::AxonGraph
 };
+use fuzzy_matcher::FuzzyMatcher;
+use fuzzy_matcher::skim::SkimMatcherV2;
 
 // ==========================================
 // VALIDATION LOGIC
@@ -137,4 +139,31 @@ pub async fn generate_public_code(
     .map_err(|_| AxonError::Backend("Bundler panicked".into()))??;
 
     Ok(Json(generated))
+}
+
+#[instrument(skip(state))]
+pub async fn search_public_files(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Query(query): Query<SearchQuery>,
+) -> AxonResult<Json<Vec<String>>> {
+    let tree = resolve_active_tree(&state, &id, "system").await?;
+    let all_paths = tree.get_all_file_paths(None);
+    
+    let matcher = SkimMatcherV2::default();
+    
+    let mut scored_paths: Vec<(i64, String)> = all_paths
+        .into_iter()
+        .filter_map(|path| matcher.fuzzy_match(&path, &query.value).map(|score| (score, path)))
+        .collect();
+
+    scored_paths.sort_by(|a, b| b.0.cmp(&a.0));
+
+    let final_paths: Vec<String> = scored_paths
+        .into_iter()
+        .take(query.limit.unwrap_or(100))
+        .map(|(_, path)| path)
+        .collect();
+        
+    Ok(Json(final_paths))
 }
