@@ -1,8 +1,8 @@
-import React from "react";
-import styled from "styled-components";
+import React, { memo } from "react";
+import styled, { useTheme } from "styled-components";
 import { FileCode, Plus, Check } from "lucide-react";
 import { Flex, Text, Button } from "@shared/ui";
-import { useTheme } from "styled-components";
+import { useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
 
 const SearchResultRow = styled(Flex)`
   padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.md}`};
@@ -11,6 +11,8 @@ const SearchResultRow = styled(Flex)`
   
   &:hover {
     background: ${({ theme }) => theme.colors.bg.surfaceHover};
+    border-left-color: ${({ theme }) => theme.colors.palette.primary.main};
+    
     .graph-toggle-btn {
       opacity: 1;
     }
@@ -25,22 +27,37 @@ const GraphToggleBtn = styled(Button)`
 
 interface ExplorerSearchResultsProps {
   results: string[];
-  activePaths: string[];
+  activePaths: Set<string>;
   onToggle: (path: string) => void;
 }
 
-export const ExplorerSearchResults: React.FC<ExplorerSearchResultsProps> = ({ 
+// 🌟 Wrap in memo so we don't re-render 100 rows when you type a new letter!
+export const ExplorerSearchResults: React.FC<ExplorerSearchResultsProps> = memo(({ 
   results, 
   activePaths, 
   onToggle 
 }) => {
   const theme = useTheme();
+  // 🌟 Bring in our global dispatchers for the hover effect!
+  const { hoverNode } = useWorkspaceDispatchers();
+
+  if (results.length === 0) {
+    return (
+      <Flex $align="center" $justify="center" $p="xl">
+        <Text $color="muted" $size="sm">No files found.</Text>
+      </Flex>
+    );
+  }
 
   return (
-    <Flex $direction="column">
+    <Flex $direction="column" $p="0 sm">
       {results.map((path) => {
-        const name = path.split(/[/\\]/).pop() || path;
-        const inGraph = activePaths.includes(path);
+        // 🌟 VS Code Style Split: Separate the file name from the directory
+        const lastSlashIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        const fileName = lastSlashIndex !== -1 ? path.substring(lastSlashIndex + 1) : path;
+        const dirPath = lastSlashIndex !== -1 ? path.substring(0, lastSlashIndex) : "";
+        
+        const inGraph = activePaths.has(path);
         
         return (
           <SearchResultRow 
@@ -48,22 +65,38 @@ export const ExplorerSearchResults: React.FC<ExplorerSearchResultsProps> = ({
             $align="center" 
             $gap="sm" 
             onClick={() => onToggle(path)}
+            // 🌟 Instant Graph Highlighting!
+            onMouseEnter={() => hoverNode(path)}
+            onMouseLeave={() => hoverNode(null)}
           >
             <FileCode 
               size={14} 
               color={inGraph ? theme.colors.palette.success.main : theme.colors.text.muted} 
+              style={{ flexShrink: 0 }}
             />
             
-            <Text 
-              $size="md" 
-              $color={inGraph ? "primary" : "secondary"} 
-              $weight={inGraph ? "semibold" : "regular"} 
-              $truncate 
-              style={{ flex: 1 }}
-              title={path}
-            >
-              {name}
-            </Text>
+            <Flex $align="baseline" $gap="xs" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+              <Text 
+                $size="sm" 
+                $color={inGraph ? "primary" : "secondary"} 
+                $weight={inGraph ? "bold" : "medium"} 
+                $truncate 
+              >
+                {fileName}
+              </Text>
+              
+              {/* 🌟 Muted Directory Path */}
+              {dirPath && (
+                <Text 
+                  $size="xs" 
+                  $color="muted" 
+                  $truncate 
+                  style={{ opacity: 0.7 }}
+                >
+                  {dirPath}
+                </Text>
+              )}
+            </Flex>
             
             <GraphToggleBtn 
               className="graph-toggle-btn" 
@@ -85,4 +118,6 @@ export const ExplorerSearchResults: React.FC<ExplorerSearchResultsProps> = ({
       })}
     </Flex>
   );
-};
+});
+
+ExplorerSearchResults.displayName = "ExplorerSearchResults";

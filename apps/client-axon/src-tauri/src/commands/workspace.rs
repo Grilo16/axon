@@ -1,4 +1,6 @@
 use chrono::Utc;
+use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 use std::{path::PathBuf, sync::Arc};
 use tauri::State;
 use tracing::{info};
@@ -7,7 +9,7 @@ use uuid::Uuid;
 use crate::state::AppState;
 use axon_core::{
     bundler::rules::BundleOptions, domain::{bundle::BundleRecord, workspace::{
-        CreateWorkspaceReq, DirQuery, FileQuery, ListWorkspacesQuery, ReadFileReq, UpdateWorkspacePayload, WorkspaceRecord
+        CreateWorkspaceReq, DirQuery, FileQuery, ListWorkspacesQuery, ReadFileReq, SearchQuery, UpdateWorkspacePayload, WorkspaceRecord
     }}, error::{AxonError, AxonResult}, explorer::{ExplorerEntry, TreeExplorer}, parser::javascript::JsTsParser, tree::{AxonTree, options::AxonScanOptions, source::OsSource, state::Analyzed}
 };
 
@@ -171,4 +173,31 @@ pub async fn read_file(state: State<'_, AppState>, id: String, query: ReadFileRe
 pub async fn list_directory(state: State<'_, AppState>, id: String, query: ReadFileReq) -> AxonResult<Vec<ExplorerEntry>> {
     let tree = resolve_active_tree(&state, &id).await?; // 🌟 Lazy load!
     TreeExplorer::list_directory(&tree, &query.path)
+}
+
+#[tauri::command]
+pub async fn search_files(
+    state: State<'_, AppState>,
+    id: String,
+    query: SearchQuery,
+) -> AxonResult<Vec<String>> {
+  let tree = resolve_active_tree(&state, &id).await?; 
+    let all_paths = tree.get_all_file_paths(None);
+    
+    let matcher = SkimMatcherV2::default();
+    
+    let mut scored_paths: Vec<(i64, String)> = all_paths
+        .into_iter()
+        .filter_map(|path| matcher.fuzzy_match(&path, &query.value).map(|score| (score, path)))
+        .collect();
+
+    scored_paths.sort_by(|a, b| b.0.cmp(&a.0));
+
+    let final_paths: Vec<String> = scored_paths
+        .into_iter()
+        .take(query.limit.unwrap_or(100))
+        .map(|(_, path)| path)
+        .collect();
+        
+    Ok(final_paths)
 }

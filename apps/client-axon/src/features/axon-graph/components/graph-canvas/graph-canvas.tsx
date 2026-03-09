@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import styled from "styled-components";
 import {
   Background, BackgroundVariant, Controls, MiniMap, ReactFlow
@@ -17,6 +17,8 @@ import { useGraphInteractions } from "../../hooks/use-graph-interactions";
 import { Flex, Text, Box } from "@shared/ui";
 // 🌟 Import our atomic Redux selector
 import { useHoveredPath, useSelectedPaths } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useWorkspaceShortcuts } from "@features/core/workspace/use-workspace-shortcuts";
+import { GraphAutoFitter } from "@features/axon-graph/utils/graph-auto-fitter";
 
 const nodeTypes = { fileNode: FileNode };
 const edgeTypes = { biColorEdge: BiColorEdge };
@@ -67,19 +69,24 @@ export const GraphCanvas: React.FC = () => {
   } = useGraphModel();
   
   const { 
-    hoverNode, toggleSelection, clearSelection, removeNodesFromBundle 
+    hoverNode, toggleSelection, clearSelection, removeNodesFromBundle, setSelection
   } = useGraphInteractions();
 
   // 1. Grab the current selection from Redux
   const selectedPaths = useSelectedPaths();
+  const hoveredPath = useHoveredPath()
+
+const selectedPathsRef = useRef(selectedPaths);
+  useEffect(() => {
+    selectedPathsRef.current = selectedPaths;
+  }, [selectedPaths]);
+  useWorkspaceShortcuts();
 
   const handleNodesDelete = useCallback((deletedNodes: AppNode[]) => {
     removeNodesFromBundle(deletedNodes.map((n) => n.id));
   }, [removeNodesFromBundle]);
 
   
-  const hoveredPath = useHoveredPath()
-
   const { displayNodes, displayEdges } = useMemo(() => {
     const selectedSet = new Set(selectedPaths);
     const connectedSet = new Set<string>();
@@ -90,27 +97,23 @@ export const GraphCanvas: React.FC = () => {
     });
 
     const nextNodes = nodes.map((node) => {
-      const isSelected = selectedSet.has(node.id);
-      const isConnected = connectedSet.has(node.id);
-      
+     const isSelected = selectedSet.has(node.data.path);
+      const isConnected = connectedSet.has(node.id); 
       const isHoverTarget = hoveredPath && (node.data.path === hoveredPath || node.data.path.startsWith(hoveredPath + '/'));
 
       let className = node.className ? node.className.replace(/dimmed-node|semi-dimmed-node|hover-targeted-node/g, '') : "";
 
-      // Prioritize the visual hierarchy
       if (isHoverTarget) {
-        className += " hover-targeted-node"; // Overrides everything with a bright glow
+        className += " hover-targeted-node";
       } else if (selectedPaths.length > 0) {
         if (isSelected) {
-          // Native selection handles border natively
         } else if (isConnected) {
           className += " semi-dimmed-node";
         } else {
           className += " dimmed-node";
         }
       }
-
-      return { ...node, className: className.trim() };
+      return { ...node, selected: isSelected, className: className.trim() };
     });
 
     const nextEdges = edges.map((edge) => {
@@ -129,6 +132,23 @@ export const GraphCanvas: React.FC = () => {
 
     return { displayNodes: nextNodes, displayEdges: nextEdges };
   }, [nodes, edges, selectedPaths, hoveredPath]);
+
+ const handleSelectionChange = useCallback(
+    ({ nodes: selectedReactFlowNodes }: { nodes: AppNode[] }) => {
+      const newSelectionIds = selectedReactFlowNodes.map((n) => n.data.path);
+      const currentReduxIds = selectedPathsRef.current;
+
+      // Safe, instantaneous comparison
+      const hasChanged = 
+        newSelectionIds.length !== currentReduxIds.length ||
+        !newSelectionIds.every((id) => currentReduxIds.includes(id));
+
+      if (hasChanged) {
+        setSelection(newSelectionIds);
+      }
+    },
+    [setSelection] 
+  );
   return (
     <Box id="tour-graph-canvas" $fill $bg="bg.main" style={{ position: 'relative' }}>
       
@@ -170,7 +190,7 @@ export const GraphCanvas: React.FC = () => {
             edgeTypes={edgeTypes}
             onNodesChange={onNodesChange} 
             onEdgesChange={onEdgesChange}
-            
+            onSelectionChange={handleSelectionChange}
             onNodeMouseEnter={(_, node) => hoverNode(node.data.fileId)}
             onNodeMouseLeave={() => hoverNode(null)}
             onNodeClick={(e, node) => {
@@ -187,6 +207,7 @@ export const GraphCanvas: React.FC = () => {
             maxZoom={1.8}
           >
             <ZoomSizeResetter />
+            <GraphAutoFitter isEmpty={isEmpty} isWorking={isWorking}/>
             <GraphToolbar />
             <Background variant={BackgroundVariant.Dots} gap={24} size={2} color="#222" />
             <Controls />

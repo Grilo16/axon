@@ -20,7 +20,8 @@ pub fn app_router(state: AppState, auth_layer: KeycloakAuthLayer<String>) -> Rou
         .route("/:id/files/dir", get(workspace::get_file_paths_by_dir))
         .route("/:id/files/read", get(workspace::read_file))
         .route("/:id/explorer", get(workspace::list_directory))
-        .route("/:workspace_id/bundles", get(bundle::get_workspace_bundles));
+        .route("/:workspace_id/bundles", get(bundle::get_workspace_bundles))
+        .route("/:id/search", get(workspace::search_files));
 
     // 2. SECURE BUNDLE ROUTER
     let bundle_router = Router::new()

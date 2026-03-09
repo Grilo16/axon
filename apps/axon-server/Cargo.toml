@@ -20,6 +20,8 @@ tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace"] }
 chrono.workspace = true
 uuid.workspace = true
+fuzzy-matcher.workspace = true
+
 
 # Serialization
 serde.workspace = true

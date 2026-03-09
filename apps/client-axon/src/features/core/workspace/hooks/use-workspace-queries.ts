@@ -1,4 +1,4 @@
-import { useGetWorkspaceQuery, useListWorkspacesQuery, useListDirectoryQuery, useReadFileQuery } from "../api/workspace-api";
+import { useGetWorkspaceQuery, useListWorkspacesQuery, useListDirectoryQuery, useReadFileQuery, useSearchFilesQuery } from "../api/workspace-api";
 import { useActiveWorkspaceId, useViewedFilePath, useViewMode } from "./use-workspace-slice";
 
 export const useActiveWorkspaceQuery = () => {
@@ -35,3 +35,25 @@ export const useReadWorkspaceFileQuery = () => {
       { skip: !activeId || !viewedFilePath || !isFile  }
     );
 }
+
+export const useActiveWorkspaceSearchFilesQuery = (value: string) => {
+  const id = useActiveWorkspaceId();
+  
+  const safeQuery = value || "";
+  const isQuerySubstantial = safeQuery.trim().length >= 2;
+
+  const { data, ...result } = useSearchFilesQuery(
+    { id: id!, query: {
+      limit: null, 
+      value
+    } },
+    { 
+      skip: !id || !isQuerySubstantial 
+    } 
+  );
+
+  return {
+    results: data ?? [], 
+    ...result,
+  };
+};

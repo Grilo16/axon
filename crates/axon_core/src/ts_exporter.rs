@@ -9,8 +9,7 @@ use crate::{
         },
         public::StatelessGraphReq,
         workspace::{
-            CreateWorkspaceReq, DirQuery, FileQuery, ListWorkspacesQuery, ReadFileReq,
-            UpdateWorkspacePayload, WorkspaceRecord,
+            CreateWorkspaceReq, DirQuery, FileQuery, ListWorkspacesQuery, ReadFileReq, SearchQuery, UpdateWorkspacePayload, WorkspaceRecord
         },
     },
     error::AxonError,
@@ -63,6 +62,7 @@ pub fn do_export() {
         (CreateBundleReq::export_all_to(base_path)),
         (CloneBundleReq::export_all_to(base_path)),
         (ListBundlesQuery::export_all_to(base_path)),
+        (SearchQuery::export_all_to(base_path)),
         // Public requests
         (StatelessGraphReq::export_all_to(base_path)),
         // export the error type

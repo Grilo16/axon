@@ -1,10 +1,14 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import styled from "styled-components";
 import { EyeOff, Trash2 } from "lucide-react";
 
 import { Flex, Text, Button } from "@shared/ui";
 import { customScrollbar } from "@shared/ui/theme/mixins";
 import type { Symbol } from "../../types";
+
+// 🌟 Import our smart hooks
+import { useActiveBundleQuery } from "@features/core/bundles/hooks/use-bundle-queries";
+import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
 
 const ScrollableSymbolList = styled(Flex)`
   flex: 1;
@@ -29,14 +33,29 @@ type Props = {
 };
 
 export const FileNodeSymbols = memo(({ symbols, filePath }: Props) => {
+  const { activeBundle } = useActiveBundleQuery();
+  const { toggleSymbolRedaction } = useActiveBundleActions();
+
+  const fileRules = useMemo(() => {
+    const map = new Map<number, string>();
+    if (!activeBundle?.options?.rules) return map;
+
+    activeBundle.options.rules.forEach(rule => {
+      if ('specificSymbol' in rule.target && rule.target.specificSymbol.file_path === filePath) {
+        map.set(rule.target.specificSymbol.symbol_id, rule.action as string);
+      }
+    });
+    return map;
+  }, [activeBundle, filePath]);
+
   if (symbols.length === 0) return null;
 
   return (
     <ScrollableSymbolList className="nodrag nowheel" $direction="column" $gap="xs" $p="sm">
       {symbols.map((sym) => {
-        // Mock rule check extracted for performance (replace with real selector later)
-        const isHidden = false; 
-        const isRemoved = false;
+        const currentAction = fileRules.get(sym.id);
+        const isHidden = currentAction === "hideImplementation";
+        const isRemoved = currentAction === "removeEntirely";
 
         return (
           <SymbolRow key={sym.id} $align="center" $justify="space-between">
@@ -78,13 +97,16 @@ export const FileNodeSymbols = memo(({ symbols, filePath }: Props) => {
               <Button 
                 $variant="icon"
                 title={isHidden ? "Restore Implementation" : "Hide Implementation"}
+                onClick={() => toggleSymbolRedaction(filePath, sym.id, "hideImplementation")}
                 style={{ color: isHidden ? '#facc15' : undefined, background: isHidden ? '#374151' : undefined }}
               >
                 <EyeOff size={12} />
               </Button>
+              
               <Button 
                 $variant="icon"
                 title={isRemoved ? "Restore Symbol" : "Remove Symbol Entirely"}
+                onClick={() => toggleSymbolRedaction(filePath, sym.id, "removeEntirely")}
                 style={{ color: isRemoved ? '#f87171' : undefined, background: isRemoved ? '#374151' : undefined }}
               >
                 <Trash2 size={12} />

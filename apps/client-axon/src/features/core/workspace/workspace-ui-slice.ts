@@ -77,6 +77,9 @@ export const workspaceUiSlice = createSlice({
         state.selectedPaths.push(path);
       }
     },
+    setSelection: (state, action: PayloadAction<string[]>) => {
+      state.selectedPaths = action.payload;
+    },
     clearSelection: (state) => {
       state.selectedPaths = [];
     },
@@ -117,6 +120,7 @@ export const {
   clearNavigation,
   setHoveredPath,
   toggleNodeSelection,
+  setSelection,
   clearSelection,
   viewFile,
   viewBundleContext,

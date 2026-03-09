@@ -73,20 +73,32 @@ const executeWebRequest = async (
         error: { type: "auth", data: "Session expired or invalid" } as AxonError 
       };
     }
+if (!response.ok) {
+      const errorText = await response.text();
+      let errorData = null;
+      try {
+        errorData = errorText ? JSON.parse(errorText) : null;
+      } catch {
+        errorData = { message: errorText };
+      }
 
-    // 4. Handle other HTTP errors
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
       return { 
         error: (errorData || { type: "http", data: response.statusText }) as AxonError 
       };
     }
 
-    // 5. Safe JSON parsing
-    // Accommodates 204 No Content responses where .json() would throw
-    if (response.status === 204) return { data: null };
-    const data = await response.json();
-    return { data };
+    const rawText = await response.text();
+    
+    if (!rawText || rawText.trim() === "") {
+      return { data: null };
+    }
+
+    try {
+      const data = JSON.parse(rawText);
+      return { data };
+    } catch (e) {
+      return { data: rawText };
+    }
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown fetch error";

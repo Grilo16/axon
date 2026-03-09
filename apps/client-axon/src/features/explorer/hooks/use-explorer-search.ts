@@ -1,59 +1,66 @@
-import { useMemo, useDeferredValue } from "react";
-import { useAppSelector, useAppDispatch } from "@app/store";
-import { toggleNodeSelection } from "@features/core/workspace/workspace-ui-slice";
-import { useGetAllFilePathsQuery } from "@features/core/workspace/api/workspace-api";
+import { useDeferredValue } from "react";
+import { useAuth } from "react-oidc-context";
+import { toast } from "sonner";
+
+import { useAppSelector } from "@app/store";
+import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
+import { selectPrivateGraphPathsSet, selectPublicGraphPathsSet } from "@features/core/workspace/workspace-ui-selector";
+import { useActiveWorkspaceSearchFilesQuery } from "@features/core/workspace/hooks/use-workspace-queries";
 
 export const useExplorerSearch = (searchQuery: string) => {
-  const dispatch = useAppDispatch();
-  const activeWorkspaceId = useAppSelector((state) => state.workspaceUi.activeWorkspaceId);
+  
+  // 1. Action Hooks
+  const { toggleTargetFile, addTargetFiles, removeTargetFiles } = useActiveBundleActions();
+  
+  const { isAuthenticated } = useAuth();
+  const privatePathsSet = useAppSelector(selectPrivateGraphPathsSet);
+  const publicPathsSet = useAppSelector(selectPublicGraphPathsSet);
+  const activePathsSet = isAuthenticated ? privatePathsSet : publicPathsSet;
 
-  // 1. Defer the search query to keep the UI typing at a buttery 60fps
-  // even if the mock frontend filtering takes a few milliseconds.
   const deferredQuery = useDeferredValue(searchQuery);
 
+  const { results, isFetching } = useActiveWorkspaceSearchFilesQuery(deferredQuery)
+
   // ==========================================
-  // 🚧 MOCK BACKEND IMPLEMENTATION 🚧
-  // TODO: Replace this entire block with your future Rust endpoint!
-  // Example future code: 
-  // const { data: results = [], isFetching } = useSearchFilesQuery({ id: activeWorkspaceId, query: deferredQuery });
-  
-  const { data: allPaths = [], isFetching } = useGetAllFilePathsQuery(
-    { id: activeWorkspaceId!, query: {limit: 200} },
-    { skip: !activeWorkspaceId || !deferredQuery } 
-  );
-
-  const results = useMemo(() => {
-    if (!deferredQuery) return [];
-    
-    const lowerQuery = deferredQuery.toLowerCase();
-    
-    // Naive frontend fuzzy search 
-    return allPaths
-      .filter((path) => path.toLowerCase().includes(lowerQuery))
-      .slice(0, 100); // Cap it at 100 so the DOM doesn't crash before the backend is ready
-  }, [allPaths, deferredQuery]);
+  // 🌟 ELITE BULK ACTIONS
   // ==========================================
-
-
-  // 2. Actions
-  const toggleTarget = (path: string) => {
-    // Note: For now we map this to our UI slice selection. 
-    // Later, this might dispatch a mutation to actually add the file to your active Bundle!
-    dispatch(toggleNodeSelection(path));
-  };
 
   const addAllToGraph = () => {
-    // Note: Same as above. Dispatching in a loop for the mock, 
-    // but future-state this will be a single API mutation `addFilesToBundle({ files: results })`
-    results.forEach((path) => {
-      dispatch(toggleNodeSelection(path));
-    });
+    if (results.length === 0) return;
+    
+    const toAdd = results.filter(path => !activePathsSet.has(path));
+    
+    if (toAdd.length > 0) {
+      addTargetFiles(toAdd);
+      toast.success(`Added ${toAdd.length} search results to graph.`);
+    } else {
+      toast.info("All search results are already in the graph.");
+    }
+  };
+
+  const removeAllFromGraph = () => {
+    if (results.length === 0) return;
+    
+    const toRemove = results.filter(path => activePathsSet.has(path));
+    
+    if (toRemove.length > 0) {
+      removeTargetFiles(toRemove);
+      toast.success(`Removed ${toRemove.length} search results from graph.`);
+    } else {
+      toast.info("None of the search results were in the graph.");
+    }
+  };
+
+  const toggleTarget = (path: string) => {
+    toggleTargetFile(path);
   };
 
   return {
-    results,
-    isSearching: isFetching || deferredQuery !== searchQuery, // True if typing OR fetching
+    results, 
+    isSearching: isFetching || (deferredQuery !== searchQuery), 
+    activePathsSet,
     toggleTarget,
     addAllToGraph,
+    removeAllFromGraph,
   };
 };

@@ -80,6 +80,7 @@ fn main() {
             workspace::get_file_paths_by_dir,
             workspace::read_file,
             workspace::list_directory,
+            workspace::search_files,
             // Bundles
             bundle::create_bundle,
             bundle::get_bundle,

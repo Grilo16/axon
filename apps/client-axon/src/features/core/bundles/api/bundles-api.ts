@@ -22,7 +22,10 @@ export const bundleApi = axonApi.injectEndpoints({
         { type: "Bundle", id: `LIST-${arg.workspaceId}` },
       ],
     }),
-    cloneBundle: builder.mutation<BundleRecord, { id: string; payload: CloneBundleReq }>({
+    cloneBundle: builder.mutation<
+      BundleRecord,
+      { id: string; payload: CloneBundleReq }
+    >({
       query: ({ id, payload }) => ({
         command: "duplicate_bundle",
         url: `/v1/bundles/${id}/clone`,
@@ -34,6 +37,7 @@ export const bundleApi = axonApi.injectEndpoints({
         { type: "Bundle", id: `LIST-${id}` },
       ],
     }),
+
     getBundle: builder.query<BundleRecord, string>({
       query: (id) => ({
         command: "get_bundle",
@@ -43,30 +47,65 @@ export const bundleApi = axonApi.injectEndpoints({
       }),
       providesTags: (_result, _error, id) => [{ type: "Bundle", id }],
     }),
-    getWorkspaceBundles: builder.query<BundleRecord[], { id: string; query: ListBundlesQuery }>({
+
+    getWorkspaceBundles: builder.query<
+      BundleRecord[],
+      { id: string; query: ListBundlesQuery }
+    >({
       query: ({ id, query }) => ({
         command: "get_workspace_bundles",
         url: `/v1/workspaces/${id}/bundles`,
         method: "GET",
         tauriArgs: { id, query },
       }),
-      providesTags: (_result, _error, arg) => [{ type: "Bundle", id: `LIST-${arg.id}` }],
+      providesTags: (_result, _error, arg) => [
+        { type: "Bundle", id: `LIST-${arg.id}` },
+      ],
     }),
-    updateBundle: builder.mutation<void, { id: string; workspaceId: string; payload: UpdateBundlePayload }>({
+
+    updateBundle: builder.mutation<
+      void,
+      {
+        id: string;
+        workspaceId: string;
+        payload: UpdateBundlePayload;
+        intent: "name" | "graph" | "context" | "all";
+      }
+    >({
       query: ({ id, payload }) => ({
         command: "update_bundle",
         url: `/v1/bundles/${id}`,
         method: "PATCH",
         body: payload,
         tauriArgs: { id, payload },
+        responseHandler: "text",
       }),
-      invalidatesTags: (_result, _error, { id, workspaceId }) => [
-        { type: "Bundle", id },
-        { type: "Bundle", id: `LIST-${workspaceId}` },
-        { type: "Bundle", id: `LIST-${id}` },
-        { type: "Bundle", id: `${id}-graph` },
-        { type: "Bundle", id: `${id}-context` }
-      ],
+      invalidatesTags: (_result, _error, { id, intent, workspaceId }) => {
+        switch (intent) {
+          case "name":
+            return [
+              { type: "Bundle", id },
+              { type: "Bundle", id: `LIST-${workspaceId}` },
+            ];
+          case "graph":
+            return [
+              { type: "Bundle", id },
+              { type: "Bundle", id: `${id}-graph` },
+              { type: "Bundle", id: `${id}-context` },
+            ];
+          case "context":
+            return [
+              { type: "Bundle", id },
+              { type: "Bundle", id: `${id}-context` },
+            ];
+          default:
+            return [
+              { type: "Bundle", id: `LIST-${workspaceId}` },
+              { type: "Bundle", id: `${id}-graph` },
+              { type: "Bundle", id: `${id}-context` },
+            ];
+        }
+      },
     }),
     deleteBundle: builder.mutation<void, { id: string; workspaceId: string }>({
       query: ({ id }) => ({
@@ -80,7 +119,7 @@ export const bundleApi = axonApi.injectEndpoints({
         { type: "Bundle", id: `LIST-${workspaceId}` },
       ],
     }),
-    getBundleGraph: builder.query<AxonGraphView, string>({ 
+    getBundleGraph: builder.query<AxonGraphView, string>({
       query: (id) => ({
         command: "get_bundle_graph",
         url: `/v1/bundles/${id}/graph`,
@@ -88,15 +127,14 @@ export const bundleApi = axonApi.injectEndpoints({
         tauriArgs: { id },
       }),
       providesTags: (_result, _error, id) => [
-        { type: "Bundle", id: `${id}-graph` }, 
-        { type: "Bundle", id: "graph" }
+        { type: "Bundle", id: `${id}-graph` },
       ],
     }),
     getGeneratedContext: builder.query<string, { id: string; name: string }>({
       query: ({ id }) => ({
         command: "generate_bundle",
         url: `/v1/bundles/${id}/generate`,
-        method: "GET", 
+        method: "GET",
         tauriArgs: { id },
       }),
       transformResponse: (response: Record<string, string>, _meta, arg) => {
@@ -104,12 +142,13 @@ export const bundleApi = axonApi.injectEndpoints({
         return [
           `# BUNDLED CONTEXT: ${arg.name}`,
           ...fileEntries.map(
-            ([path, content]) => `## File: ${path}\n\`\`\`typescript\n${content}\n\`\`\``
+            ([path, content]) =>
+              `## File: ${path}\n\`\`\`typescript\n${content}\n\`\`\``,
           ),
         ].join("\n\n");
       },
       providesTags: (_result, _error, { id }) => [
-        { type: "Bundle", id: `${id}-context` }
+        { type: "Bundle", id: `${id}-context` },
       ],
     }),
   }),

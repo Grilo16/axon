@@ -17,6 +17,7 @@ import {
   setHoveredPath,
   toggleNodeSelection,
   clearSelection,
+  setSelection,
 } from "../workspace-ui-slice";
 import { 
   selectHoverRelationship,
@@ -119,6 +120,10 @@ export const useWorkspaceDispatchers = () => {
     toggleSelection: useCallback(
       (path: string, multi: boolean = false) => dispatch(toggleNodeSelection({ path, multi })),
       [dispatch],
+    ),
+    setSelection: useCallback(
+      (paths: string[]) => dispatch(setSelection(paths)),
+      [dispatch]
     ),
     clearSelection: useCallback(
       () => dispatch(clearSelection()), 

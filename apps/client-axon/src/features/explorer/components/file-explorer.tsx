@@ -1,14 +1,14 @@
-// src/features/explorer/containers/PrivateExplorerContainer.tsx
 import { useState } from "react";
 import styled from "styled-components";
 import { Flex, Box } from "@shared/ui";
 import { customScrollbar } from "@shared/ui/theme/mixins";
 
-import { ExplorerSearchBar } from "../components/explorer-search-bar";
-import { ExplorerSearchResults } from "../components/explorer-search-results";
-import { ExplorerNode } from "../components/explorer-node";
+import { ExplorerSearchBar } from "./explorer-search-bar";
+import { ExplorerSearchResults } from "./explorer-search-results";
+import { ExplorerNode } from "./explorer-node";
 import { useExplorerSearch } from "../hooks/use-explorer-search";
 import { useExplorerDirectory } from "../hooks/use-explorer-directory";
+import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
 
 const ScrollableArea = styled(Box)`
   overflow-y: auto;
@@ -16,17 +16,21 @@ const ScrollableArea = styled(Box)`
   ${customScrollbar}
 `;
 
-export const FileExplorer = ({}) => {
+export const FileExplorer = () => {
+  const activeWorkspaceId = useActiveWorkspaceId();
   const [searchQuery, setSearchQuery] = useState("");
   const { children } = useExplorerDirectory("/", true);
-  const { results, addAllToGraph, toggleTarget } = useExplorerSearch(searchQuery);
+  
+  // Grab your fully built actions!
+  const { results, activePathsSet, addAllToGraph, removeAllFromGraph, toggleTarget } = useExplorerSearch(searchQuery);
 
   return (
-    <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface">
+    <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface" key={activeWorkspaceId}>
       <ExplorerSearchBar 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
         onAddAll={addAllToGraph} 
+        onRemoveAll={removeAllFromGraph}
         resultCount={results.length}
       />
 
@@ -34,25 +38,24 @@ export const FileExplorer = ({}) => {
        {searchQuery ? (
           <ExplorerSearchResults 
             results={results} 
-            activePaths={[]}
+            activePaths={activePathsSet}
             onToggle={toggleTarget} 
           />
         ) : (
-        children.length > 0 && (
-        <Flex $direction="column">
-          {children.map((child: any) => (
-            <ExplorerNode
-              key={child.data.path}
-              path={child.data.path}
-              name={child.data.name}
-              isFolder={child.type === "folder"}
-              depth={0}
-            />
-          ))}
-        </Flex>
-      ))}
-
-   
+          children.length > 0 && (
+            <Flex $direction="column">
+              {children.map((child: any) => (
+                <ExplorerNode
+                  key={child.data.path}
+                  path={child.data.path}
+                  name={child.data.name}
+                  isFolder={child.type === "folder"}
+                  depth={0}
+                />
+              ))}
+            </Flex>
+          )
+        )}
       </ScrollableArea>
     </Flex>
   );

@@ -1,11 +1,12 @@
+use fuzzy_matcher::skim::SkimMatcherV2;
+use fuzzy_matcher::FuzzyMatcher;
 use uuid::Uuid;
 use chrono::Utc;
 use crate::api::prelude::*;
 use crate::api::engine::resolve_active_tree;
 use axon_core::{
     bundler::rules::BundleOptions, domain::{bundle::BundleRecord, workspace::{
-        CreateWorkspaceReq, DirQuery, FileQuery, ListWorkspacesQuery, 
-        ReadFileReq, UpdateWorkspacePayload, WorkspaceRecord
+        CreateWorkspaceReq, DirQuery, FileQuery, ListWorkspacesQuery, ReadFileReq, SearchQuery, UpdateWorkspacePayload, WorkspaceRecord
     }}, explorer::{ExplorerEntry, TreeExplorer}
 };
 
@@ -128,4 +129,38 @@ pub async fn list_directory(
     let tree = resolve_active_tree(&ctx.state, &id, &ctx.user_id).await?;
     let entries = TreeExplorer::list_directory(&tree, &query.path)?;
     Ok(Json(entries))
+}
+
+#[instrument(skip(ctx))]
+pub async fn search_files(
+    ctx: AuthContext,
+    Path(id): Path<String>,
+    Query(query): Query<SearchQuery>,
+) -> AxonResult<Json<Vec<String>>> {
+    let tree = resolve_active_tree(&ctx.state, &id, &ctx.user_id).await?;
+    let all_paths = tree.get_all_file_paths(None);
+    
+    // 1. Initialize the Skim Matcher
+    let matcher = SkimMatcherV2::default();
+    
+    // 2. Score every path
+    let mut scored_paths: Vec<(i64, String)> = all_paths
+        .into_iter()
+        .filter_map(|path| {
+            // fuzzy_match returns Option<i64> (the score). If it's None, it didn't match.
+            matcher.fuzzy_match(&path, &query.value).map(|score| (score, path))
+        })
+        .collect();
+
+    // 3. Sort by highest score first!
+    scored_paths.sort_by(|a, b| b.0.cmp(&a.0));
+
+    // 4. Extract just the strings and apply the limit
+    let final_paths: Vec<String> = scored_paths
+        .into_iter()
+        .take(query.limit.unwrap_or(100))
+        .map(|(_, path)| path)
+        .collect();
+        
+    Ok(Json(final_paths))
 }

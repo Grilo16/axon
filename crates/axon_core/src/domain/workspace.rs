@@ -65,6 +65,14 @@ pub struct ReadFileReq {
     pub path: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export_to = "workspace-api.ts", rename_all = "camelCase")]
+#[serde(rename_all = "camelCase")]
+pub struct SearchQuery {
+    pub value: String,
+    pub limit: Option<usize>,
+}
+
 #[async_trait]
 pub trait WorkspaceRepository: Send + Sync {
     async fn create(&self, workspace: WorkspaceRecord) -> AxonResult<()>;

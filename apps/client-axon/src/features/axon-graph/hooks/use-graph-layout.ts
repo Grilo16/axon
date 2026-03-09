@@ -17,14 +17,12 @@ export function useGraphLayout() {
 
   const nodesRef = useRef<AppNode[]>([]);
 
-  // --- SAFE XYFLOW NODE UPDATES ---
   const onNodesChangeSafe = useCallback(
     (changes: NodeChange<AppNode>[]) => {
-      // Reject React Flow's native selection to keep Redux as the source of truth
       const layoutChanges = changes.filter((c) => c.type !== "select");
       setNodes((prev) => {
         const nextNodes = applyNodeChanges(layoutChanges, prev) as AppNode[];
-        nodesRef.current = nextNodes; // Keep ref synced for the layout engine
+        nodesRef.current = nextNodes; 
         return nextNodes;
       });
     },

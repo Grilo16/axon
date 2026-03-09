@@ -1,4 +1,4 @@
-import { Search, PlusSquare, X } from "lucide-react";
+import { Search, PlusSquare, X, MinusSquare } from "lucide-react";
 import { Flex, Text, Button, Input, Box } from "@shared/ui";
 import { useTheme } from "styled-components";
 
@@ -6,10 +6,11 @@ interface Props {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   onAddAll: () => void;
+  onRemoveAll: () => void;
   resultCount: number;
 }
 
-export const ExplorerSearchBar = ({ searchQuery, setSearchQuery, onAddAll, resultCount }: Props) => {
+export const ExplorerSearchBar = ({ searchQuery, setSearchQuery, onAddAll, resultCount, onRemoveAll }: Props) => {
   const theme = useTheme();
 
   return (
@@ -37,12 +38,20 @@ export const ExplorerSearchBar = ({ searchQuery, setSearchQuery, onAddAll, resul
       {searchQuery && (
         <Flex $align="center" $justify="space-between">
           <Text $size="xs" $color="muted">{resultCount} files found</Text>
+          <Flex $gap={8}>
           <Button $variant="primary" onClick={onAddAll} disabled={resultCount === 0} style={{ padding: '4px 8px' }}>
             <Flex $align="center" $gap="xs">
               <PlusSquare size={12} />
               <Text $size="xs" $weight="semibold">Add All</Text>
             </Flex>
           </Button>
+          <Button $variant="danger" onClick={onRemoveAll} disabled={resultCount === 0} style={{ padding: '4px 8px' }}>
+            <Flex $align="center" $gap="xs">
+              <MinusSquare size={12} />
+              <Text $size="xs" $weight="semibold">Remove All</Text>
+            </Flex>
+          </Button>
+          </Flex>
         </Flex>
       )}
     </Flex>

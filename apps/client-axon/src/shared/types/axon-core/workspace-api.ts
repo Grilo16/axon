@@ -10,6 +10,8 @@ export type ListWorkspacesQuery = { limit: bigint | null, offset: bigint | null,
 
 export type ReadFileReq = { path: string, };
 
+export type SearchQuery = { value: string, limit: number | null, };
+
 export type UpdateWorkspacePayload = { name: string | null, projectRoot: string | null, lastOpened: string | null, };
 
 export type WorkspaceRecord = { id: string, ownerId: string, name: string, projectRoot: string, lastOpened: string, createdAt: string, updatedAt: string, };

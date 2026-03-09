@@ -7,6 +7,7 @@ import type {
   ReadFileReq,
   ListWorkspacesQuery,
   FileQuery,
+  SearchQuery,
 } from "@shared/types/axon-core/workspace-api";
 import type { ExplorerEntry } from "@shared/types/axon-core/explorer";
 
@@ -110,6 +111,14 @@ export const workspaceApi = axonApi.injectEndpoints({
         { type: "Workspace", id: `${id}-dir-${query.path ?? "root"}` },
       ],
     }),
+    searchFiles: builder.query<string[], { id: string; query: SearchQuery }>({
+      query: ({ id, query }) => ({
+        command: "search_files",
+        url: `/v1/workspaces/${id}/search?value=${encodeURIComponent(query.value)}${query.limit ? `&limit=${query.limit}`: ""}`,
+        method: "GET",
+        tauriArgs: { id, query },
+      }),
+    }),
   }),
 });
 
@@ -127,4 +136,5 @@ export const {
   useLazyReadFileQuery,
   useListDirectoryQuery,
   useLazyListDirectoryQuery,
+  useSearchFilesQuery,
 } = workspaceApi;
