@@ -22,7 +22,6 @@ import {
 import { 
   selectHoverRelationship,
   selectPrivateGraphPathsSet, 
-  selectPublicGraphPathsSet 
 } from "../workspace-ui-selector";
 
 // ==========================================
@@ -59,9 +58,23 @@ export const useIsNodeDimmed = (path: string) => {
 // Internal helper to seamlessly switch between public/private graph Sets
 const useActiveGraphPathsSet = () => {
   const { isAuthenticated } = useAuth();
+  const activeBundleId = useActiveBundleId();
+
+  // 1. Private Set (Uses your existing highly-optimized selector)
   const privatePathsSet = useAppSelector(selectPrivateGraphPathsSet);
-  const publicPathsSet = useAppSelector(selectPublicGraphPathsSet);
+
+  // 2. Public Array (Reads directly from our new EntityAdapter slice)
+  const publicTargetFiles = useAppSelector((state) => {
+    if (!activeBundleId) return undefined;
+    return state.publicBundles.entities[activeBundleId]?.options?.targetFiles;
+  });
+
+  // 3. Public Set (Memoized to prevent infinite re-renders!)
+  const publicPathsSet = useMemo(() => {
+    return new Set<string>(publicTargetFiles || []);
+  }, [publicTargetFiles]);
   
+  // The Switchboard
   return isAuthenticated ? privatePathsSet : publicPathsSet;
 };
 

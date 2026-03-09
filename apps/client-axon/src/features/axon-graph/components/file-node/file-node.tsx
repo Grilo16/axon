@@ -8,12 +8,15 @@ import { FileNodeActions } from "./file-node-actions";
 import { FileNodeSymbols } from "./file-node-symbols";
 
 import { Flex, Text } from "@shared/ui";
-import { useIsNodeHovered, useIsNodeSelected, useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useGraphRender } from "@features/axon-graph/contexts/graph-render-context";
 
-// --- XYFlow Specific Styled Components ---
-const NodeCardWrapper = styled.div<{ $selected?: boolean; $isSeed?: boolean; $isZoomedOut?: boolean; $isHovered?: boolean; }>`
-  background: ${({ theme, $isSeed }) => ($isSeed ? "#1b1f24" : theme.colors.bg.surface)};
-  /* Hijack standard border/shadow logic based purely on our Redux injected props */
+const NodeCardWrapper = styled.div<{ 
+  $selected?: boolean; 
+  $isZoomedOut?: boolean; 
+  $visualState: "normal" | "hovered" | "dimmed" | "semi-dimmed"; 
+}>`
+  background: ${({ theme }) => theme.colors.bg.surface};
   border: 1px solid ${({ theme, $selected }) => ($selected ? theme.colors.palette.primary.main : theme.colors.border.default)};
   border-radius: ${({ theme }) => theme.radii.lg};
   position: relative;
@@ -23,47 +26,57 @@ const NodeCardWrapper = styled.div<{ $selected?: boolean; $isSeed?: boolean; $is
   box-shadow: ${({ theme, $selected }) => ($selected ? `0 0 0 1px ${theme.colors.palette.primary.main}, 0 0 12px rgba(59, 130, 246, 0.2)` : theme.shadows.sm)};
   display: flex;
   flex-direction: column;
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, filter 0.3s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 
-  ${({ $isHovered, theme }) => $isHovered && css`
+  /* The magic internal states */
+  ${({ $visualState }) => $visualState === "dimmed" && css`
+    opacity: 0.15; filter: grayscale(100%);
+  `}
+  ${({ $visualState }) => $visualState === "semi-dimmed" && css`
+    opacity: 0.55; filter: grayscale(40%);
+  `}
+  ${({ $visualState, theme }) => $visualState === "hovered" && css`
+    opacity: 1 !important; filter: none !important; z-index: 1000;
     border-color: ${theme.colors.palette.primary.light};
-    box-shadow: 0 0 0 1px ${theme.colors.palette.primary.main}, 0 0 24px rgba(59, 130, 246, 0.4);
-    z-index: 1000;
+    box-shadow: 0 0 0 2px ${theme.colors.palette.primary.main}, 0 0 24px rgba(59, 130, 246, 0.4);
   `}
 `;
+
 
 const StyledHandle = styled(Handle)`
   width: 8px;
   height: 8px;
   border: 1px solid #111;
 `;
-
 export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
   const zoom = useStore((s) => s.transform[2]);
   const isZoomedOut = zoom < 0.65;
   const updateNodeInternals = useUpdateNodeInternals();
-
-  // 1. Redux UI State (O(1) highly optimized!)
-    const isHovered = useIsNodeHovered(data.path)
-    const isSelected = useIsNodeSelected(data.path)
-  const {openFileViewer} = useWorkspaceDispatchers()
+  const { openFileViewer } = useWorkspaceDispatchers();
   
-  const symbols = data.symbols ?? [];
+  // 🌟 O(1) Context Lookups!
+  const { selectedPathsSet, connectedNodeIdsSet, hoveredPath } = useGraphRender();
+  
+  const isSelected = selectedPathsSet.has(data.path);
+  const isHoverTarget = hoveredPath && (data.path === hoveredPath || data.path.startsWith(hoveredPath + '/'));
+  const hasSelection = selectedPathsSet.size > 0;
+  
+  let visualState: "normal" | "hovered" | "dimmed" | "semi-dimmed" = "normal";
+  if (isHoverTarget) visualState = "hovered";
+  else if (hasSelection) {
+    if (isSelected) visualState = "normal"; // Selected nodes stay fully lit
+    else if (connectedNodeIdsSet.has(id)) visualState = "semi-dimmed";
+    else visualState = "dimmed";
+  }
 
-  useEffect(() => { 
-    updateNodeInternals(id); 
-  }, [isZoomedOut, updateNodeInternals, id]);
-
+  useEffect(() => { updateNodeInternals(id); }, [isZoomedOut, updateNodeInternals, id]);
 
   return (
-    <NodeCardWrapper 
+<NodeCardWrapper 
       $selected={isSelected} 
       $isZoomedOut={isZoomedOut} 
-      $isHovered={isHovered} 
-      onDoubleClick={(e) => { 
-        e.stopPropagation(); 
-        openFileViewer(data.path); 
-      }}
+      $visualState={visualState} 
+      onDoubleClick={(e) => { e.stopPropagation(); openFileViewer(data.path); }}
     >
       {!isZoomedOut && (
         <NodeResizeControl minWidth={300} minHeight={110} style={{ border: 'none', background: 'transparent' }}>
@@ -87,7 +100,7 @@ export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
 
       {!isZoomedOut && (
         <FileNodeSymbols 
-          symbols={symbols} 
+          symbols={data.symbols} 
           filePath={data.path} 
         />
       )}

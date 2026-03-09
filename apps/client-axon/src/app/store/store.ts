@@ -27,7 +27,7 @@ const persistConfig = {
   key: "axon-root",
   version: 1,
   storage,
-  whitelist: ["workspaces", "bundles"],
+  whitelist: ["workspaceUi", "publicBundles"],
 };
 
 // We use "as any" only during the persist wrap because redux-persist

@@ -79,9 +79,19 @@ export const useBundleActions = () => {
             })(payload);
           } else {
             // 🏖️ Sandbox Mode
-            sandboxActions.removeBundle(payload.id);
-            dispatch(setBundle(null)); // Drop selection
-            toast.success("Sandbox bundle deleted.");
+           sandboxActions.removeBundle(payload.id);
+            
+            const remaining = Object.values(publicBundlesState.entities)
+              .filter(b => b?.workspaceId === payload.workspaceId && b?.id !== payload.id);
+            
+            if (remaining.length === 0) {
+              const newId = sandboxActions.createBundle(payload.workspaceId, "Default Context");
+              dispatch(setBundle(newId)); // Auto-select the newly created default
+              toast.success("Last bundle deleted. Recreated Default Context.");
+            } else {
+              dispatch(setBundle(null)); // Drop selection normally
+              toast.success("Sandbox bundle deleted.");
+            }
             return;
           }
         },

@@ -6,7 +6,7 @@ export const ToastProvider = () => {
 
   return (
     <Toaster
-      position="bottom-right"
+      position="bottom-center"
       gap={theme.spacing.sm as unknown as number}
       toastOptions={{
         style: {

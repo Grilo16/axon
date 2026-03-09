@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@app/store";
 import { 
   addPublicBundle, 
@@ -7,6 +7,7 @@ import {
   selectPublicBundlesByWorkspace,
   selectPublicBundleById
 } from "../public-bundles-slice";
+import { setBundle } from "@features/core/workspace/workspace-ui-slice";
 
 const DEFAULT_OPTIONS = {
   targetFiles: [],
@@ -47,12 +48,21 @@ export const usePublicBundleDispatchers = () => {
   return { createBundle, updateBundle, removeBundle };
 };
 
-// Query wrappers to match the RTK Query style
 export const usePublicWorkspaceBundles = (workspaceId: string | null) => {
   const bundles = useAppSelector(state => selectPublicBundlesByWorkspace(state, workspaceId));
+  
+  const { createBundle } = usePublicBundleDispatchers();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    if (workspaceId && bundles.length === 0) {
+      const newId = createBundle(workspaceId, "Default Context");
+      dispatch(setBundle(newId)); 
+    }
+  }, [workspaceId, bundles.length, createBundle, dispatch]);
+
   return { bundles, isLoading: false };
 };
-
 export const usePublicBundle = (bundleId: string | null) => {
   const bundle = useAppSelector(state => 
     bundleId ? selectPublicBundleById(state, bundleId) : null

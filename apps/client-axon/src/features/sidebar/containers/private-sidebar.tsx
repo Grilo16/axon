@@ -20,7 +20,6 @@ export const PrivateSidebar = () => {
     const auth = useAuth();
     const { startTour } = useTour();
 
-    // 🌟 Group the private actions
     const PrivateActions = (
       <>
         <SidebarIcon title="Create New Workspace" onClick={() => setIsLoaderOpen(true)} icon={<VscAdd size={18} />} />
@@ -35,7 +34,7 @@ export const PrivateSidebar = () => {
         workspaces={workspaces || []}
         activeWorkspaceId={activeWorkspaceId}
         onSelectWorkspace={switchWorkspace}
-        bottomActions={PrivateActions} // 🌟 Inject here!
+        bottomActions={PrivateActions}
       />
       {isLoaderOpen && <WorkspaceLoader onClose={() => setIsLoaderOpen(false)} />}
     </>
