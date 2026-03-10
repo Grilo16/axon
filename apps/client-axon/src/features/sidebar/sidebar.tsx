@@ -21,7 +21,6 @@ interface WorkspaceSidebarProps {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
   onSelectWorkspace: (id: string) => void;
-  // 🌟 THE ELITE FIX: Accept any ReactNode for the bottom actions!
   bottomActions?: React.ReactNode; 
 }
 

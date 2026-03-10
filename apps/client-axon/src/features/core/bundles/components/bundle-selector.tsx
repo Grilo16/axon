@@ -1,11 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Check, X, Layers, Edit2, Trash2 } from "lucide-react";
 import { Flex, Button, Input, Select, Box } from "@shared/ui";
 import { useTheme } from "styled-components";
 
 import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
 import { useBundleActions } from "../hooks/use-bundle-actions";
-import { useActiveBundleQuery, useActiveWorkspaceBundlesQuery } from "../hooks/use-bundle-queries";
+import {
+  useActiveBundleQuery,
+  useActiveWorkspaceBundlesQuery,
+} from "../hooks/use-bundle-queries";
 import { useActiveBundleActions } from "../hooks/use-active-bundle-actions";
 
 export const BundleSelector = () => {
@@ -14,8 +17,8 @@ export const BundleSelector = () => {
   // 1. Global State
   const workspaceId = useActiveWorkspaceId();
   const { activeBundle } = useActiveBundleQuery();
-  const { allBundles } = useActiveWorkspaceBundlesQuery(); 
-  
+  const { allBundles } = useActiveWorkspaceBundlesQuery();
+
   // 2. Action Hooks
   const { createBundle, selectBundle } = useBundleActions();
   const { renameBundle, deleteBundle } = useActiveBundleActions();
@@ -24,6 +27,19 @@ export const BundleSelector = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [newName, setNewName] = useState("");
+
+    useEffect(() => {
+    // If we have no bundles loaded yet, do nothing.
+    if (!allBundles || allBundles.length === 0) return;
+
+    // Check if the current Redux activeBundleId actually exists in this dimension
+    const isCurrentBundleValid = allBundles.some(b => b.id === activeBundle?.id);
+
+    // If it's a ghost ID, or if nothing is selected, heal the state!
+    if (!isCurrentBundleValid) {
+      selectBundle(allBundles[0].id);
+    }
+  }, [allBundles, activeBundle?.id, selectBundle]);
 
   // 4. Handlers
   const handleSave = async () => {
@@ -37,7 +53,7 @@ export const BundleSelector = () => {
         options: {
           hideBarrelExports: false,
           rules: [],
-          targetFiles: []
+          targetFiles: [],
         },
       });
     } else if (isRenaming && trimmedName !== activeBundle?.name) {
@@ -68,7 +84,14 @@ export const BundleSelector = () => {
   // --- RENDER: EDIT MODE ---
   if (isCreating || isRenaming) {
     return (
-      <Flex id="tour-bundle-selector" $align="center" $gap="sm" $p="xs md" $bg="bg.surface" $radius="md">
+      <Flex
+        id="tour-bundle-selector"
+        $align="center"
+        $gap="sm"
+        $p="xs md"
+        $bg="bg.surface"
+        $radius="md"
+      >
         <Layers size={16} color={theme.colors.palette.primary.light} />
         <Input
           autoFocus
@@ -115,13 +138,26 @@ export const BundleSelector = () => {
       </Select>
 
       <Flex $gap="xs">
-        <Button $variant="icon" onClick={startRename} title="Rename" disabled={!activeBundle}>
+        <Button
+          $variant="icon"
+          onClick={startRename}
+          title="Rename"
+          disabled={!activeBundle}
+        >
           <Edit2 size={14} color={theme.colors.text.muted} />
         </Button>
-        <Button $variant="icon" onClick={handleDelete} title="Delete" disabled={!activeBundle}>
+        <Button
+          $variant="icon"
+          onClick={handleDelete}
+          title="Delete"
+          disabled={!activeBundle}
+        >
           <Trash2 size={14} color={theme.colors.text.muted} />
         </Button>
-        <Box $bg="border.subtle" style={{ width: 1, height: 16, margin: "0 4px" }} />
+        <Box
+          $bg="border.subtle"
+          style={{ width: 1, height: 16, margin: "0 4px" }}
+        />
         <Button $variant="icon" onClick={startCreate} title="New Bundle">
           <Plus size={16} color={theme.colors.palette.primary.light} />
         </Button>

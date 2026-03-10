@@ -16,7 +16,7 @@ export const PublicSidebar = () => {
   const { switchWorkspace } = useWorkspaceDispatchers();
 
   const { data: publicWorkspaces = [] } = useListPublicWorkspacesQuery();
-
+    
   const auth = useAuth();
   const { startTour } = useTour();
 

@@ -24,7 +24,9 @@ export const PrivateSidebar = () => {
       <>
         <SidebarIcon title="Create New Workspace" onClick={() => setIsLoaderOpen(true)} icon={<VscAdd size={18} />} />
         <SidebarIcon title="Take a Tour" onClick={() => startTour(AXON_TOUR_STEPS)} icon={<HelpCircle size={16} />} />
-        <SidebarIcon title="Log Out" $isDanger onClick={() => auth.signoutRedirect()} icon={<LogOut size={16} />} />
+        <SidebarIcon title="Log Out" $isDanger onClick={() => auth.signoutRedirect({
+          post_logout_redirect_uri: window.location.origin
+        })} icon={<LogOut size={16} />} />
       </>
     );
 

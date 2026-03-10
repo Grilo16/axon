@@ -100,7 +100,7 @@ export const workspaceUiSlice = createSlice({
     },
   },
 
- extraReducers: (builder) => {
+extraReducers: (builder) => {
     builder.addMatcher(
       isAnyOf(
         workspaceApi.endpoints.listWorkspaces.matchFulfilled,
@@ -108,11 +108,25 @@ export const workspaceUiSlice = createSlice({
       ),
       (state, action) => {
         const workspaces = action.payload;
-        if (!state.activeWorkspaceId && workspaces && workspaces.length > 0) {
-          workspaceUiSlice.caseReducers.setWorkspace(state, {
-            type: "workspaceUi/setWorkspace",
-            payload: workspaces[0].id,
-          });
+
+        if (workspaces && workspaces.length > 0) {
+          // 🌟 1. Does the current persisted ID actually exist in this new dimension?
+          const isValidWorkspace = workspaces.some((w) => w.id === state.activeWorkspaceId);
+
+          // 🌟 2. THE DIMENSIONAL HEALER
+          // If the ID is a ghost (from the other auth state) or it's just missing...
+          if (!isValidWorkspace) {
+            console.log("[WorkspaceUI] Ghost workspace detected. Healing state to default...");
+            
+            // Instantly snap to the first valid workspace in this dimension
+            state.activeWorkspaceId = workspaces[0].id;
+
+            state.activeBundleId = null;
+            state.selectedPaths = [];
+            state.hoveredPath = null;
+            state.viewMode = "none";
+            state.viewedFilePath = null;
+          }
         }
       },
     );

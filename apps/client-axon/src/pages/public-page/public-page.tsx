@@ -3,7 +3,9 @@ import { CodeViewerPanel } from "@features/code-viewer/components/code-viewer-pa
 import { BundleCompact } from "@features/core/bundles/components/bundle-compact";
 import { BundleDetails } from "@features/core/bundles/components/bundle-details";
 import { BundleSelector } from "@features/core/bundles/components/bundle-selector";
+import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
 import { FileExplorer } from "@features/explorer";
+import { useListPublicWorkspacesQuery } from "@features/public/api/public-api";
 import { Flex } from "@shared/ui";
 import { WorkspaceLayout } from "@shared/ui/layouts/workspace-layout";
 import { Loader2 } from "lucide-react";
@@ -13,8 +15,9 @@ import { Navigate } from "react-router-dom";
 export default function PublicSandboxPage() {
 
 const { isAuthenticated, isLoading } = useAuth();
+  const { data: publicWorkspaces, isLoading: isWorkspacesLoading } = useListPublicWorkspacesQuery();
+  const activeWorkspaceId = useActiveWorkspaceId();
 
-  // 🌟 1. THE FREEZE: Wait for OIDC to figure out if they have a token
   if (isLoading) {
     return (
       <Flex $fill $align="center" $justify="center" $bg="bg.main">
@@ -26,6 +29,17 @@ const { isAuthenticated, isLoading } = useAuth();
   // 🌟 2. THE BOUNCER: If they are logged in, silently teleport them to the real app!
   if (isAuthenticated) {
     return <Navigate to="/app" replace />;
+  }
+
+  const isGhostWorkspace = publicWorkspaces && activeWorkspaceId && !publicWorkspaces.some(w => w.id === activeWorkspaceId);
+
+  // Block the UI from mounting until the network loads AND the Redux extraReducer finishes healing!
+  if (isWorkspacesLoading || isGhostWorkspace) {
+    return (
+      <Flex $fill $align="center" $justify="center" $bg="bg.main">
+        <Loader2 size={32} className="animate-spin" color="#60a5fa" />
+      </Flex>
+    );
   }
 
   const BundlerUI = (
