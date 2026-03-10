@@ -1,8 +1,7 @@
 import { createContext, useContext } from "react";
-import { type DriveStep } from "driver.js";
 
 export interface TourContextValue {
-  startTour: (steps: DriveStep[]) => void;
+  startTour: () => void;
   hasSeenTour: boolean;
   markTourAsSeen: () => void;
 }

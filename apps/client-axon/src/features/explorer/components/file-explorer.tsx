@@ -8,7 +8,7 @@ import { ExplorerSearchResults } from "./explorer-search-results";
 import { ExplorerNode } from "./explorer-node";
 import { useExplorerSearch } from "../hooks/use-explorer-search";
 import { useExplorerDirectory } from "../hooks/use-explorer-directory";
-import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useActiveWorkspaceId, useSelectedExplorerKey } from "@features/core/workspace/hooks/use-workspace-slice";
 
 const ScrollableArea = styled(Box)`
   overflow-y: auto;
@@ -17,6 +17,7 @@ const ScrollableArea = styled(Box)`
 `;
 
 export const FileExplorer = () => {
+  const key = useSelectedExplorerKey()
   const activeWorkspaceId = useActiveWorkspaceId();
   const [searchQuery, setSearchQuery] = useState("");
   const { children } = useExplorerDirectory("/", true, true);
@@ -24,7 +25,7 @@ export const FileExplorer = () => {
   const { results, activePathsSet, addAllToGraph, removeAllFromGraph, toggleTarget } = useExplorerSearch(searchQuery);
 
   return (
-    <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface" key={activeWorkspaceId}>
+    <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface" key={`${activeWorkspaceId}-${key}`}>
       <ExplorerSearchBar 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 

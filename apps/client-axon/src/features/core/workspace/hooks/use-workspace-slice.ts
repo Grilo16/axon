@@ -18,6 +18,8 @@ import {
   toggleNodeSelection,
   clearSelection,
   setSelection,
+  selectExplorerKey,
+  resetExplorer,
 } from "../workspace-ui-slice";
 import { 
   selectHoverRelationship,
@@ -32,6 +34,7 @@ export const useActiveBundleId = () => useAppSelector(selectActiveBundleId);
 export const useViewMode = () => useAppSelector(selectViewMode);
 export const useViewedFilePath = () => useAppSelector(selectViewedFilePath);
 export const useSelectedPaths = () => useAppSelector(selectSelectedPaths);
+export const useSelectedExplorerKey = () => useAppSelector(selectExplorerKey);
 
 // ==========================================
 // 🌟 ATOMIC NODE STATE (High Performance)
@@ -140,6 +143,10 @@ export const useWorkspaceDispatchers = () => {
     ),
     clearSelection: useCallback(
       () => dispatch(clearSelection()), 
+      [dispatch]
+    ),
+    resetExplorer: useCallback(
+      () => dispatch(resetExplorer()),
       [dispatch]
     ),
   };

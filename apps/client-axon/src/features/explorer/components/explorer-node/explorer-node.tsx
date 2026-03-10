@@ -52,8 +52,22 @@ export const ExplorerNode = memo(
       hoverRel === "parent-hovered" || // The folder containing it is hovered
       (hoverRel === "child-hovered" && !isOpen); // A child is hovered, but THIS folder is closed!
 
+
+      const tourID = (path: string) => {
+        switch(path) {
+          case "axon-tutorial": 
+            return "tour-explorer-demo-folder"
+          case "axon-tutorial/src": 
+            return "tour-explorer-row-src"
+          default: 
+            return undefined
+        }
+      }
+        
     return (
-      <Flex $direction="column">
+      <Flex 
+      id={tourID(path)}
+      $direction="column" >
         <NodeContainer
           $depth={depth}
           // Highlight this node if it meets our smart targeting criteria

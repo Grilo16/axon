@@ -32,7 +32,6 @@ export const WorkspaceSidebar = ({
 }: WorkspaceSidebarProps) => {
   return (
     <Flex
-      id="tour-sidebar-workspaces"
       $direction="column"
       $align="center"
       $gap="md" 

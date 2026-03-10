@@ -37,6 +37,7 @@ export const BundleCompact = () => {
           </Flex>
 
           <Button
+            id="tour-hide-barrels-toggle"
             $variant="icon"
             onClick={toggleHideBarrelExports}
             title="Toggle Barrel Exports"
@@ -79,6 +80,7 @@ export const BundleCompact = () => {
         </Flex>
 
         <Button
+          id="tour-generate-context-btn"
           $variant="primary"
           $fill
           onClick={openBundleViewer}

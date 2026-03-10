@@ -67,4 +67,41 @@ export const DriverThemeOverrides = createGlobalStyle`
   .driver-popover-arrow {
     border-color: ${({ theme }) => theme.colors.bg.surface} !important;
   }
+
+.driver-active-element .tour-add-btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important; 
+    
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.palette.primary.main}, 
+                0 0 15px ${({ theme }) => theme.colors.palette.primary.main} !important;
+    border-radius: 4px;
+    animation: tour-pulse 2s infinite;
+  }
+
+  @keyframes tour-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  .driver-active-element.tour-symbol-row-first .symbol-actions {
+    opacity: 1 !important;
+  }
+
+  /* 🌟 Make the specific Eye button pulse and glow! */
+  .driver-active-element .tour-symbol-hide-btn {
+    box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.palette.primary.main}, 
+                0 0 15px ${({ theme }) => theme.colors.palette.primary.main} !important;
+    border-radius: 4px;
+    animation: tour-pulse 2s infinite;
+  }
+
+.driver-active-element.react-flow__node {
+    height: max-content !important;
+    min-height: min-content !important;
+    width: max-content !important; /* Optional: if you also want width to hug perfectly */
+    overflow: visible !important;
+  }
+
 `;

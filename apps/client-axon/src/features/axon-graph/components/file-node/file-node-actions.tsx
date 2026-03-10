@@ -17,12 +17,21 @@ function getFileName(path: string): string {
 }
 
 type Props = {
+  filePath: string;
   imports: string[];
   usedBy: string[];
 };
 
-export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
+export const FileNodeActions = memo(({filePath, imports, usedBy }: Props) => {
   // 🌟 Directly consume the interaction hook
+  const tourImportsId = (path: string) => {
+    switch(path) {
+      case "axon-tutorial/src/app.tsx": 
+        return "tour-node-actions-imports";
+      default: 
+        return undefined;
+    }
+  };
   const { addNodeToBundle, batchUpdateNodesInBundle } = useGraphInteractions();
   
   const {activeBundle} = useActiveBundleQuery()
@@ -38,7 +47,9 @@ export const FileNodeActions = memo(({ imports, usedBy }: Props) => {
     <Grid className="nodrag nowheel" $columns="1fr 1fr" $gap="sm" $p="sm" style={{ borderBottom: '1px solid #2b2b2b' }}>
       
       {/* OUTGOING (Imports) */}
-      <Flex $direction="column" style={{ position: 'relative' }}>
+      <Flex 
+      id={tourImportsId(filePath)}
+      $direction="column" style={{ position: 'relative' }}>
         <SplitButtonGroup $active={inactiveImports.length < imports.length} $tone="success">
           <SplitButtonMain 
             disabled={inactiveImports.length === 0}

@@ -22,7 +22,8 @@ const NodeCardWrapper = styled.div<{
   position: relative;
   width: 100%;
   min-width: 300px;
-  height: ${({ $isZoomedOut }) => ($isZoomedOut ? "max-content" : "100%")};
+  height: ${({ $isZoomedOut }) => ($isZoomedOut ? "max-content" : "min-content")};
+  max-height: 18rem;
   box-shadow: ${({ theme, $selected }) => ($selected ? `0 0 0 1px ${theme.colors.palette.primary.main}, 0 0 12px rgba(59, 130, 246, 0.2)` : theme.shadows.sm)};
   display: flex;
   flex-direction: column;
@@ -72,7 +73,8 @@ export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
   useEffect(() => { updateNodeInternals(id); }, [isZoomedOut, updateNodeInternals, id]);
 
   return (
-<NodeCardWrapper 
+    <NodeCardWrapper 
+      id={data.path === "axon-tutorial/src/app.tsx" ? "tour-node-app" : undefined}
       $selected={isSelected} 
       $isZoomedOut={isZoomedOut} 
       $visualState={visualState} 
@@ -96,7 +98,7 @@ export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
         </Flex>
       )}
 
-      <FileNodeActions imports={data.imports} usedBy={data.usedBy} />
+      <FileNodeActions imports={data.imports} usedBy={data.usedBy} filePath={data.path} />
 
       {!isZoomedOut && (
         <FileNodeSymbols 

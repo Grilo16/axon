@@ -51,14 +51,14 @@ export const FileNodeSymbols = memo(({ symbols, filePath }: Props) => {
   if (symbols.length === 0) return null;
 
   return (
-    <ScrollableSymbolList className="nodrag nowheel" $direction="column" $gap="xs" $p="sm">
-      {symbols.map((sym) => {
+    <ScrollableSymbolList className="nodrag nowheel" $direction="column" $gap="xs" $p="sm" >
+      {symbols.map((sym, index) => {
         const currentAction = fileRules.get(sym.id);
         const isHidden = currentAction === "hideImplementation";
         const isRemoved = currentAction === "removeEntirely";
-
+        const isTourTarget = filePath === "axon-tutorial/src/app.tsx" && index === 1
         return (
-          <SymbolRow key={sym.id} $align="center" $justify="space-between">
+          <SymbolRow key={sym.id} $align="center" $justify="space-between" className={isTourTarget ? "tour-symbol-row-first" : undefined}>
             <Flex $align="center" $gap="sm" style={{ minWidth: 0 }}>
               <Flex 
                 $align="center" 
@@ -95,6 +95,7 @@ export const FileNodeSymbols = memo(({ symbols, filePath }: Props) => {
 
             <Flex className="symbol-actions" $align="center" $gap="xs" style={{ opacity: isHidden || isRemoved ? 1 : undefined }}>
               <Button 
+                className={isTourTarget ? "tour-symbol-hide-btn" : undefined}
                 $variant="icon"
                 title={isHidden ? "Restore Implementation" : "Hide Implementation"}
                 onClick={() => toggleSymbolRedaction(filePath, sym.id, "hideImplementation")}

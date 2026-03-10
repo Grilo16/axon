@@ -71,7 +71,7 @@ export const CodeViewerPanel = () => {
   };
 
   return (
-    <PanelSection $bg="bg.main">
+    <PanelSection $bg="bg.main" id="tour-code-viewer">
       <PanelHeader>
         <Flex $align="center" $gap="sm" style={{ minWidth: 0 }}>
           {isBundle ? (

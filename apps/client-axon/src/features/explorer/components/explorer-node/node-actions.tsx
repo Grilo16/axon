@@ -32,11 +32,9 @@ export const NodeActions = ({
     }
   };
 
- 
-
   return (
    <ActionButton
-      className="node-actions"
+      className= {`node-actions ${path === "axon-tutorial/src" ? "tour-add-btn" : ""}`}
       $variant="icon"
       onClick={handleToggle}
       disabled={isFolderToggling}

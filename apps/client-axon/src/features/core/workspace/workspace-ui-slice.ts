@@ -22,6 +22,7 @@ export interface WorkspaceUiState {
   selectedPaths: string[];
   viewMode: ViewMode;
   viewedFilePath: string | null;
+  explorerResetKey: number,
 }
 
 const initialState: WorkspaceUiState = {
@@ -31,6 +32,7 @@ const initialState: WorkspaceUiState = {
   selectedPaths: [],
   viewMode: "none",
   viewedFilePath: null,
+  explorerResetKey: 0,
 };
 
 export const workspaceUiSlice = createSlice({
@@ -98,6 +100,9 @@ export const workspaceUiSlice = createSlice({
       state.viewMode = "none";
       state.viewedFilePath = null;
     },
+    resetExplorer: (state) => {
+    state.explorerResetKey += 1;
+  },
   },
 
 extraReducers: (builder) => {
@@ -144,6 +149,7 @@ export const {
   viewFile,
   viewBundleContext,
   closeView,
+  resetExplorer
 } = workspaceUiSlice.actions;
 
 export default workspaceUiSlice.reducer;
@@ -173,6 +179,10 @@ export const selectViewedFilePath = createSelector(
 export const selectSelectedPaths = createSelector(
   selectWorkspaceUi,
   (ui) => ui.selectedPaths,
+);
+export const selectExplorerKey = createSelector(
+  selectWorkspaceUi,
+  (ui) => ui.explorerResetKey,
 );
 
 // Parameterized pure functions

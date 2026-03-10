@@ -9,7 +9,6 @@ import { useListPublicWorkspacesQuery } from "@features/public/api/public-api";
 import { WorkspaceSidebar } from "../sidebar";
 import { SidebarIcon } from "../sidebar-icon";
 import { useTour } from "@app/providers";
-import { AXON_TOUR_STEPS } from "@features/core/tour";
 
 export const PublicSidebar = () => {
   const activeWorkspaceId = useActiveWorkspaceId();
@@ -24,7 +23,7 @@ export const PublicSidebar = () => {
     <>
       <SidebarIcon
         title="Take a Tour"
-        onClick={() => startTour(AXON_TOUR_STEPS)}
+        onClick={() => startTour()}
         icon={<HelpCircle size={16} />}
       />
 
