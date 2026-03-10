@@ -18,12 +18,23 @@ const waitForElement = (selector: string): Promise<Element> => {
 };
 
 export const getTourSteps = (driverObj: any, dispatch: AppDispatch): DriveStep[] => [
+  // step 0
+  {
+    // Notice: No 'element' property here! driver.js will center it.
+    popover: {
+      title: "Welcome to Axon 🧠",
+      description: "You are looking at a next-generation context curation engine. We are going to map an architecture, slice out the noise, and bundle it for an LLM in exactly 60 seconds. Ready?",
+      align: "center",
+      showButtons: ["next", "close"],
+      nextBtnText: "Let's Go!!", 
+    }
+  },
   // STEP 1: OPEN FOLDER
   {
     element: "#tour-explorer-demo-folder",
     popover: {
-      title: "Welcome to Axon 🧠",
-      description: "Let's map out this codebase. Click the arrow next to the 'src' folder to peek inside.",
+      title: "The explorer",
+      description: "Let's map out this codebase. Click the 'src' folder to peek inside.",
       side: "right",
       align: "start",
       showButtons: ["close"], 
@@ -126,6 +137,18 @@ export const getTourSteps = (driverObj: any, dispatch: AppDispatch): DriveStep[]
       el.addEventListener("click", advanceTour);
     },
   },
+    // STEP 5.5: Note barrel export
+  {
+    element: "#tour-graph-canvas",
+    popover: {
+      title: "The Graph Matrix",
+      description: "No more barrels in the graph",
+      side: "left",
+      align: "center",
+      showButtons: ["next", "close"],
+    },
+  },
+
 
   // STEP 6: DOUBLE CLICK TO OPEN FILE
   {
