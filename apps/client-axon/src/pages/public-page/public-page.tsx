@@ -15,27 +15,25 @@ import { useAuth } from "react-oidc-context";
 import { Navigate } from "react-router-dom";
 
 export default function PublicSandboxPage() {
+  // 🌟 1. ALL HOOKS MUST GO AT THE ABSOLUTE TOP
   const { isAuthenticated, isLoading } = useAuth();
-  const { data: publicWorkspaces, isLoading: isWorkspacesLoading } =
-    useListPublicWorkspacesQuery();
+  const { data: publicWorkspaces, isLoading: isWorkspacesLoading } = useListPublicWorkspacesQuery();
   const activeWorkspaceId = useActiveWorkspaceId();
   const { startTour, hasSeenTour } = useTour();
-
-  // 🌟 2. THE BOUNCER: If they are logged in, silently teleport them to the real app!
-  if (isAuthenticated) {
-    return <Navigate to="/app" replace />;
-  }
-
+  
   const isGhostWorkspace =
     publicWorkspaces &&
     activeWorkspaceId &&
     !publicWorkspaces.some((w) => w.id === activeWorkspaceId);
+
   const hasAttemptedTour = useRef(false);
 
   useEffect(() => {
     if (
       hasAttemptedTour.current ||
       hasSeenTour ||
+      isLoading ||        
+      isAuthenticated ||
       isWorkspacesLoading ||
       isGhostWorkspace ||
       !activeWorkspaceId
@@ -43,22 +41,32 @@ export default function PublicSandboxPage() {
       return;
     }
 
-    console.log("[Sandbox] First-time visitor detected. Launching Tour...");
+    console.log("[Sandbox] UI is fully mounted. Launching Tour...");
 
+    // 2. Permanently lock the ignition for the lifecycle of this component
     hasAttemptedTour.current = true;
 
-    const timer = setTimeout(() => {
+    // 3. FIRE AND FORGET
+    // We intentionally DO NOT clear this timeout. This allows the initial 
+    // Strict Mode render to successfully launch the tour, while the useRef 
+    // permanently prevents any infinite loops when Redux updates!
+    setTimeout(() => {
       startTour();
     }, 500);
 
-    return () => clearTimeout(timer);
+    // 🌟 REMOVED THE CLEANUP FUNCTION ENTIRELY 🌟
+
   }, [
     hasSeenTour,
+    isLoading,
+    isAuthenticated,
     isWorkspacesLoading,
     isGhostWorkspace,
     activeWorkspaceId,
     startTour,
   ]);
+
+  // 🌟 3. EARLY RETURNS GO DOWN HERE, AFTER ALL HOOKS ARE REGISTERED
   if (isLoading) {
     return (
       <Flex $fill $align="center" $justify="center" $bg="bg.main">
@@ -67,7 +75,10 @@ export default function PublicSandboxPage() {
     );
   }
 
-  // Block the UI from mounting until the network loads AND the Redux extraReducer finishes healing!
+  if (isAuthenticated) {
+    return <Navigate to="/app" replace />;
+  }
+
   if (isWorkspacesLoading || isGhostWorkspace) {
     return (
       <Flex $fill $align="center" $justify="center" $bg="bg.main">
