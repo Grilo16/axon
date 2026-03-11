@@ -15,21 +15,25 @@ export const WorkspaceSidebarLayout: React.FC<WorkspaceSidebarLayoutProps> = ({
   return (
     <Group orientation="vertical">
       <Panel defaultSize={"60%"} minSize={"30%"}>
-        <PanelSection $bg="bg.surface">
-          {explorer}
-        </PanelSection>
+        <PanelSection $bg="bg.surface">{explorer}</PanelSection>
       </Panel>
 
       <Separator>
         <ResizeHandle $orientation="horizontal" />
       </Separator>
-
       <Panel defaultSize={"40%"} minSize={"30%"}>
         <PanelSection
           $bg="bg.surface"
           $p="lg"
           $gap="md"
-          style={{ borderTop: "1px solid #333" }}
+          style={{
+            borderTop: "1px solid #333",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            minHeight: 0,
+            overflowY: "auto",
+          }}
         >
           {bundler}
         </PanelSection>
@@ -66,9 +70,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
         </Separator>
 
         <Panel defaultSize={"80%"} minSize={"30%"}>
-          <CanvasArea>
-            {graph}
-          </CanvasArea>
+          <CanvasArea>{graph}</CanvasArea>
         </Panel>
 
         {viewMode !== "none" && (
@@ -78,9 +80,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
             </Separator>
 
             <Panel defaultSize={"35%"} minSize={"20%"}>
-              <PanelSection $bg="bg.surface">
-                {codeViewer}
-              </PanelSection>
+              <PanelSection $bg="bg.surface">{codeViewer}</PanelSection>
             </Panel>
           </>
         )}

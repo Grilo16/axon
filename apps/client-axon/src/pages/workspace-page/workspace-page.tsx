@@ -27,11 +27,11 @@ const isGhostWorkspace = workspaces && activeWorkspaceId && !workspaces.some(w =
   }
 
   const BundlerUI = (
-    <>
+    <Flex $direction="column" $fill $gap="md" style={{ minHeight: 'min-content' }}>
       <BundleSelector />
-      <BundleCompact />
       <BundleDetails />
-    </>
+      <BundleCompact /> 
+    </Flex>
   );
 
   return (

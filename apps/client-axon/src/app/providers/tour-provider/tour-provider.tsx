@@ -40,6 +40,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const newBundleId = result?.id;
       if (!newBundleId) throw new Error("Failed to create tour bundle");
 
+      document.body.classList.add("axon-tour-active");
       // 3. Configure the Driver
       const driverObj = driver({
         stagePadding: 4,
@@ -54,7 +55,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!driverObj.hasNextStep() || window.confirm("Are you sure you want to skip the tutorial?")) {
             driverObj.destroy();
             markTourAsSeen();
-
+            document.body.classList.remove("axon-tour-active");
             // 4. Destroy the bundle (NO .unwrap() here either!)
             deleteBundle.handle({ id: `${newBundleId}`, workspaceId }).catch(console.error);
           }
@@ -80,48 +81,3 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </TourContext.Provider>
   );
 };
-// import "driver.js/dist/driver.css";
-// import React, { useCallback, useState } from "react";
-// import { driver, type DriveStep } from "driver.js";
-// import { TourContext } from "./tour-context";
-// import { DriverThemeOverrides } from "./tour-theme";
-
-// export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-//   const [hasSeenTour, setHasSeenTour] = useState<boolean>(() => {
-//     return localStorage.getItem("axon_tour_seen") === "true";
-//   });
-
-//   const markTourAsSeen = useCallback(() => {
-//     localStorage.setItem("axon_tour_seen", "true");
-//     setHasSeenTour(true);
-//   }, []);
-
-//   const startTour = useCallback((steps: DriveStep[]) => {
-//     const driverObj = driver({
-//       stagePadding: 2,
-//       showProgress: true,
-//       animate: true,
-//       smoothScroll: true,
-//       overlayOpacity: 0.75,
-//       steps: steps,
-//       doneBtnText: "Finish",
-//       nextBtnText: "Next →",
-//       prevBtnText: "← Back",
-//       onDestroyStarted: () => {
-//         if (!driverObj.hasNextStep() || window.confirm("Are you sure you want to skip the tour?")) {
-//           driverObj.destroy();
-//           markTourAsSeen();
-//         }
-//       },
-//     });
-
-//     driverObj.drive();
-//   }, [markTourAsSeen]);
-
-//   return (
-//     <TourContext.Provider value={{ startTour, hasSeenTour, markTourAsSeen }}>
-//       <DriverThemeOverrides />
-//       {children}
-//     </TourContext.Provider>
-//   );
-// };

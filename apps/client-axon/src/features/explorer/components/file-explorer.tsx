@@ -25,7 +25,7 @@ export const FileExplorer = () => {
   const { results, activePathsSet, addAllToGraph, removeAllFromGraph, toggleTarget } = useExplorerSearch(searchQuery);
 
   return (
-    <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface" key={`${activeWorkspaceId}-${key}`}>
+    <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface" key={`${activeWorkspaceId}-${key}`} style={{ minHeight: 0 }}>
       <ExplorerSearchBar 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 

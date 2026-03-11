@@ -1,6 +1,6 @@
-import { memo, useEffect } from "react";
+import { memo, useEffect} from "react";
 import styled, { css } from "styled-components";
-import { Position, type NodeProps, useStore, NodeResizeControl, useUpdateNodeInternals, Handle } from "@xyflow/react";
+import { Position, type NodeProps, useStore, useUpdateNodeInternals, Handle } from "@xyflow/react";
 
 import type { AppFileNode } from "../../types";
 import { FileNodeHeader } from "./file-node-header";
@@ -13,7 +13,6 @@ import { useGraphRender } from "@features/axon-graph/contexts/graph-render-conte
 
 const NodeCardWrapper = styled.div<{ 
   $selected?: boolean; 
-  $isZoomedOut?: boolean; 
   $visualState: "normal" | "hovered" | "dimmed" | "semi-dimmed"; 
 }>`
   background: ${({ theme }) => theme.colors.bg.surface};
@@ -22,7 +21,7 @@ const NodeCardWrapper = styled.div<{
   position: relative;
   width: 100%;
   min-width: 300px;
-  height: ${({ $isZoomedOut }) => ($isZoomedOut ? "max-content" : "min-content")};
+  height: auto;
   max-height: 18rem;
   box-shadow: ${({ theme, $selected }) => ($selected ? `0 0 0 1px ${theme.colors.palette.primary.main}, 0 0 12px rgba(59, 130, 246, 0.2)` : theme.shadows.sm)};
   display: flex;
@@ -43,6 +42,16 @@ const NodeCardWrapper = styled.div<{
   `}
 `;
 
+const SymbolsContainer = styled.div<{ $isZoomedOut: boolean }>`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  
+  ${({ $isZoomedOut }) => $isZoomedOut && css`
+    display: none;
+  `}
+`;
 
 const StyledHandle = styled(Handle)`
   width: 8px;
@@ -51,10 +60,12 @@ const StyledHandle = styled(Handle)`
 `;
 export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
   const zoom = useStore((s) => s.transform[2]);
-  const isZoomedOut = zoom < 0.65;
   const updateNodeInternals = useUpdateNodeInternals();
   const { openFileViewer } = useWorkspaceDispatchers();
-  
+  const isTourActive = document.body.classList.contains("axon-tour-active")
+  const isTourNode = data.path === "axon-tutorial/src/app.tsx"; 
+  // If the tour is active AND this is the tour node, NEVER hide the symbols!
+  const isZoomedOut = (isTourNode && isTourActive) ? false : zoom < 0.65;
   // 🌟 O(1) Context Lookups!
   const { selectedPathsSet, connectedNodeIdsSet, hoveredPath } = useGraphRender();
   
@@ -65,7 +76,7 @@ export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
   let visualState: "normal" | "hovered" | "dimmed" | "semi-dimmed" = "normal";
   if (isHoverTarget) visualState = "hovered";
   else if (hasSelection) {
-    if (isSelected) visualState = "normal"; // Selected nodes stay fully lit
+    if (isSelected) visualState = "normal"; 
     else if (connectedNodeIdsSet.has(id)) visualState = "semi-dimmed";
     else visualState = "dimmed";
   }
@@ -76,16 +87,10 @@ export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
     <NodeCardWrapper 
       id={data.path === "axon-tutorial/src/app.tsx" ? "tour-node-app" : undefined}
       $selected={isSelected} 
-      $isZoomedOut={isZoomedOut} 
       $visualState={visualState} 
       onDoubleClick={(e) => { e.stopPropagation(); openFileViewer(data.path); }}
     >
-      {!isZoomedOut && (
-        <NodeResizeControl minWidth={300} minHeight={110} style={{ border: 'none', background: 'transparent' }}>
-          <div style={{ position: 'absolute', right: 4, bottom: 4, width: 10, height: 10, cursor: 'nwse-resize', background: 'linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.3) 50%)' }} />
-        </NodeResizeControl>
-      )}
-
+  
       <StyledHandle id="top-in" type="target" position={Position.Top} style={{ top: -4, background: '#3b82f6' }} />
 
       <FileNodeHeader fileId={data.fileId} label={data.label} isZoomedOut={isZoomedOut} />
@@ -100,12 +105,9 @@ export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
 
       <FileNodeActions imports={data.imports} usedBy={data.usedBy} filePath={data.path} />
 
-      {!isZoomedOut && (
-        <FileNodeSymbols 
-          symbols={data.symbols} 
-          filePath={data.path} 
-        />
-      )}
+      <SymbolsContainer className="tour-symbols-container" $isZoomedOut={isZoomedOut}>
+        <FileNodeSymbols symbols={data.symbols} filePath={data.path} />
+      </SymbolsContainer>
 
       <StyledHandle id="bottom-out" type="source" position={Position.Bottom} style={{ bottom: -4, background: '#16a34a' }} />
     </NodeCardWrapper>
@@ -113,3 +115,12 @@ export const FileNode = memo(({ id, data }: NodeProps<AppFileNode>) => {
 });
 
 FileNode.displayName = "FileNode";
+
+
+    {/* {!isZoomedOut && (
+        <NodeResizeControl 
+        onResizeStart={() => setIsResized(true)}
+        minWidth={300} minHeight={110} style={{ border: 'none', background: 'transparent' }}>
+          <div style={{ position: 'absolute', right: 4, bottom: 4, width: 10, height: 10, cursor: 'nwse-resize', background: 'linear-gradient(135deg, transparent 50%, rgba(255, 255, 255, 0.3) 50%)' }} />
+        </NodeResizeControl>
+      )} */}

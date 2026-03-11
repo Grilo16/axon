@@ -34,7 +34,7 @@ export const getTourSteps = (driverObj: any, dispatch: AppDispatch): DriveStep[]
     element: "#tour-explorer-demo-folder",
     popover: {
       title: "The explorer",
-      description: "Let's map out this codebase. Click the 'src' folder to peek inside.",
+      description: "Click the 'axon-tutorial' folder to peek inside. Let's map out this codebase.",
       side: "right",
       align: "start",
       showButtons: ["close"], 

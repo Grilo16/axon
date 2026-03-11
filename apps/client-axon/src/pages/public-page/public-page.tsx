@@ -88,11 +88,11 @@ export default function PublicSandboxPage() {
   }
 
   const BundlerUI = (
-    <>
+  <Flex $direction="column" $fill $gap="md" style={{ minHeight: 'min-content' }}>
       <BundleSelector />
-      <BundleCompact />
       <BundleDetails />
-    </>
+      <BundleCompact /> 
+    </Flex>
   );
 
   return (

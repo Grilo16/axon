@@ -22,6 +22,7 @@ export const PanelSection = styled(Flex).attrs(props => ({
 }))`
   min-height: 0; 
   overflow: hidden;
+  ${customScrollbar}
 `;
 
 export const PanelHeader = styled(Flex).attrs({

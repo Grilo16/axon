@@ -27,6 +27,7 @@ const FlowChromeOverrides = styled(Box)`
     box-shadow: none !important;
     border: none !important;
     outline: none !important;
+    max-height: min-content;
   }
   .react-flow__controls { background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; }
   .react-flow__controls-button { background: #222; border-bottom: 1px solid #333; color: #ccc; }
