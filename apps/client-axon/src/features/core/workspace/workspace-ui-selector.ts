@@ -49,8 +49,8 @@ export const selectPublicGraphPathsSet = createSelector(
 
 export const selectHoverRelationship = createSelector(
   [
-    (state: any) => state.workspaceUi.hoveredPath, 
-    (_state: any, path: string) => path
+    (state: RootState) => state.workspaceUi.hoveredPath,
+    (_state: RootState, path: string) => path
   ],
   (hovered: string | null, path: string): HoverRelationship => {
     if (!hovered) return "none";

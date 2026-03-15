@@ -53,20 +53,21 @@ export const useGraphModel = () => {
   
   // Layout Engine
   const layout = useGraphLayout();
-  
+  const { applyLayout } = layout;
+
   // Structural change detector (prevents infinite layout loops)
-  const topologyHash = useMemo(() => 
+  const topologyHash = useMemo(() =>
     topology.nodes.map(n => n.id).join(',') + '|' + topology.edges.map(e => e.id).join(','),
   [topology]);
-  
+
   const prevHash = useRef<string | null>(null);
 
   useEffect(() => {
     if (topologyHash !== prevHash.current) {
       prevHash.current = topologyHash;
-      layout.applyLayout(topology.nodes, topology.edges, false);
+      applyLayout(topology.nodes, topology.edges, false);
     }
-  }, [topologyHash, topology.nodes, topology.edges, layout]);
+  }, [topologyHash, topology.nodes, topology.edges, applyLayout]);
 
   return {
     nodes: layout.nodes,

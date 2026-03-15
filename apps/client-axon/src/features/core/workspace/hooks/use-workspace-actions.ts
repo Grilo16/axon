@@ -3,6 +3,7 @@ import {
   useCreateWorkspaceMutation,
   useUpdateWorkspaceMutation,
   useDeleteWorkspaceMutation,
+  useRescanWorkspaceMutation,
   useLazyGetFilePathsByDirQuery,
   useLazyListDirectoryQuery,
   useLazyGetAllFilePathsQuery,
@@ -13,6 +14,7 @@ export const useWorkspaceActions = () => {
   const [createMut, createState] = useCreateWorkspaceMutation();
   const [updateMut, updateState] = useUpdateWorkspaceMutation();
   const [deleteMut, deleteState] = useDeleteWorkspaceMutation();
+  const [rescanMut, rescanState] = useRescanWorkspaceMutation();
   const [lazyPathsByDirMut, lazyPathsByDirState] =
     useLazyGetFilePathsByDirQuery();
   const [lazyListDirMut, lazyListDirState] = useLazyListDirectoryQuery();
@@ -69,6 +71,13 @@ export const useWorkspaceActions = () => {
         errorMessage: "Failed to delete workspace.",
       }),
       ...deleteState,
+    },
+    rescanWorkspace: {
+      handle: createActionHandler(rescanMut, {
+        successMessage: "Workspace rescanned successfully!",
+        errorMessage: "Failed to rescan workspace.",
+      }),
+      ...rescanState,
     },
   };
 };

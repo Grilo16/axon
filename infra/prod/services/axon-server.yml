@@ -3,6 +3,8 @@ services:
     image: ghcr.io/grilo16/axon-server:latest 
     container_name: axon-server
     restart: unless-stopped
+    volumes: 
+      - ../../sandbox_repos:/app/sandbox_repos
     networks:
       - axon-network
     environment:
@@ -11,6 +13,8 @@ services:
       PORT_RUST_API: ${PORT_RUST_API}
       KEYCLOAK_URL: ${KEYCLOAK_URL}
       KC_REALM: ${KC_REALM}
+      KC_CLIENT_ID: ${KC_CLIENT_ID}
+      ADMIN_USER_ID: ${ADMIN_USER_ID}
     depends_on:
       postgres:
         condition: service_healthy

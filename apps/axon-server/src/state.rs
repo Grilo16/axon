@@ -19,8 +19,6 @@ pub struct AppState {
     pub bundle_repo: Arc<dyn BundleRepository>,
     pub spool: Arc<AxonSpool>,
     pub admin_user_id: Option<String>,
-    /// Caps concurrent slow-path workspace loads (git clone + OXC parse).
-    /// Prevents 2 vCPU saturation — callers get 429 if both permits are taken.
     pub scan_semaphore: Arc<Semaphore>,
     active_trees: Cache<String, Arc<AxonTree<Analyzed>>>,
 }

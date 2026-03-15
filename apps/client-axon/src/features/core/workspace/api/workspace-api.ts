@@ -68,6 +68,20 @@ export const workspaceApi = axonApi.injectEndpoints({
       invalidatesTags: ["Workspace"],
     }),
 
+    rescanWorkspace: builder.mutation<void, string>({
+      query: (id) => ({
+        command: "rescan_workspace",
+        url: `/v1/workspaces/${id}/rescan`,
+        method: "POST",
+        tauriArgs: { id },
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: "Workspace", id },
+        { type: "Workspace", id: `ALL-${id}` },
+        "Bundle",
+      ],
+    }),
+
     getAllFilePaths: builder.query<string[], { id: string; query: FileQuery }>({
       query: ({ id, query }) => ({
         command: "get_all_file_paths",
@@ -128,6 +142,7 @@ export const {
   useListWorkspacesQuery,
   useUpdateWorkspaceMutation,
   useDeleteWorkspaceMutation,
+  useRescanWorkspaceMutation,
   useGetAllFilePathsQuery,
   useLazyGetAllFilePathsQuery,
   useGetFilePathsByDirQuery,
