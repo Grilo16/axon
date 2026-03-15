@@ -53,7 +53,7 @@ export const useReadWorkspaceFileQuery = () => {
 
   const publicQuery = useReadPublicFileQuery(
      { id: activeId!, query: { path: viewedFilePath! } },
-    { skip: !activeId || !viewedFilePath || !isFile },
+    { skip: !activeId || !viewedFilePath || !isFile || isAuthenticated },
   );
 
   return isAuthenticated ? privateQuery : publicQuery

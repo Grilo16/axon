@@ -7,7 +7,7 @@ use tracing::{info, instrument};
 use crate::state::AppState;
 use crate::commands::workspace::resolve_active_tree; // 🌟 Import our new engine!
 use axon_core::{
-   bundler::rules::BundleOptions, domain::bundle::{BundleRecord, CloneBundleReq, CreateBundleReq, ListBundlesQuery, UpdateBundlePayload}, error::{AxonError, AxonResult}, graph::{AxonGraph, AxonGraphView}
+ domain::bundle::{BundleOptions, BundleRecord, CloneBundleReq, CreateBundleReq, ListBundlesQuery, UpdateBundlePayload}, error::{AxonError, AxonResult}, graph::{AxonGraph, AxonGraphView}
 };
 
 // ==========================================

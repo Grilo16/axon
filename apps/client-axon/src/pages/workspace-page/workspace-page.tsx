@@ -13,7 +13,6 @@ import { Flex } from "@shared/ui";
 import { Loader2 } from "lucide-react";
 
 export const WorkspacePage = () => {
-  // 🌟 Group the bundler pieces into a single fragment
 const { workspaces, isLoading } = useAllWorkspacesQuery();
   const activeWorkspaceId = useActiveWorkspaceId();
 const isGhostWorkspace = workspaces && activeWorkspaceId && !workspaces.some(w => w.id === activeWorkspaceId);

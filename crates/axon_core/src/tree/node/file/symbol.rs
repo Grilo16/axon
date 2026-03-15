@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
+use compact_str::CompactString;
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use crate::{
     error::{AxonError, AxonResult}, 
     ids::SymbolId
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS, Archive, RkyvSerialize, RkyvDeserialize)]
 #[ts(export_to = "symbols.ts", rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub enum SymbolKind {
@@ -25,43 +27,33 @@ pub enum SymbolKind {
     Unknown,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS, Archive, RkyvSerialize, RkyvDeserialize)]
 #[ts(export_to = "symbols.ts", rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub struct Symbol {
     pub id: SymbolId,
     pub kind: SymbolKind,
-    pub name: String,
-
-    /// Full extent (docstring to end of block)
+    #[ts(type = "string")]
+    pub name: CompactString,
     pub range: TextRange,
-
-    /// Specifically where the name is defined (for clicking in UI)
     pub selection_range: TextRange,
-
-    /// Implementation body { ... }
     pub body_range: Option<TextRange>,
-
-    /// Extracted documentation
-    pub docstring: Option<String>,
-
-    /// Nested symbols (e.g. methods in a class)
+    #[ts(type = "string")]
+    pub docstring: Option<CompactString>,
     pub children: Vec<SymbolId>,
     pub parent: Option<SymbolId>,
-
-    /// Pre-rendered signature for quick UI display
-    pub signature: Option<String>,
+    #[ts(type = "string")]
+    pub signature: Option<CompactString>,
 }
 
 impl Symbol {
     pub fn new(
         id: SymbolId,
         kind: SymbolKind,
-        name: String,
+        name: CompactString,
         range: TextRange,
         selection_range: TextRange,
     ) -> AxonResult<Self> {
-        // Integrity check: selection must be within the full range
         if selection_range.start.0 < range.start.0 || selection_range.end.0 > range.end.0 {
             return Err(AxonError::InvalidRange {
                 start: selection_range.start.0,
@@ -83,7 +75,6 @@ impl Symbol {
         })
     }
 
-    /// Builder pattern for body_range
     pub fn with_body(mut self, body: TextRange) -> AxonResult<Self> {
         if body.start.0 < self.range.start.0 || body.end.0 > self.range.end.0 {
              return Err(AxonError::InvalidRange {
@@ -95,18 +86,17 @@ impl Symbol {
         Ok(self)
     }
     
-    /// Builder pattern for docstring
-    pub fn with_doc(mut self, doc: Option<String>) -> Self {
+    pub fn with_doc(mut self, doc: Option<CompactString>) -> Self {
         self.docstring = doc;
         self
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS, Archive, RkyvSerialize, RkyvDeserialize)]
 #[ts(export_to = "symbols.ts")]
 pub struct ByteOffset(pub u32);
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS, Archive, RkyvSerialize, RkyvDeserialize)]
 #[ts(export_to = "symbols.ts", rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub struct TextRange {
@@ -130,20 +120,24 @@ impl TextRange {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS, Archive, RkyvSerialize, RkyvDeserialize)]
 #[ts(export_to = "symbols.ts", rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub struct UnresolvedReference {
-    pub raw_path: String,
-    pub symbols: Vec<String>,
+    #[ts(type = "string")]
+    pub raw_path: CompactString,
+    #[ts(type = "string[]")]
+    pub symbols: Vec<CompactString>,
     pub is_type_only: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS, Archive, RkyvSerialize, RkyvDeserialize)]
 #[ts(export_to = "symbols.ts", rename_all = "camelCase")]
 #[serde(rename_all = "camelCase")]
 pub struct Export {
-    pub name: String,
+    #[ts(type = "string")]
+    pub name: CompactString,
     pub is_reexport: bool,
-    pub source: Option<String>, 
+    #[ts(type = "string")]
+    pub source: Option<CompactString>, 
 }

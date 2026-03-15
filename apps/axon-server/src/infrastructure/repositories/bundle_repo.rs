@@ -4,9 +4,8 @@ use tracing::instrument;
 use chrono::Utc;
 
 use axon_core::{
-    domain::bundle::{BundleRecord, BundleRepository, UpdateBundlePayload},
+    domain::bundle::{BundleOptions, BundleRecord, BundleRepository, UpdateBundlePayload},
     error::{AxonError, AxonResult},
-    bundler::rules::BundleOptions,
 };
 
 pub struct PostgresBundleRepo {
@@ -50,7 +49,6 @@ impl BundleRepository for PostgresBundleRepo {
             })?;
             
         let now = Utc::now().to_rfc3339();
-        
         let cloned_record = BundleRecord {
             id: new_id.to_string(),
             workspace_id: original.workspace_id,

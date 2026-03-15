@@ -1,4 +1,3 @@
-// --- FILE: explorer.rs ---
 use crate::error::{AxonError, AxonResult};
 use crate::tree::state::RegistryAccess;
 use crate::tree::{state::Analyzed, AxonTree};
@@ -45,11 +44,9 @@ impl ExplorerEntry {
 pub struct TreeExplorer;
 
 impl TreeExplorer {
-    /// Reads instantly from the parsed AxonTree in memory.
-    /// Expects a RelativeAxonPath string (e.g., "", "src", "src/features").
+    /// Reads directory structure from RAM, but fetches file size natively from the OS metadata cache.
     pub fn list_directory(tree: &AxonTree<Analyzed>, target_path: &str) -> AxonResult<Vec<ExplorerEntry>> {
         
-        // 1. Look up the directory in our ultra-fast HashMap
         let dir_id = tree
             .dir_id_by_path(target_path)
             .ok_or_else(|| AxonError::NotFound {
@@ -65,7 +62,6 @@ impl TreeExplorer {
 
         let mut entries = Vec::new();
 
-        // 2. Map Child Folders
         for &child_dir_id in dir.child_dirs() {
             if let Some(child_dir) = tree.directory(child_dir_id) {
                 entries.push(ExplorerEntry::Folder(ExplorerFolder {
@@ -76,7 +72,6 @@ impl TreeExplorer {
             }
         }
 
-        // 3. Map Child Files
         for &child_file_id in dir.child_files() {
             if let Some(child_file) = tree.file(child_file_id) {
                 let file_path = child_file.path();
@@ -87,16 +82,26 @@ impl TreeExplorer {
                     .unwrap_or("")
                     .to_string();
 
+                let abs_path = if child_file.path().is_base() {
+                    tree.core.root.clone()
+                } else {
+                    tree.core.root.join(child_file.path().as_str())
+                };
+
+                // Fetch size cleanly from the OS without loading the file into RAM
+                let size = std::fs::metadata(&abs_path)
+                    .map(|m| m.len())
+                    .unwrap_or(0);
+
                 entries.push(ExplorerEntry::File(ExplorerFile {
                     name: child_file.name().to_string(),
                     path: file_path.to_string(),
-                    size: child_file.content().len() as u64, // Instant size from RAM!
+                    size, 
                     extension,
                 }));
             }
         }
 
-        // 4. Sort: Folders first, then Alphabetical
         entries.sort_by(|a, b| match (a, b) {
             (ExplorerEntry::Folder(_), ExplorerEntry::File(_)) => std::cmp::Ordering::Less,
             (ExplorerEntry::File(_), ExplorerEntry::Folder(_)) => std::cmp::Ordering::Greater,

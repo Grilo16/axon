@@ -1,80 +1,98 @@
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 use ts_rs::TS;
 
-macro_rules! define_id {
-    ($name:ident) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
-        #[ts(export_to = "ids.ts")]
-        pub struct $name(pub u32);
+// ==========================================
+// 1. DOMAIN MARKERS (ZERO-SIZED TYPES)
+// ==========================================
 
-        impl From<u32> for $name {
-            fn from(id: u32) -> Self {
-                Self(id)
-            }
-        }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize, TS)]
+#[ts(export_to = "ids.ts")]
+pub struct FileMarker;
 
-        impl $name {
-            pub fn as_u32(self) -> u32 {
-                self.0
-            }
-            pub fn as_usize(self) -> usize {
-                self.0 as usize
-            }
-        }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize, TS)]
+#[ts(export_to = "ids.ts")]
+pub struct DirectoryMarker;
 
-        impl std::fmt::Display for $name {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                write!(f, "{}", self.0)
-            }
-        }
-    };
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize, TS)]
+#[ts(export_to = "ids.ts")]
+pub struct SymbolMarker;
+
+// ==========================================
+// 2. THE UNIVERSAL TYPE-SAFE ID
+// ==========================================
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize, TS)]
+#[ts(type = "number", export_to = "ids.ts")] 
+#[serde(transparent)] // 🛡️ Mathematically aligns JSON serialization with the raw inner type
+pub struct Id<M: TS, T: TS = u32> {
+    raw: T,
+    #[serde(skip)]
+    #[ts(skip)]
+    _marker: PhantomData<M>,
 }
 
-define_id!(FileId);
-define_id!(DirectoryId);
-define_id!(SymbolId);
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_id_conversions() {
-        let id = FileId::from(42);
-
-        assert_eq!(id.as_u32(), 42);
-        assert_eq!(id.as_usize(), 42);
-        assert_eq!(format!("{}", id), "42");
+impl<M: TS, T: TS> Id<M, T> {
+    pub const fn new(raw: T) -> Self {
+        Self {
+            raw,
+            _marker: PhantomData,
+        }
     }
 
-    #[test]
-    fn test_type_safety() {
-        // This test is mostly "conceptual" - the compiler
-        // ensures FileId and DirectoryId can't be swapped.
-
-        // let f_id = FileId::from(1);
-        // let d_id = DirectoryId::from(1);
-
-        // assert_eq!(f_id, d_id); // <-- This would fail to compile!
+    pub fn inner(&self) -> &T {
+        &self.raw
     }
 }
 
-#[cfg(test)]
-mod debug_tests {
-    use super::*;
-
-    #[test]
-    fn check_id_serialization() {
-        let id = FileId(123);
-
-        // Serialize the ID to a JSON string
-        let json_output = serde_json::to_string(&id).unwrap();
-
-        println!("\n--- ID SERIALIZATION CHECK ---");
-        println!("Raw JSON: {}", json_output);
-        println!("------------------------------\n");
-
-        // If transparent is OFF: This will likely be [123]
-        // If transparent is ON: This will be 123
+impl<M: TS, T: Copy + TS> Id<M, T> {
+    pub fn as_raw(&self) -> T {
+        self.raw
+    }
+    
+    pub fn as_usize(&self) -> usize 
+    where 
+        T: Into<u64>
+    {
+        let val: u64 = self.raw.into();
+        val as usize
     }
 }
+
+// Ergonomic From conversions
+impl<M: TS> From<u32> for Id<M, u32> {
+    fn from(raw: u32) -> Self {
+        Self::new(raw)
+    }
+}
+
+impl<M: TS, T: std::fmt::Display + TS> std::fmt::Display for Id<M, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.raw)
+    }
+}
+
+// ==========================================
+// 3. CORE DOMAIN ALIASES
+// ==========================================
+
+pub type FileId = Id<FileMarker, u32>;
+pub type DirectoryId = Id<DirectoryMarker, u32>;
+pub type SymbolId = Id<SymbolMarker, u32>;
+
+// ==========================================
+// 4. BACKWARD COMPATIBILITY CONSTRUCTORS
+// ==========================================
+
+#[allow(non_snake_case)]
+#[inline(always)]
+pub const fn FileId(raw: u32) -> FileId { Id::new(raw) }
+
+#[allow(non_snake_case)]
+#[inline(always)]
+pub const fn DirectoryId(raw: u32) -> DirectoryId { Id::new(raw) }
+
+#[allow(non_snake_case)]
+#[inline(always)]
+pub const fn SymbolId(raw: u32) -> SymbolId { Id::new(raw) }

@@ -76,7 +76,8 @@ fn test_jsdoc_attachment() {
 
         assert_eq!(output.imports.len(), 1);
         assert_eq!(output.imports[0].raw_path, "react");
-        assert!(output.imports[0].symbols.contains(&"useState".to_string()));
+        use compact_str::CompactString;
+        assert!(output.imports[0].symbols.contains(&CompactString::from("useState")));
     }
 
     #[test]

@@ -1,6 +1,7 @@
 use axon_core::{
     domain::{bundle::BundleRepository, workspace::WorkspaceRepository},
     error::{AxonError, AxonResult},
+    spool::AxonSpool,
     tree::{state::Analyzed, AxonTree},
 };
 use moka::future::Cache;
@@ -11,6 +12,7 @@ use tracing::instrument;
 pub struct AppState {
     pub workspace_repo: Arc<dyn WorkspaceRepository>,
     pub bundle_repo: Arc<dyn BundleRepository>,
+    pub spool: Arc<AxonSpool>,
     active_trees: Cache<String, Arc<AxonTree<Analyzed>>>,
 }
 
@@ -18,6 +20,7 @@ impl AppState {
     pub fn new(
         workspace_repo: Arc<dyn WorkspaceRepository>,
         bundle_repo: Arc<dyn BundleRepository>,
+        spool: Arc<AxonSpool>,
     ) -> Self {
         let active_trees = Cache::builder()
             .time_to_idle(std::time::Duration::from_secs(30 * 60))
@@ -27,6 +30,7 @@ impl AppState {
         Self {
             workspace_repo,
             bundle_repo,
+            spool,
             active_trees,
         }
     }

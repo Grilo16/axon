@@ -59,7 +59,7 @@ mod tests {
         let sym = Symbol::new(
             SymbolId::from(0),
             SymbolKind::Variable,
-            "x".to_string(),
+            "x".to_string().into(),
             TextRange::new(0, 13).unwrap(),
             TextRange::new(6, 7).unwrap(),
         ).unwrap();

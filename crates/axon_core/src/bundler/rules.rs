@@ -32,12 +32,3 @@ pub struct RedactionRule {
     pub target: TargetScope,
     pub action: RedactionType,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
-#[ts(export_to = "bundler.ts", rename_all = "camelCase")]
-#[serde(rename_all = "camelCase")]
-pub struct BundleOptions {
-    pub rules: Vec<RedactionRule>,
-    pub target_files: Vec<String>,
-    #[serde(default)]
-    pub hide_barrel_exports: bool
-}

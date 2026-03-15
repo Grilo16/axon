@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::state::AppState;
 use axon_core::{
-    bundler::rules::BundleOptions, domain::{bundle::BundleRecord, workspace::{
+    domain::{bundle::{BundleOptions, BundleRecord}, workspace::{
         CreateWorkspaceReq, DirQuery, FileQuery, ListWorkspacesQuery, ReadFileReq, SearchQuery, UpdateWorkspacePayload, WorkspaceRecord
     }}, error::{AxonError, AxonResult}, explorer::{ExplorerEntry, TreeExplorer}, parser::javascript::JsTsParser, tree::{AxonTree, options::AxonScanOptions, source::OsSource, state::Analyzed}
 };

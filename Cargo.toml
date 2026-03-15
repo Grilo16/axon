@@ -44,3 +44,8 @@ oxc_ast = "0.13"
 oxc_span = "0.13"
 
 sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono", "sqlite"] }
+
+rkyv = "0.8.15"
+redb = "2.0"
+compact_str = {version = "0.9.0", features = ["rkyv", "serde"] }
+rayon = "1.11.0"

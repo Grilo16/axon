@@ -2,22 +2,15 @@ use std::collections::{HashMap, HashSet};
 use crate::api::prelude::*;
 use crate::api::engine::resolve_active_tree;
 use axon_core::{
-    bundler::rules::BundleOptions, domain::{public::StatelessGraphReq, workspace::{DirQuery, FileQuery, ReadFileReq, SearchQuery, WorkspaceRecord}}, explorer::{ExplorerEntry, TreeExplorer}, graph::AxonGraph
+     domain::{bundle::BundleOptions, public::StatelessGraphReq, workspace::{DirQuery, FileQuery, ReadFileReq, SearchQuery, WorkspaceRecord}}, explorer::{ExplorerEntry, TreeExplorer}, graph::AxonGraph
 };
 use fuzzy_matcher::FuzzyMatcher;
 use fuzzy_matcher::skim::SkimMatcherV2;
 
-// ==========================================
-// VALIDATION LOGIC
-// ==========================================
-
-/// Validates that a user hasn't submitted multiple rules targeting the same scope.
 pub fn validate_bundle_options(options: &BundleOptions) -> AxonResult<()> {
     let mut seen_targets = HashSet::new();
 
-    for rule in &options.rules { //
-        // Serialize the target enum to a string to use as a unique hash key.
-        // This avoids needing #[derive(Hash, Eq)] on all your internal AST domain structs.
+    for rule in &options.rules { 
         let target_key = serde_json::to_string(&rule.target)
             .map_err(|_| AxonError::Parse { 
                 path: "BundleOptions".into(), 
@@ -31,13 +24,8 @@ pub fn validate_bundle_options(options: &BundleOptions) -> AxonResult<()> {
             });
         }
     }
-    
     Ok(())
 }
-
-// ==========================================
-// PUBLIC EXPLORER HANDLERS
-// ==========================================
 
 #[instrument(skip(state))]
 pub async fn list_public_workspaces(
@@ -64,8 +52,12 @@ pub async fn get_file_paths_by_dir(
     Query(query): Query<DirQuery>,
 ) -> AxonResult<Json<Vec<String>>> {
     let tree = resolve_active_tree(&state, &id, "system").await?;
-    let paths = tree.get_file_paths_by_dir(&query.path, query.recursive, query.limit)
-        .ok_or_else(|| AxonError::NotFound { entity: "Directory", id: query.path.clone() })?;
+    
+    // 🛡️ Exact explicit unwrapping to satisfy inference
+    let paths = match tree.get_file_paths_by_dir(&query.path, query.recursive, query.limit) {
+        Some(p) => p,
+        None => return Err(AxonError::NotFound { entity: "Directory", id: query.path.clone() }),
+    };
     Ok(Json(paths))
 }
 
@@ -76,8 +68,9 @@ pub async fn read_file(
     Query(query): Query<ReadFileReq>,
 ) -> AxonResult<Json<String>> {
     let tree = resolve_active_tree(&state, &id, "system").await?;
-    let content = tree.read_file_content(&query.path)
-        .ok_or_else(|| AxonError::NotFound { entity: "File", id: query.path.clone() })?;
+    let spool = state.spool.clone(); // (or state.spool.clone() in public.rs)
+    let commit_hash = id.clone();
+    let content = tree.read_file_content(&spool, &commit_hash, &query.path)?;
     Ok(Json(content))
 }
 
@@ -91,10 +84,6 @@ pub async fn list_directory(
     let entries = TreeExplorer::list_directory(&tree, &query.path)?;
     Ok(Json(entries))
 }
-
-// ==========================================
-// STATELESS BUNDLE GENERATION
-// ==========================================
 
 #[instrument(skip(payload))]
 pub async fn validate_public_options(
@@ -114,9 +103,11 @@ pub async fn generate_public_graph(
     let tree = resolve_active_tree(&state, &payload.workspace_id, "system").await?;
 
     let view = tokio::task::spawn_blocking(move || {
-        let graph = AxonGraph::build(&tree);
-        let focus_refs: Vec<&str> = payload.options.target_files.iter().map(|s| s.as_str()).collect(); //
-        graph.to_view(&tree, &focus_refs, payload.options.hide_barrel_exports)
+        let spool = state.spool.clone();
+        let commit_hash = payload.workspace_id.clone();
+        let graph = AxonGraph::build(&tree, &spool, &commit_hash);
+        let focus_refs: Vec<&str> = payload.options.target_files.iter().map(|s| s.as_str()).collect(); 
+        graph.to_view(&tree, &spool, &commit_hash, &focus_refs, payload.options.hide_barrel_exports)
     }).await.map_err(|_| AxonError::Backend("Graph builder panicked".into()))?;
 
     Ok(Json(serde_json::to_value(view)?))
@@ -129,10 +120,12 @@ pub async fn generate_public_code(
 ) -> AxonResult<Json<HashMap<String, String>>> {
     validate_bundle_options(&payload.options)?;
 
+      let spool = state.spool.clone();
+        let commit_hash = payload.workspace_id.clone();
     let tree = resolve_active_tree(&state, &payload.workspace_id, "system").await?;
 
     let generated = tokio::task::spawn_blocking(move || {
-        let bundler = axon_core::bundler::AxonBundler::new(&tree, payload.options);
+        let bundler = axon_core::bundler::AxonBundler::new(&tree, &spool, &commit_hash, payload.options);
         bundler.generate_bundle()
     })
     .await

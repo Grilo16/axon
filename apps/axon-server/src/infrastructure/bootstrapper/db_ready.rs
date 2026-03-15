@@ -39,13 +39,11 @@ impl Bootstrapper<DbReady> {
             info!("🌱 No public showcases found in DB. Scanning local sandbox_repos...");
             let now = Utc::now().to_rfc3339();
 
-            // Define your local pre-cloned repos here
             let showcases = vec![
                 ("Axon Showcase", "./sandbox_repos/axon"),
             ];
 
             for (name, local_path) in showcases {
-                // 🛡️ The Ultimate Guardrail: Don't seed it if it's not physically on disk!
                 if Path::new(local_path).exists() {
                     sqlx::query!(
                         r#"
@@ -80,8 +78,12 @@ impl Bootstrapper<DbReady> {
 
         let workspace_repo = Arc::new(PostgresWorkspaceRepo::new(pool.clone()));
         let bundle_repo = Arc::new(PostgresBundleRepo::new(pool));
+        
+        // 🛡️ Initialize the NVMe Zero-Copy Spool
+        let spool = Arc::new(axon_core::spool::AxonSpool::new("./axon_spool.db")?);
 
-        let state = AppState::new(workspace_repo, bundle_repo);
+        // Wire it into the AppState
+        let state = AppState::new(workspace_repo, bundle_repo, spool);
 
         let cors = CorsLayer::new()
             .allow_origin(self.config.frontend_url.0.clone())

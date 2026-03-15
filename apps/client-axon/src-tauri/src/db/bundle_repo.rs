@@ -1,9 +1,8 @@
 use async_trait::async_trait;
 use sqlx::{SqlitePool, Row, types::Json};
 use axon_core::{
-    domain::bundle::{BundleRecord, BundleRepository, UpdateBundlePayload},
+    domain::bundle::{BundleOptions, BundleRecord, BundleRepository, UpdateBundlePayload},
     error::{AxonError, AxonResult},
-    bundler::rules::BundleOptions,
 };
 use chrono::Utc;
 

@@ -23,11 +23,13 @@ pub async fn resolve_active_tree(
             id: workspace_id.to_string() 
         })?;
 
+    // We extract these so we can safely move them into the blocking thread
+    let spool = state.spool.clone();
+    let commit_hash = workspace.id.clone();
+
     // 2. Fetch from Cache or Lazily Compute
     state.get_or_compute_tree(workspace_id, || async move {
         tokio::task::spawn_blocking(move || {
-            // 🌟 THE FIX: We declare the TempDir here at the top of the closure.
-            // This ensures it lives until the very end of the closure block.
             let mut _ephemeral_dir = None;
 
             let target_path = if is_local_sandbox(&workspace.project_root) {
@@ -52,22 +54,19 @@ pub async fn resolve_active_tree(
                 temp_path
             };
 
-            // 1. The files are securely on disk here.
             let options = AxonScanOptions::auto_detect(&target_path);
-            let parser = JsTsParser;
+            let parser = Arc::new(JsTsParser);
             let source_manager = OsSource::new(target_path.clone());
 
-            // 2. We read all the files and build the AST in memory.
             let analyzed_tree = tokio::runtime::Handle::current().block_on(async {
-                AxonTree::new(target_path, options)?
+                let loaded_tree = AxonTree::new(target_path, options)?
                     .scan_os()?
-                    .load_all_sources(&source_manager).await?
-                    .analyze(&parser).await
+                    .load_all_sources(&source_manager).await?;
+
+                // 🛡️ THE FORGE: Route the AST directly to the NVMe disk wrapper
+                loaded_tree.spool_to_disk(parser, spool, commit_hash).await
             })?;
 
-            // 3. 🌟 As we hit this line, the closure finishes.
-            // `_ephemeral_dir` goes out of scope, and Rust's Drop trait automatically 
-            // wipes the folder from the hard drive. Pure memory safety!
             Ok(analyzed_tree)
         })
         .await

@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use ts_rs::TS;
 
-use crate::bundler::rules::BundleOptions;
+use crate::domain::bundle::BundleOptions;
 
 
 #[derive(Deserialize, TS)]

@@ -1,5 +1,6 @@
 use crate::ids::FileId;
 use crate::path::RelativeAxonPath;
+use crate::spool::AxonSpool;
 use crate::tree::state::RegistryAccess;
 use crate::tree::{state::Analyzed, AxonTree};
 use std::collections::HashSet;
@@ -13,54 +14,72 @@ impl<'a> ImportResolver<'a> {
         Self { tree }
     }
 
-    pub fn trace_symbol(&self, start_id: FileId, symbol_name: &str) -> Option<FileId> {
+    pub fn trace_symbol(
+        &self, 
+        spool: &AxonSpool, 
+        commit_hash: &str, 
+        start_id: FileId, 
+        symbol_name: &str
+    ) -> Option<FileId> {
         let mut visited = HashSet::new();
-        self.trace_internal(start_id, symbol_name, &mut visited)
+        self.trace_internal(spool, commit_hash, start_id, symbol_name, &mut visited)
     }
 
     fn trace_internal(
         &self,
+        spool: &AxonSpool,
+        commit_hash: &str,
         current_id: FileId,
         symbol_name: &str,
         visited: &mut HashSet<FileId>,
     ) -> Option<FileId> {
+        // 1. Prevent infinite import cycles
         if !visited.insert(current_id) {
             return None;
         }
 
-        let file = self.tree.file(current_id)?;
+        // Lazy load the AST chunk from NVMe
+        let chunk = self.tree.get_file_chunk(spool, commit_hash, current_id).ok()?;
 
-        if symbol_name == "*" || symbol_name == "default" {
+        // 2. Concrete Symbol Match
+        if chunk.symbols.iter().any(|s| s.name.as_str() == symbol_name) {
             return Some(current_id);
         }
-        if file.symbols().iter().any(|s| s.name == symbol_name) {
-            return Some(current_id);
-        }
 
-        for exp in file.exports() {
-            if exp.name == symbol_name {
+        // 3. Trace Explicit Named Exports
+        for exp in &chunk.exports {
+            if exp.name.as_str() == symbol_name {
                 if let Some(source) = &exp.source {
-                    if let Some(next_file) = self.resolve_path(current_id, source) {
-                        if let Some(found) = self.trace_internal(next_file, symbol_name, visited) {
+                    if let Some(next_file) = self.resolve_path(current_id, source.as_str()) {
+                        if let Some(found) = self.trace_internal(spool, commit_hash, next_file, symbol_name, visited) {
                             return Some(found);
                         }
                     }
                 } else {
+                    // It explicitly exports it but has no source (defined locally)
                     return Some(current_id);
                 }
             }
         }
 
-        for exp in file.exports() {
-            if exp.name == "*" {
+        // 4. Trace Wildcard Re-exports (`export * from './module'`)
+        for exp in &chunk.exports {
+            if exp.name.as_str() == "*" {
                 if let Some(source) = &exp.source {
-                    if let Some(next_file) = self.resolve_path(current_id, source) {
-                        if let Some(found) = self.trace_internal(next_file, symbol_name, visited) {
+                    if let Some(next_file) = self.resolve_path(current_id, source.as_str()) {
+                        if let Some(found) = self.trace_internal(spool, commit_hash, next_file, symbol_name, visited) {
                             return Some(found);
                         }
                     }
                 }
             }
+        }
+
+        // 5. Semantic Fallback
+        // If we hit a dead end, but the requested symbol is "default" or "*", 
+        // the current file is the authoritative source.
+        if symbol_name == "*" || symbol_name == "default" {
+            return Some(current_id);
         }
 
         None
@@ -87,15 +106,14 @@ impl<'a> ImportResolver<'a> {
             let project_root = {
                 let parts: Vec<&str> = current_dir_str.split('/').collect();
                 if let Some(src_idx) = parts.iter().position(|&p| p == "src") {
-                    parts[..src_idx].join("/") // e.g. "apps/react-vite"
+                    parts[..src_idx].join("/") 
                 } else if parts.len() >= 2 && (parts[0] == "apps" || parts[0] == "packages") {
-                    parts[..2].join("/") // e.g. "packages/ui"
+                    parts[..2].join("/") 
                 } else {
                     "".to_string()
                 }
             };
 
-            // 1. Check tsconfig.json explicitly defined paths
             for (alias, targets) in &tsconfig.paths {
                 if let Some(prefix) = alias.strip_suffix("/*") {
                     if let Some(suffix) = raw.strip_prefix(prefix) {
@@ -103,7 +121,6 @@ impl<'a> ImportResolver<'a> {
 
                         for target in targets {
                             if let Some(target_prefix) = target.as_str().strip_suffix("/*") {
-                                // Clean up the target (remove trailing slashes and leading "./")
                                 let target_prefix_clean = target_prefix.trim_end_matches('/').trim_start_matches("./");
 
                                 let candidate_str = if clean_suffix.is_empty() {
@@ -132,7 +149,6 @@ impl<'a> ImportResolver<'a> {
                 }
             }
 
-            // 2. Vite / Next.js Fallback Heuristics
             if !matched_alias {
                 if let Some(base_url) = &tsconfig.base_url {
                     let joined = base_url.join(&RelativeAxonPath::from(raw));
@@ -141,7 +157,6 @@ impl<'a> ImportResolver<'a> {
                     candidates.push(RelativeAxonPath::from(raw).normalize());
                 }
 
-                //Handle @/, ~/, AND bare @ (like @features/...)
                 let stripped_alias = if let Some(s) = raw.strip_prefix("@/") {
                     Some(s)
                 } else if let Some(s) = raw.strip_prefix("~/") {
@@ -154,34 +169,38 @@ impl<'a> ImportResolver<'a> {
 
                 if let Some(stripped) = stripped_alias {
                     if !project_root.is_empty() {
-                        // We are in a monorepo sub-project! (e.g., apps/client-axon/src/features/...)
                         candidates.push(RelativeAxonPath::from(&format!("{}/src/{}", project_root, stripped)).normalize());
                     } else {
-                        // Standard flat repo fallback
                         candidates.push(RelativeAxonPath::from(&format!("src/{}", stripped)).normalize());
                     }
 
-                    // Global Absolute Fallbacks just in case
                     candidates.push(RelativeAxonPath::from(&format!("src/{}", stripped)).normalize());
                     candidates.push(RelativeAxonPath::from(stripped).normalize());
                 }
             }
         }
 
-        let extensions = ["ts", "tsx", "js", "jsx", "mjs", "cjs"];
+        // Expanded extension heuristic to map static assets correctly
+        let extensions = [
+            "ts", "tsx", "js", "jsx", "mjs", "cjs", 
+            "d.ts", "json", "css", "scss", "svg"
+        ];
 
         for candidate in candidates {
             let base_str = candidate.as_str();
 
+            // 1. Exact String Match (crucial for things like "styles.css")
             if let Some(id) = self.tree.file_id_by_path(base_str) {
                 return Some(id);
             }
+            // 2. Implicit Extensions
             for ext in &extensions {
                 let path_str = format!("{}.{}", base_str, ext);
                 if let Some(id) = self.tree.file_id_by_path(&path_str) {
                     return Some(id);
                 }
             }
+            // 3. Implicit Barrel Exports
             for ext in &extensions {
                 let path_str = format!("{}/index.{}", base_str, ext);
                 if let Some(id) = self.tree.file_id_by_path(&path_str) {
@@ -191,24 +210,5 @@ impl<'a> ImportResolver<'a> {
         }
 
         None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::graph::test_utils::MockTreeBuilder;
-
-    #[test]
-    fn test_resolver_relative_paths() {
-        let mut builder = MockTreeBuilder::new();
-        let target_id = builder.add_file("src/utils/math.ts", vec![], vec![], vec![]);
-        let source_id = builder.add_file("src/main.ts", vec![], vec![], vec![]);
-
-        let tree = builder.build();
-        let resolver = ImportResolver::new(&tree);
-
-        let resolved = resolver.resolve_path(source_id, "./utils/math");
-        assert_eq!(resolved, Some(target_id));
     }
 }

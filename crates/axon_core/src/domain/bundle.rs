@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
-use crate::error::AxonResult;
-use crate::bundler::rules::BundleOptions;
+use crate::{bundler::rules::RedactionRule, error::AxonResult};
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[ts(export_to = "bundle-api.ts", rename_all = "camelCase")]
@@ -48,6 +47,15 @@ pub struct ListBundlesQuery {
     pub offset: Option<i64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default, TS)]
+#[ts(export_to = "bundler.ts", rename_all = "camelCase")]
+#[serde(rename_all = "camelCase")]
+pub struct BundleOptions {
+    pub rules: Vec<RedactionRule>,
+    pub target_files: Vec<String>,
+    #[serde(default)]
+    pub hide_barrel_exports: bool
+}
 
 
 #[async_trait]
@@ -58,5 +66,5 @@ pub trait BundleRepository: Send + Sync {
     async fn get_by_workspace_id(&self, workspace_id: &str, limit: i64, offset: i64) -> AxonResult<Vec<BundleRecord>>;
     async fn update(&self, id: &str, updates: UpdateBundlePayload) -> AxonResult<()>;
     async fn delete(&self, id: &str) -> AxonResult<bool>;
-    async fn delete_by_workspace_id(&self, workspace_id: &str) -> AxonResult<u64>; // Returns count
+    async fn delete_by_workspace_id(&self, workspace_id: &str) -> AxonResult<u64>;
 }

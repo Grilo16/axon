@@ -2,6 +2,8 @@
 pub mod macros;
 
 pub mod ids;
+pub mod ir;
+pub mod spool;
 pub mod error;
 pub mod path;
 pub mod tree;

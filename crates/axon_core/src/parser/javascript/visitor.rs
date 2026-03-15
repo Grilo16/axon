@@ -1,3 +1,4 @@
+use compact_str::CompactString;
 use oxc_ast::ast;
 use oxc_ast::visit::walk;
 use oxc_ast::Visit;
@@ -64,7 +65,7 @@ impl<'a> SymbolVisitor<'a> {
         let selection_range = self.map_range(name_span);
         let parent_id = self.scope_stack.last().copied();
 
-        let mut symbol = Symbol::new(id, kind, name, range, selection_range).expect("Range error");
+        let mut symbol = Symbol::new(id, kind, name.into(), range, selection_range).expect("Range error");
         
         symbol.parent = parent_id;
 
@@ -73,7 +74,7 @@ impl<'a> SymbolVisitor<'a> {
                 .with_body(self.map_range(b))
                 .expect("Body range error");
         }
-        symbol = symbol.with_doc(self.capture_docstring(full_span));
+        symbol = symbol.with_doc(self.capture_docstring(full_span).map(CompactString::from));
 
         // NESTING LOGIC: If there's a parent in the stack, add this ID to its children
         if let Some(&parent_id) = self.scope_stack.last() {
@@ -209,20 +210,20 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
             for specifier in specifiers {
                 match specifier {
                     ast::ImportDeclarationSpecifier::ImportSpecifier(s) => {
-                        symbols.push(s.imported.name().to_string())
+                        symbols.push(CompactString::from(s.imported.name().to_string()))
                     }
                     ast::ImportDeclarationSpecifier::ImportDefaultSpecifier(_) => {
-                        symbols.push("default".to_string())
+                        symbols.push(CompactString::from("default"))
                     }
                     ast::ImportDeclarationSpecifier::ImportNamespaceSpecifier(_) => {
-                        symbols.push("*".to_string())
+                        symbols.push(CompactString::from("*"))
                     }
                 }
             }
         }
 
         self.imports.push(UnresolvedReference {
-            raw_path,
+            raw_path: raw_path.into(),
             symbols,
             is_type_only: decl.import_kind.is_type(),
         });
@@ -233,8 +234,8 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
     fn visit_import_expression(&mut self, expr: &ast::ImportExpression<'a>) {
         if let ast::Expression::StringLiteral(str_lit) = &expr.source {
             self.imports.push(UnresolvedReference {
-                raw_path: str_lit.value.to_string(),
-                symbols: vec!["*".to_string()], 
+                raw_path: str_lit.value.to_string().into(),
+                symbols: vec!["*".to_string().into()], 
                 is_type_only: false,
             });
         }
@@ -247,9 +248,9 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
         let raw_path = decl.source.value.to_string();
         
         self.exports.push(Export {
-            name: "*".to_string(),
+            name: "*".to_string().into(),
             is_reexport: true,
-            source: Some(raw_path),
+            source: Some(raw_path.into()),
         });
         
         walk::walk_export_all_declaration(self, decl);
@@ -257,7 +258,10 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
 
     // Catches: export { x } from './module'; OR export const x = 1;
     fn visit_export_named_declaration(&mut self, decl: &ast::ExportNamedDeclaration<'a>) {
-        let source_path = decl.source.as_ref().map(|s| s.value.to_string());
+        let source_path = decl
+            .source
+            .as_ref()
+            .map(|s| CompactString::from(s.value.to_string()));
         let is_reexport = source_path.is_some();
 
         for specifier in &decl.specifiers {
@@ -265,7 +269,7 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
             let export_name = specifier.exported.name().to_string();
 
             self.exports.push(Export {
-                name: export_name,
+                name: export_name.into(),
                 is_reexport,
                 source: source_path.clone(),
             });

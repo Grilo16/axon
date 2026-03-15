@@ -7,3 +7,14 @@ macro_rules! ensure {
         }
     };
 }
+
+#[macro_export]
+macro_rules! time_it {
+    ($name:expr, $block:expr) => {{
+        let start = std::time::Instant::now();
+        let result = $block;
+        let duration = start.elapsed();
+        tracing::info!("⏱️ [PROFILING] {} took {:?}", $name, duration);
+        result
+    }};
+}

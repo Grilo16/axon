@@ -2,7 +2,8 @@ use crate::{
     error::AxonResult,
     parser::AxonParser,
     tree::node::file::{
-        AxonFile, state::{Outlined, Read}
+        state::{Outlined, Read},
+        AxonFile,
     },
 };
 use std::sync::Arc;
@@ -22,8 +23,10 @@ impl AxonFile<Read> {
 
     /// Primary transition: Use a parser to move from raw text to semantic symbols.
     pub fn outline_with<P: AxonParser>(self, parser: &P) -> AxonResult<AxonFile<Outlined>> {
-        let output = parser.parse(self.content(), self.source_type())?;
-
+        let output = crate::time_it!(
+            format!("Parsing {}", self.path.as_str()),
+            parser.parse(self.content(), self.source_type())?
+        );
         Ok(AxonFile::transition(
             self.id,
             self.path,
@@ -43,8 +46,8 @@ impl AxonFile<Read> {
 mod tests {
     use super::*;
     use crate::ids::{DirectoryId, FileId};
-    use std::sync::Arc;
     use oxc_span::SourceType;
+    use std::sync::Arc;
 
     #[test]
     fn test_line_counting() {

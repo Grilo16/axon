@@ -2,10 +2,10 @@ use std::path::Path;
 use ts_rs::TS;
 
 use crate::{
-    bundler::rules::{BundleOptions, RedactionRule, RedactionType, TargetScope},
+    bundler::rules::{RedactionRule, RedactionType, TargetScope},
     domain::{
         bundle::{
-            BundleRecord, CloneBundleReq, CreateBundleReq, ListBundlesQuery, UpdateBundlePayload,
+            BundleOptions, BundleRecord, CloneBundleReq, CreateBundleReq, ListBundlesQuery, UpdateBundlePayload
         },
         public::StatelessGraphReq,
         workspace::{
