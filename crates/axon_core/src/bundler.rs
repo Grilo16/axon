@@ -38,8 +38,7 @@ impl<'a> AxonBundler<'a> {
                 let rules_for_file = grouped_rules.get(&file_id).map(|v| v.as_slice()).unwrap_or(&[]);
                 
                 let redacted_text = crate::time_it!(
-                    format!("Redacting {}", path),
-                    self.redact_file(file_id, path, rules_for_file)?
+                    "Redacting {}", path; self.redact_file(file_id, path, rules_for_file)?
                 );
                 
                 output.insert(path.clone(), redacted_text);
@@ -95,7 +94,7 @@ impl<'a> AxonBundler<'a> {
         }
 
         let chunk = self.tree.get_file_chunk(self.spool, self.commit_hash, file_id)?;
-        let mut replacements = Vec::new();
+        let mut replacements = Vec::with_capacity(chunk.symbols.len());
 
         for symbol in &chunk.symbols {
             let applicable_rule = rules.iter().find(|rule| match &rule.target {

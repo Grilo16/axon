@@ -162,10 +162,13 @@ impl IntoResponse for AxonError {
                 (StatusCode::BAD_REQUEST, "Invalid text range provided".to_string())
             }
             AxonError::Auth(msg) => (StatusCode::UNAUTHORIZED, msg.clone()),
+            AxonError::Parse { .. } | AxonError::UnknownSourceType { .. } | AxonError::OutOfBounds { .. } => {
+                (StatusCode::BAD_REQUEST, "Invalid input".to_string())
+            }
             AxonError::Config(_) | AxonError::Database(_) | AxonError::Startup(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal infrastructure error".to_string())
             }
-            err => (StatusCode::INTERNAL_SERVER_ERROR, err.to_string()),
+            _err => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string()),
         };
 
         // Log the actual internal error for telemetry, while returning a safe message to the client

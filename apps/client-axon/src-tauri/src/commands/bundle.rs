@@ -5,9 +5,11 @@ use std::collections::{HashMap, HashSet};
 use tracing::{info, instrument};
 
 use crate::state::AppState;
-use crate::commands::workspace::resolve_active_tree; // 🌟 Import our new engine!
+use crate::commands::workspace::resolve_active_tree;
 use axon_core::{
- domain::bundle::{BundleOptions, BundleRecord, CloneBundleReq, CreateBundleReq, ListBundlesQuery, UpdateBundlePayload}, error::{AxonError, AxonResult}, graph::{AxonGraph, AxonGraphView}
+    domain::bundle::{BundleOptions, BundleRecord, CloneBundleReq, CreateBundleReq, ListBundlesQuery, UpdateBundlePayload},
+    error::{AxonError, AxonResult},
+    graph::{AxonGraph, AxonGraphView},
 };
 
 // ==========================================
@@ -37,10 +39,10 @@ pub fn validate_bundle_options(options: &BundleOptions) -> AxonResult<()> {
 
 #[tauri::command]
 pub async fn create_bundle(
-    state: State<'_, AppState>, 
-    payload: CreateBundleReq 
+    state: State<'_, AppState>,
+    payload: CreateBundleReq
 ) -> AxonResult<BundleRecord> {
-    validate_bundle_options(&payload.options)?; // 🌟 Validate!
+    validate_bundle_options(&payload.options)?;
 
     let now = Utc::now().to_rfc3339();
     let record = BundleRecord {
@@ -65,7 +67,7 @@ pub async fn clone_bundle(state: State<'_, AppState>, id: String, payload: Clone
 #[tauri::command]
 pub async fn get_bundle(state: State<'_, AppState>, id: String) -> AxonResult<BundleRecord> {
     state.bundle_repo.get_by_id(&id).await?
-        .ok_or_else(|| AxonError::NotFound { entity: "Bundle".into(), id: id.clone() })
+        .ok_or_else(|| AxonError::NotFound { entity: "Bundle", id: id.clone() })
 }
 
 #[tauri::command]
@@ -78,7 +80,7 @@ pub async fn get_workspace_bundles(state: State<'_, AppState>, id: String, query
 #[tauri::command]
 pub async fn update_bundle(state: State<'_, AppState>, id: String, payload: UpdateBundlePayload) -> AxonResult<()> {
     if let Some(ref options) = payload.options {
-        validate_bundle_options(options)?; // 🌟 Validate!
+        validate_bundle_options(options)?;
     }
     state.bundle_repo.update(&id, payload).await
 }
@@ -86,11 +88,13 @@ pub async fn update_bundle(state: State<'_, AppState>, id: String, payload: Upda
 #[tauri::command]
 pub async fn delete_bundle(state: State<'_, AppState>, id: String) -> AxonResult<bool> {
     let bundle = state.bundle_repo.get_by_id(&id).await?
-        .ok_or_else(|| AxonError::NotFound { entity: "Bundle".into(), id: id.clone() })?;
+        .ok_or_else(|| AxonError::NotFound { entity: "Bundle", id: id.clone() })?;
 
-    // 🌟 Fallback logic: Ensure there's always at least one bundle
-    let existing = state.bundle_repo.get_by_workspace_id(&bundle.workspace_id, 2, 0).await?;
-    if existing.len() <= 1 {
+    // Delete first, then ensure at least one bundle exists (prevents TOCTOU race)
+    let result = state.bundle_repo.delete(&id).await?;
+
+    let remaining = state.bundle_repo.get_by_workspace_id(&bundle.workspace_id, 1, 0).await?;
+    if remaining.is_empty() {
         let now = Utc::now().to_rfc3339();
         let fallback = BundleRecord {
             id: Uuid::new_v4().to_string(),
@@ -103,7 +107,7 @@ pub async fn delete_bundle(state: State<'_, AppState>, id: String) -> AxonResult
         state.bundle_repo.create(fallback).await?;
     }
 
-    state.bundle_repo.delete(&id).await
+    Ok(result)
 }
 
 // ==========================================
@@ -116,16 +120,17 @@ pub async fn get_bundle_graph(state: State<'_, AppState>, id: String) -> AxonRes
     info!("📊 Generating graph for desktop bundle: {}", id);
 
     let bundle = state.bundle_repo.get_by_id(&id).await?
-        .ok_or_else(|| AxonError::NotFound { entity: "Bundle".into(), id: id.clone() })?;
+        .ok_or_else(|| AxonError::NotFound { entity: "Bundle", id: id.clone() })?;
 
-    // 🌟 Lazy load the tree!
     let tree = resolve_active_tree(&state, &bundle.workspace_id).await?;
+    let spool = state.spool.clone();
+    let commit_hash = bundle.workspace_id.clone();
 
     let view = tokio::task::spawn_blocking(move || {
-        let graph = AxonGraph::build(&tree);
+        let graph = AxonGraph::build(&tree, &spool, &commit_hash);
         let focus_refs: Vec<&str> = bundle.options.target_files.iter().map(|s| s.as_str()).collect();
-        graph.to_view(&tree, &focus_refs, bundle.options.hide_barrel_exports)
-    }).await.map_err(|_| AxonError::Backend("Graph builder panicked".into()))?;
+        graph.to_view(&tree, &spool, &commit_hash, &focus_refs, bundle.options.hide_barrel_exports)
+    }).await.map_err(|e| AxonError::Backend(format!("Graph builder task failed: {e}")))?;
 
     Ok(view)
 }
@@ -136,15 +141,17 @@ pub async fn generate_bundle(state: State<'_, AppState>, id: String) -> AxonResu
     info!("📦 Generating bundle for desktop: {}", id);
 
     let bundle = state.bundle_repo.get_by_id(&id).await?
-        .ok_or_else(|| AxonError::NotFound { entity: "Bundle".into(), id: id.clone() })?;
+        .ok_or_else(|| AxonError::NotFound { entity: "Bundle", id: id.clone() })?;
 
-    // 🌟 Lazy load the tree!
     let tree = resolve_active_tree(&state, &bundle.workspace_id).await?;
+    let spool = state.spool.clone();
+    let commit_hash = bundle.workspace_id.clone();
 
     let generated = tokio::task::spawn_blocking(move || {
-        let bundler = axon_core::bundler::AxonBundler::new(&tree, bundle.options);
+        let bundler = axon_core::bundler::AxonBundler::new(&tree, &spool, &commit_hash, bundle.options);
         bundler.generate_bundle()
-    }).await.map_err(|_| AxonError::Backend("Bundler panicked".into()))??;
+    }).await.map_err(|e| AxonError::Backend(format!("Bundler task failed: {e}")))?
+    ?;
 
     Ok(generated)
 }

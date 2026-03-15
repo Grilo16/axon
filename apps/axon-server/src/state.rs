@@ -13,6 +13,7 @@ pub struct AppState {
     pub workspace_repo: Arc<dyn WorkspaceRepository>,
     pub bundle_repo: Arc<dyn BundleRepository>,
     pub spool: Arc<AxonSpool>,
+    pub admin_user_id: Option<String>,
     active_trees: Cache<String, Arc<AxonTree<Analyzed>>>,
 }
 
@@ -21,6 +22,7 @@ impl AppState {
         workspace_repo: Arc<dyn WorkspaceRepository>,
         bundle_repo: Arc<dyn BundleRepository>,
         spool: Arc<AxonSpool>,
+        admin_user_id: Option<String>,
     ) -> Self {
         let active_trees = Cache::builder()
             .time_to_idle(std::time::Duration::from_secs(30 * 60))
@@ -31,6 +33,7 @@ impl AppState {
             workspace_repo,
             bundle_repo,
             spool,
+            admin_user_id,
             active_trees,
         }
     }
@@ -57,5 +60,10 @@ impl AppState {
             })
             .await
             .map_err(|e| AxonError::Backend(format!("Cache computation failed: {}", e)))
+    }
+
+    /// Evicts a tree from the in-memory cache, forcing the next access to recompute it.
+    pub async fn invalidate_tree(&self, tree_id: &str) {
+        self.active_trees.remove(tree_id).await;
     }
 }

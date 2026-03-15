@@ -11,10 +11,11 @@ pub struct DatabaseUrl(pub(crate) String);
 pub struct AppConfig {
     pub port: Port,
     pub frontend_url: FrontendUrl,
-    pub db_url: DatabaseUrl, // Added to config
+    pub db_url: DatabaseUrl,
     pub kc_url: Url,
     pub kc_realm: String,
     pub kc_client: KeycloakClient,
+    pub admin_user_id: Option<String>,
 }
 
 impl AppConfig {
@@ -45,6 +46,8 @@ impl AppConfig {
                 .to_string(),
         );
 
+        let admin_user_id = env::var("ADMIN_USER_ID").ok();
+
         Ok(Self {
             port: Port(port),
             frontend_url: FrontendUrl(frontend_url),
@@ -52,6 +55,7 @@ impl AppConfig {
             kc_url,
             kc_realm,
             kc_client,
+            admin_user_id,
         })
     }
 }

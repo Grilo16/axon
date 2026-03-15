@@ -86,6 +86,27 @@ pub async fn delete_workspace(
 }
 
 #[instrument(skip(ctx))]
+pub async fn rescan_workspace(
+    ctx: AuthContext,
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
+) -> AxonResult<StatusCode> {
+    info!("🔄 User {} triggered rescan for workspace: {}", ctx.user_id, workspace.id);
+
+    // 1. Evict spool data (AST chunks + skeleton + metadata)
+    let evicted = ctx.state.spool.evict_commit(&workspace.id)?;
+    info!("🗑️ Evicted {} chunks from spool for workspace '{}'", evicted, workspace.name);
+
+    // 2. Evict in-memory tree cache
+    ctx.state.invalidate_tree(&workspace.id).await;
+
+    // 3. Eagerly re-scan so the user gets fresh data immediately
+    let _tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
+    info!("✅ Rescan complete for workspace '{}'", workspace.name);
+
+    Ok(StatusCode::OK)
+}
+
+#[instrument(skip(ctx))]
 pub async fn get_all_file_paths(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -101,8 +122,9 @@ pub async fn get_file_paths_by_dir(
     VerifiedWorkspace(workspace): VerifiedWorkspace,
     Query(query): Query<DirQuery>,
 ) -> AxonResult<Json<Vec<String>>> {
+    validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
-    
+
     let paths = match tree.get_file_paths_by_dir(&query.path, query.recursive, query.limit) {
         Some(p) => p,
         None => return Err(AxonError::NotFound { entity: "Directory", id: query.path.clone() }),
@@ -117,6 +139,7 @@ pub async fn read_file(
     VerifiedWorkspace(workspace): VerifiedWorkspace,
     Query(query): Query<ReadFileReq>,
 ) -> AxonResult<Json<String>> {
+    validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
     let spool = ctx.state.spool.clone(); 
     let content = tree.read_file_content(&spool, &workspace.id, &query.path)?;
@@ -129,6 +152,7 @@ pub async fn list_directory(
     VerifiedWorkspace(workspace): VerifiedWorkspace,
     Query(query): Query<ReadFileReq>,
 ) -> AxonResult<Json<Vec<ExplorerEntry>>> {
+    validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
     let entries = TreeExplorer::list_directory(&tree, &query.path)?;
     Ok(Json(entries))
@@ -144,19 +168,24 @@ pub async fn search_files(
     let all_paths = tree.get_all_file_paths(None);
     
     let matcher = SkimMatcherV2::default();
-    
+    let limit = query.limit.unwrap_or(100);
+
     let mut scored_paths: Vec<(i64, String)> = all_paths
         .into_iter()
         .filter_map(|path| matcher.fuzzy_match(&path, &query.value).map(|score| (score, path)))
         .collect();
 
-    scored_paths.sort_by(|a, b| b.0.cmp(&a.0));
+    // Partial sort: only order the top `limit` elements instead of sorting everything.
+    if scored_paths.len() > limit {
+        scored_paths.select_nth_unstable_by(limit, |a, b| b.0.cmp(&a.0));
+        scored_paths.truncate(limit);
+    }
+    scored_paths.sort_unstable_by(|a, b| b.0.cmp(&a.0));
 
     let final_paths: Vec<String> = scored_paths
         .into_iter()
-        .take(query.limit.unwrap_or(100))
         .map(|(_, path)| path)
         .collect();
-        
+
     Ok(Json(final_paths))
 }

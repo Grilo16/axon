@@ -17,6 +17,7 @@ pub fn app_router(state: AppState, auth_layer: KeycloakAuthLayer<String>) -> Rou
     let ws_router = Router::new()
         .route("/", get(workspace::list_workspaces).post(workspace::create_workspace))
         .route("/:id", get(workspace::get_workspace).patch(workspace::update_workspace).delete(workspace::delete_workspace))
+        .route("/:id/rescan", post(workspace::rescan_workspace))
         .route("/:id/files", get(workspace::get_all_file_paths))
         .route("/:id/files/dir", get(workspace::get_file_paths_by_dir))
         .route("/:id/files/read", get(workspace::read_file))

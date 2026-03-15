@@ -51,6 +51,7 @@ pub async fn get_file_paths_by_dir(
     Path(id): Path<String>,
     Query(query): Query<DirQuery>,
 ) -> AxonResult<Json<Vec<String>>> {
+    validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&state, &id, "system").await?;
     
     // 🛡️ Exact explicit unwrapping to satisfy inference
@@ -67,6 +68,7 @@ pub async fn read_file(
     Path(id): Path<String>,
     Query(query): Query<ReadFileReq>,
 ) -> AxonResult<Json<String>> {
+    validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&state, &id, "system").await?;
     let spool = state.spool.clone(); // (or state.spool.clone() in public.rs)
     let commit_hash = id.clone();
@@ -80,6 +82,7 @@ pub async fn list_directory(
     Path(id): Path<String>,
     Query(query): Query<ReadFileReq>,
 ) -> AxonResult<Json<Vec<ExplorerEntry>>> {
+    validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&state, &id, "system").await?;
     let entries = TreeExplorer::list_directory(&tree, &query.path)?;
     Ok(Json(entries))
@@ -108,7 +111,7 @@ pub async fn generate_public_graph(
         let graph = AxonGraph::build(&tree, &spool, &commit_hash);
         let focus_refs: Vec<&str> = payload.options.target_files.iter().map(|s| s.as_str()).collect(); 
         graph.to_view(&tree, &spool, &commit_hash, &focus_refs, payload.options.hide_barrel_exports)
-    }).await.map_err(|_| AxonError::Backend("Graph builder panicked".into()))?;
+    }).await.map_err(|e| AxonError::Backend(format!("Graph builder task failed: {e}")))?;
 
     Ok(Json(serde_json::to_value(view)?))
 }
@@ -129,7 +132,7 @@ pub async fn generate_public_code(
         bundler.generate_bundle()
     })
     .await
-    .map_err(|_| AxonError::Backend("Bundler panicked".into()))??;
+    .map_err(|e| AxonError::Backend(format!("Bundler task failed: {e}")))??;
 
     Ok(Json(generated))
 }
@@ -144,19 +147,24 @@ pub async fn search_public_files(
     let all_paths = tree.get_all_file_paths(None);
     
     let matcher = SkimMatcherV2::default();
-    
+    let limit = query.limit.unwrap_or(100);
+
     let mut scored_paths: Vec<(i64, String)> = all_paths
         .into_iter()
         .filter_map(|path| matcher.fuzzy_match(&path, &query.value).map(|score| (score, path)))
         .collect();
 
-    scored_paths.sort_by(|a, b| b.0.cmp(&a.0));
+    // Partial sort: only order the top `limit` elements instead of sorting everything.
+    if scored_paths.len() > limit {
+        scored_paths.select_nth_unstable_by(limit, |a, b| b.0.cmp(&a.0));
+        scored_paths.truncate(limit);
+    }
+    scored_paths.sort_unstable_by(|a, b| b.0.cmp(&a.0));
 
     let final_paths: Vec<String> = scored_paths
         .into_iter()
-        .take(query.limit.unwrap_or(100))
         .map(|(_, path)| path)
         .collect();
-        
+
     Ok(Json(final_paths))
 }

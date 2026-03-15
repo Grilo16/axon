@@ -77,16 +77,19 @@ pub async fn update_bundle(
 
 #[instrument(skip(ctx))]
 pub async fn delete_bundle(
-    ctx: AuthContext, 
+    ctx: AuthContext,
     VerifiedBundle(bundle): VerifiedBundle
 ) -> AxonResult<StatusCode> {
-    let existing_bundles = ctx
-        .state
-        .bundle_repo
-        .get_by_workspace_id(&bundle.workspace_id, 2, 0)
+    // Delete first, then ensure at least one bundle remains.
+    // This avoids the TOCTOU race where two concurrent deletes could both see count > 1
+    // and skip fallback creation, leaving zero bundles.
+    ctx.state.bundle_repo.delete(&bundle.id).await?;
+
+    let remaining = ctx.state.bundle_repo
+        .get_by_workspace_id(&bundle.workspace_id, 1, 0)
         .await?;
-        
-    if existing_bundles.len() <= 1 {
+
+    if remaining.is_empty() {
         let now = Utc::now().to_rfc3339();
         let fallback = BundleRecord {
             id: Uuid::new_v4().to_string(),
@@ -97,10 +100,9 @@ pub async fn delete_bundle(
             updated_at: now,
         };
         info!("Creating fallback default bundle for workspace {}", bundle.workspace_id);
-        ctx.state.bundle_repo.create(fallback).await?; 
+        ctx.state.bundle_repo.create(fallback).await?;
     }
 
-    ctx.state.bundle_repo.delete(&bundle.id).await?; 
     Ok(StatusCode::OK)
 }
 
@@ -142,7 +144,7 @@ pub async fn get_bundle_graph(
         )
     })
     .await
-    .map_err(|_| AxonError::Backend("Graph builder panicked".into()))?;
+    .map_err(|e| AxonError::Backend(format!("Graph builder task failed: {e}")))?;
 
     Ok(Json(serde_json::to_value(view)?))
 }
@@ -161,7 +163,7 @@ pub async fn generate_bundle_handler(
         bundler.generate_bundle()
     })
     .await
-    .map_err(|_| AxonError::Backend("Bundler panicked".into()))??;
+    .map_err(|e| AxonError::Backend(format!("Bundler task failed: {e}")))??;
 
     info!("✅ Bundle generated successfully for {}!", bundle.id);
     Ok(Json(generated))

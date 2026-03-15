@@ -154,25 +154,18 @@ impl AxonSpool {
 
     pub fn get_cached_chunk(&self, commit_hash: &str, file_path: &str) -> AxonResult<Arc<FileChunk>> {
         let key = (commit_hash.to_string(), file_path.to_string());
-        
+
         let chunk = self.l1_cache.try_get_with(key, || -> Result<Arc<FileChunk>, String> {
-            let mut result = Err(format!("AST chunk missing in spool for {}", file_path));
-            
-            let query_res = self.with_chunk(commit_hash, file_path, |bytes| {
-                let mut aligned_buffer: rkyv::util::AlignedVec<16> = rkyv::util::AlignedVec::with_capacity(bytes.len());
-                aligned_buffer.extend_from_slice(bytes);
-
-                match rkyv::from_bytes::<FileChunk, rkyv::rancor::Error>(&aligned_buffer) {
-                    Ok(chunk) => { result = Ok(Arc::new(chunk)); }
-                    Err(e) => { result = Err(format!("Failed to deserialize chunk: {}", e)); }
-                }
-            });
-
-            match query_res {
-                Ok(_) => result,
-                Err(e) => Err(format!("Database error: {}", e)),
-            }
-        }).map_err(|e| AxonError::Backend(format!("Cache error: {}", e)))?;
+            self.with_chunk(commit_hash, file_path, |bytes| {
+                let mut aligned = rkyv::util::AlignedVec::<16>::with_capacity(bytes.len());
+                aligned.extend_from_slice(bytes);
+                rkyv::from_bytes::<FileChunk, rkyv::rancor::Error>(&aligned)
+                    .map(Arc::new)
+                    .map_err(|e| format!("Failed to deserialize chunk: {e}"))
+            })
+            .map_err(|e| format!("Database error: {e}"))?
+            .ok_or_else(|| format!("AST chunk missing in spool for {file_path}"))?
+        }).map_err(|e| AxonError::Backend(format!("Cache error: {e}")))?;
 
         Ok(chunk)
     }
@@ -250,7 +243,7 @@ impl AxonSpool {
         let read_txn = self.db.begin_read().db("Failed to open read txn for LRU")?;
         let table = read_txn.open_table(METADATA_TABLE).db("Failed to open Metadata table")?;
         
-        let mut records = Vec::new();
+        let mut records = Vec::with_capacity(32);
         let current_time = Self::now();
 
         let iter = table.iter().db("Failed to iterate metadata")?;

@@ -36,19 +36,25 @@ impl<'a> ImportResolver<'a> {
     }
 
     fn compute_project_root(dir_str: &str) -> String {
-        let segments: Vec<&str> = dir_str.split('/').collect();
-
-        // If there's a "src" segment, everything before it is the project root
-        if let Some(src_idx) = segments.iter().position(|&s| s == "src") {
-            if src_idx > 0 {
-                return segments[..src_idx].join("/");
+        // Find "src" segment position without allocating a Vec.
+        if let Some(src_pos) = dir_str.split('/').position(|s| s == "src") {
+            if src_pos > 0 {
+                // Take everything before the "src" segment by byte offset.
+                return dir_str.split('/').take(src_pos).collect::<Vec<_>>().join("/");
             }
             return String::new();
         }
 
         // Fallback: "apps/X" or "packages/X" → take first two segments
-        if segments.len() >= 2 && (segments[0] == "apps" || segments[0] == "packages") {
-            return format!("{}/{}", segments[0], segments[1]);
+        let mut segments = dir_str.splitn(3, '/');
+        if let (Some(first), Some(second)) = (segments.next(), segments.next()) {
+            if first == "apps" || first == "packages" {
+                let mut root = String::with_capacity(first.len() + 1 + second.len());
+                root.push_str(first);
+                root.push('/');
+                root.push_str(second);
+                return root;
+            }
         }
 
         String::new()
@@ -133,7 +139,8 @@ impl<'a> ImportResolver<'a> {
             .unwrap_or_else(RelativeAxonPath::base);
         let options = self.tree.options();
 
-        let mut candidates = Vec::new();
+        let mut candidates = Vec::with_capacity(8);
+        let mut buf = String::with_capacity(128);
 
         if raw.starts_with('.') {
             let joined = current_dir.join(&RelativeAxonPath::from(raw));
@@ -154,16 +161,25 @@ impl<'a> ImportResolver<'a> {
                             if let Some(target_prefix) = target.as_str().strip_suffix("/*") {
                                 let target_prefix_clean = target_prefix.trim_end_matches('/').trim_start_matches("./");
 
-                                let candidate_str = if clean_suffix.is_empty() {
-                                    target_prefix_clean.to_string()
-                                } else {
-                                    format!("{}/{}", target_prefix_clean, clean_suffix)
-                                };
-
-                                if !project_root.is_empty() && !candidate_str.starts_with(&project_root) {
-                                    candidates.push(RelativeAxonPath::from(&format!("{}/{}", project_root, candidate_str)).normalize());
+                                buf.clear();
+                                buf.push_str(target_prefix_clean);
+                                if !clean_suffix.is_empty() {
+                                    buf.push('/');
+                                    buf.push_str(clean_suffix);
                                 }
-                                candidates.push(RelativeAxonPath::from(candidate_str.as_str()).normalize());
+
+                                if !project_root.is_empty() && !buf.starts_with(project_root.as_str()) {
+                                    let candidate_len = buf.len();
+                                    let prefix_buf = {
+                                        let mut tmp = String::with_capacity(project_root.len() + 1 + candidate_len);
+                                        tmp.push_str(&project_root);
+                                        tmp.push('/');
+                                        tmp.push_str(&buf);
+                                        tmp
+                                    };
+                                    candidates.push(RelativeAxonPath::from(prefix_buf.as_str()).normalize());
+                                }
+                                candidates.push(RelativeAxonPath::from(buf.as_str()).normalize());
                             }
                         }
                         matched_alias = true;
@@ -171,8 +187,12 @@ impl<'a> ImportResolver<'a> {
                 } else if alias == raw {
                     for target in targets {
                         let target_clean = target.as_str().trim_start_matches("./");
-                        if !project_root.is_empty() && !target_clean.starts_with(&project_root) {
-                            candidates.push(RelativeAxonPath::from(&format!("{}/{}", project_root, target_clean)).normalize());
+                        if !project_root.is_empty() && !target_clean.starts_with(project_root.as_str()) {
+                            buf.clear();
+                            buf.push_str(&project_root);
+                            buf.push('/');
+                            buf.push_str(target_clean);
+                            candidates.push(RelativeAxonPath::from(buf.as_str()).normalize());
                         }
                         candidates.push(RelativeAxonPath::from(target_clean).normalize());
                     }
@@ -199,13 +219,21 @@ impl<'a> ImportResolver<'a> {
                 };
 
                 if let Some(stripped) = stripped_alias {
+                    buf.clear();
                     if !project_root.is_empty() {
-                        candidates.push(RelativeAxonPath::from(&format!("{}/src/{}", project_root, stripped)).normalize());
+                        buf.push_str(&project_root);
+                        buf.push_str("/src/");
                     } else {
-                        candidates.push(RelativeAxonPath::from(&format!("src/{}", stripped)).normalize());
+                        buf.push_str("src/");
                     }
+                    buf.push_str(stripped);
+                    candidates.push(RelativeAxonPath::from(buf.as_str()).normalize());
 
-                    candidates.push(RelativeAxonPath::from(&format!("src/{}", stripped)).normalize());
+                    buf.clear();
+                    buf.push_str("src/");
+                    buf.push_str(stripped);
+                    candidates.push(RelativeAxonPath::from(buf.as_str()).normalize());
+
                     candidates.push(RelativeAxonPath::from(stripped).normalize());
                 }
             }

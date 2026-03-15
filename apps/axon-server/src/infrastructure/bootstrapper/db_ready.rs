@@ -83,7 +83,7 @@ impl Bootstrapper<DbReady> {
         let spool = Arc::new(axon_core::spool::AxonSpool::new("./axon_spool.db")?);
 
         // Wire it into the AppState
-        let state = AppState::new(workspace_repo, bundle_repo, spool);
+        let state = AppState::new(workspace_repo, bundle_repo, spool, self.config.admin_user_id.clone());
 
         let cors = CorsLayer::new()
             .allow_origin(self.config.frontend_url.0.clone())

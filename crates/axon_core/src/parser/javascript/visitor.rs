@@ -13,18 +13,20 @@ pub struct SymbolVisitor<'a> {
     pub imports: Vec<UnresolvedReference>,
     pub exports: Vec<Export>,
     source: &'a str,
-    trivias: &'a oxc_ast::Trivias,
+    /// Pre-collected and sorted comment spans for O(log n) docstring lookup via binary search.
+    comment_spans: Vec<Span>,
     scope_stack: Vec<SymbolId>,
 }
 
 impl<'a> SymbolVisitor<'a> {
     pub fn new(source: &'a str, trivias: &'a oxc_ast::Trivias) -> Self {
+        let comment_spans: Vec<Span> = trivias.comments().map(|(_, span)| span).collect();
         Self {
-            symbols: Vec::new(),
-            imports: Vec::new(),
-            exports: Vec::new(),
+            symbols: Vec::with_capacity(64),
+            imports: Vec::with_capacity(16),
+            exports: Vec::with_capacity(16),
             source,
-            trivias,
+            comment_spans,
             scope_stack: Vec::new(),
         }
     }
@@ -37,16 +39,19 @@ impl<'a> SymbolVisitor<'a> {
         TextRange::new(span.start, span.end).expect("Invalid OXC span")
     }
 
+    /// O(log n) docstring lookup using binary search on pre-sorted comment spans.
     fn capture_docstring(&self, span: Span) -> Option<CompactString> {
-        self.trivias
-            .comments()
-            .filter(|(_, comment_span)| {
-                comment_span.end <= span.start && (span.start - comment_span.end) <= 20
-            })
-            .last()
-            .map(|(_, comment_span)| {
-                CompactString::from(&self.source[comment_span.start as usize..comment_span.end as usize])
-            })
+        // Find the insertion point where span.start would go — all comments before this index end <= span.start
+        let idx = self.comment_spans.partition_point(|cs| cs.end <= span.start);
+        if idx == 0 {
+            return None;
+        }
+        let candidate = &self.comment_spans[idx - 1];
+        if candidate.end <= span.start && (span.start - candidate.end) <= 20 {
+            Some(CompactString::from(&self.source[candidate.start as usize..candidate.end as usize]))
+        } else {
+            None
+        }
     }
 
 

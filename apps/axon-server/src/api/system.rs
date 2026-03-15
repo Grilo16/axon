@@ -5,11 +5,12 @@ use axon_core::spool::SpoolStats;
 pub async fn get_spool_stats(
     ctx: AuthContext,
 ) -> AxonResult<Json<SpoolStats>> {
-    // 🛡️ Security Check: Ensure only your Admin Keycloak account can view system internals
-    // You can customize this to match your specific admin UUID or role
-    // if ctx.user_id != "YOUR_ADMIN_UUID_HERE" {
-    //     return Err(AxonError::Unauthorized("Only system administrators can view telemetry.".into()));
-    // }
+    // 🛡️ Security Check: Only the configured admin can view system internals.
+    // Set the ADMIN_USER_ID env var to your Keycloak user UUID.
+    match &ctx.state.admin_user_id {
+        Some(admin_id) if ctx.user_id == *admin_id => {}
+        _ => return Err(AxonError::Auth("Only system administrators can view telemetry".into())),
+    }
 
     let stats = ctx.state.spool.get_stats()?;
     Ok(Json(stats))
