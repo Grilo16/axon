@@ -37,7 +37,7 @@ impl<'a> SymbolVisitor<'a> {
         TextRange::new(span.start, span.end).expect("Invalid OXC span")
     }
 
-    fn capture_docstring(&self, span: Span) -> Option<String> {
+    fn capture_docstring(&self, span: Span) -> Option<CompactString> {
         self.trivias
             .comments()
             .filter(|(_, comment_span)| {
@@ -45,7 +45,7 @@ impl<'a> SymbolVisitor<'a> {
             })
             .last()
             .map(|(_, comment_span)| {
-                self.source[comment_span.start as usize..comment_span.end as usize].to_string()
+                CompactString::from(&self.source[comment_span.start as usize..comment_span.end as usize])
             })
     }
 
@@ -55,7 +55,7 @@ impl<'a> SymbolVisitor<'a> {
     fn push_symbol(
         &mut self,
         kind: SymbolKind,
-        name: String,
+        name: &str,
         full_span: Span,
         name_span: Span,
         body: Option<Span>,
@@ -65,8 +65,8 @@ impl<'a> SymbolVisitor<'a> {
         let selection_range = self.map_range(name_span);
         let parent_id = self.scope_stack.last().copied();
 
-        let mut symbol = Symbol::new(id, kind, name.into(), range, selection_range).expect("Range error");
-        
+        let mut symbol = Symbol::new(id, kind, CompactString::from(name), range, selection_range).expect("Range error");
+
         symbol.parent = parent_id;
 
         if let Some(b) = body {
@@ -74,13 +74,12 @@ impl<'a> SymbolVisitor<'a> {
                 .with_body(self.map_range(b))
                 .expect("Body range error");
         }
-        symbol = symbol.with_doc(self.capture_docstring(full_span).map(CompactString::from));
+        symbol = symbol.with_doc(self.capture_docstring(full_span));
 
-        // NESTING LOGIC: If there's a parent in the stack, add this ID to its children
+        // NESTING LOGIC: If there's a parent in the stack, add this ID to its children.
+        // SymbolId == vec index, so direct indexing is O(1) instead of O(n) linear scan.
         if let Some(&parent_id) = self.scope_stack.last() {
-            if let Some(parent_symbol) = self.symbols.iter_mut().find(|s| s.id == parent_id) {
-                parent_symbol.children.push(id);
-            }
+            self.symbols[parent_id.as_usize()].children.push(id);
         }
 
         self.symbols.push(symbol);
@@ -100,7 +99,7 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
             // 1. Push Property Symbol
             let id = self.push_symbol(
                 SymbolKind::Property,
-                name.to_string(),
+                &name,
                 prop.span,
                 name_span,
                 body_span,
@@ -118,7 +117,7 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
         // 1. Push Interface
         let id = self.push_symbol(
             SymbolKind::Interface,
-            decl.id.name.to_string(),
+            &decl.id.name,
             decl.span,
             decl.id.span,
             Some(decl.body.span),
@@ -156,7 +155,7 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
                     body = Some(init.span());
                 }
 
-                self.push_symbol(kind, id.name.to_string(), declarator.span, id.span, body);
+                self.push_symbol(kind, &id.name, declarator.span, id.span, body);
             }
         }
         walk::walk_variable_declaration(self, decl);
@@ -166,7 +165,7 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
         if let Some(id_node) = &func.id {
             let id = self.push_symbol(
                 SymbolKind::Function,
-                id_node.name.to_string(),
+                &id_node.name,
                 func.span,
                 id_node.span,
                 func.body.as_ref().map(|b| b.span),
@@ -184,7 +183,7 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
             // 1. Push Class
             let id = self.push_symbol(
                 SymbolKind::Class,
-                name.name.to_string(),
+                &name.name,
                 class.span,
                 name.span,
                 None,
@@ -203,14 +202,13 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
    
     fn visit_import_declaration(&mut self, decl: &ast::ImportDeclaration<'a>) {
 
-        let raw_path = decl.source.value.to_string();
         let mut symbols = Vec::new();
 
         if let Some(specifiers) = &decl.specifiers {
             for specifier in specifiers {
                 match specifier {
                     ast::ImportDeclarationSpecifier::ImportSpecifier(s) => {
-                        symbols.push(CompactString::from(s.imported.name().to_string()))
+                        symbols.push(CompactString::from(s.imported.name().as_str()))
                     }
                     ast::ImportDeclarationSpecifier::ImportDefaultSpecifier(_) => {
                         symbols.push(CompactString::from("default"))
@@ -223,7 +221,7 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
         }
 
         self.imports.push(UnresolvedReference {
-            raw_path: raw_path.into(),
+            raw_path: CompactString::from(decl.source.value.as_str()),
             symbols,
             is_type_only: decl.import_kind.is_type(),
         });
@@ -234,8 +232,8 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
     fn visit_import_expression(&mut self, expr: &ast::ImportExpression<'a>) {
         if let ast::Expression::StringLiteral(str_lit) = &expr.source {
             self.imports.push(UnresolvedReference {
-                raw_path: str_lit.value.to_string().into(),
-                symbols: vec!["*".to_string().into()], 
+                raw_path: CompactString::from(str_lit.value.as_str()),
+                symbols: vec![CompactString::from("*")],
                 is_type_only: false,
             });
         }
@@ -245,12 +243,10 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
 
     // Catches: export * from './module';
     fn visit_export_all_declaration(&mut self, decl: &ast::ExportAllDeclaration<'a>) {
-        let raw_path = decl.source.value.to_string();
-        
         self.exports.push(Export {
-            name: "*".to_string().into(),
+            name: CompactString::from("*"),
             is_reexport: true,
-            source: Some(raw_path.into()),
+            source: Some(CompactString::from(decl.source.value.as_str())),
         });
         
         walk::walk_export_all_declaration(self, decl);
@@ -261,15 +257,12 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
         let source_path = decl
             .source
             .as_ref()
-            .map(|s| CompactString::from(s.value.to_string()));
+            .map(|s| CompactString::from(s.value.as_str()));
         let is_reexport = source_path.is_some();
 
         for specifier in &decl.specifiers {
-            // OXC's ExportSpecifier is a struct, so we can access .exported directly!
-            let export_name = specifier.exported.name().to_string();
-
             self.exports.push(Export {
-                name: export_name.into(),
+                name: CompactString::from(specifier.exported.name().as_str()),
                 is_reexport,
                 source: source_path.clone(),
             });
@@ -281,7 +274,7 @@ impl<'a> Visit<'a> for SymbolVisitor<'a> {
     fn visit_ts_type_alias_declaration(&mut self, decl: &ast::TSTypeAliasDeclaration<'a>) {
         let id = self.push_symbol(
             SymbolKind::TypeAlias,
-            decl.id.name.to_string(),
+            &decl.id.name,
             decl.span,
             decl.id.span,
             Some(decl.type_annotation.span()),

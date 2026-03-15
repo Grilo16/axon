@@ -10,11 +10,26 @@ macro_rules! ensure {
 
 #[macro_export]
 macro_rules! time_it {
+    // Variant with lazy format args — avoids format!() allocation when tracing is disabled.
+    // Usage: time_it!("Parsing {}", path; expr)
+    ($fmt:literal, $($arg:expr),+; $block:expr) => {{
+        let start = std::time::Instant::now();
+        let result = $block;
+        if tracing::enabled!(tracing::Level::INFO) {
+            let duration = start.elapsed();
+            tracing::info!(concat!("⏱️ [PROFILING] ", $fmt, " took {:?}"), $($arg),+, duration);
+        }
+        result
+    }};
+    // Simple variant with a pre-built name.
+    // Usage: time_it!("Phase Name", expr)
     ($name:expr, $block:expr) => {{
         let start = std::time::Instant::now();
         let result = $block;
-        let duration = start.elapsed();
-        tracing::info!("⏱️ [PROFILING] {} took {:?}", $name, duration);
+        if tracing::enabled!(tracing::Level::INFO) {
+            let duration = start.elapsed();
+            tracing::info!("⏱️ [PROFILING] {} took {:?}", $name, duration);
+        }
         result
     }};
 }

@@ -42,7 +42,7 @@ impl AxonTree<Loaded> {
                         .map(|file| {
                             // ⏱️ Wrap the individual file parsing
                             let output = crate::time_it!(
-                                format!("Parsing {}", file.path().as_str()),
+                                "Parsing {}", file.path().as_str();
                                 parser.parse(file.content(), file.source_type())?
                             );
 

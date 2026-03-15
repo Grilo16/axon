@@ -39,7 +39,7 @@ impl<'a> AxonBundler<'a> {
                 
                 // ⏱️ Wrap the O(N) sequential redaction process
                 let redacted_text = crate::time_it!(
-                    format!("Redacting {}", path),
+                    "Redacting {}", path;
                     self.redact_file(file_id, path, rules_for_file)?
                 );
                 
@@ -53,6 +53,10 @@ impl<'a> AxonBundler<'a> {
     fn group_rules_by_file(&self) -> HashMap<FileId, Vec<&RedactionRule>> {
         let mut grouped: HashMap<FileId, Vec<&RedactionRule>> = HashMap::new();
 
+        // Partition rules: file-specific rules can be resolved cheaply via path lookup,
+        // global rules require scanning all files (but we do it in one pass).
+        let mut global_rules = Vec::new();
+
         for rule in &self.options.rules {
             match &rule.target {
                 TargetScope::SpecificSymbol { file_path, .. } | TargetScope::EntireFile(file_path) => {
@@ -60,9 +64,18 @@ impl<'a> AxonBundler<'a> {
                         grouped.entry(file_id).or_default().push(rule);
                     }
                 }
-                TargetScope::Global(kind) => {
-                    for file in self.tree.files() {
-                        if let Ok(chunk) = self.tree.get_file_chunk(self.spool, self.commit_hash, file.id()) {
+                TargetScope::Global(_) => {
+                    global_rules.push(rule);
+                }
+            }
+        }
+
+        // Single pass: deserialize each file's chunk once, check all global rules against it.
+        if !global_rules.is_empty() {
+            for file in self.tree.files() {
+                if let Ok(chunk) = self.tree.get_file_chunk(self.spool, self.commit_hash, file.id()) {
+                    for &rule in &global_rules {
+                        if let TargetScope::Global(kind) = &rule.target {
                             if chunk.symbols.iter().any(|s| s.kind == *kind) {
                                 grouped.entry(file.id()).or_default().push(rule);
                             }

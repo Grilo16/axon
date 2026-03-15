@@ -52,7 +52,10 @@ impl AxonTree<Analyzed> {
     // ==========================================
 
     /// Global search for a symbol by name across the entire project.
-    /// Iterates through the spool to locate matching symbols.
+    ///
+    /// **WARNING**: This is O(N) — it deserializes every file's chunk from the spool.
+    /// If you need frequent symbol lookups, build a `HashMap<CompactString, Vec<(FileId, SymbolId)>>`
+    /// index during `spool_to_disk` instead.
     pub fn find_symbols_by_name(
         &self,
         spool: &AxonSpool,
@@ -92,33 +95,9 @@ impl AxonTree<Analyzed> {
         Ok(deps)
     }
 
-    /// Returns a list of FileIds that import the given file.
-    pub fn dependents_of(
-        &self, 
-        spool: &AxonSpool, 
-        commit_hash: &str, 
-        target_file_id: FileId
-    ) -> AxonResult<Vec<FileId>> {
-        // Ensure the target file exists before running the expensive scan
-        let _ = self.file(target_file_id).ok_or_else(|| AxonError::missing_file(target_file_id))?;
-
-        let mut dependents = Vec::new();
-
-        for file in self.files() {
-            // Optimization: Skip checking if it's the target file itself
-            if file.id() == target_file_id {
-                continue;
-            }
-
-            if let Ok(deps) = self.dependencies_of(spool, commit_hash, file.id()) {
-                if deps.contains(&target_file_id) {
-                    dependents.push(file.id());
-                }
-            }
-        }
-
-        Ok(dependents)
-    }
+    // NOTE: `dependents_of` (reverse dependency lookup) is intentionally NOT provided here.
+    // The naive implementation is O(N^2) — it would deserialize every file from the spool.
+    // Use `AxonGraph::dependents_of()` instead, which has an O(1) pre-built reverse index.
 
     // ==========================================
     // 3. RAM-BACKED REGISTRY QUERIES (NO SPOOL REQUIRED)
@@ -145,45 +124,42 @@ impl AxonTree<Analyzed> {
             return Some(Vec::new()); 
         }
 
-        match recursive {
-            false => {
-                let paths = self
-                    .directory(start_dir_id)?
-                    .child_files()
-                    .iter()
-                    .filter_map(|&id| self.file(id))
-                    .map(|f| f.path().as_str().to_string())
-                    .take(max_files)
-                    .collect();
+        if recursive {
+            let mut results = Vec::new();
+            let mut stack = vec![start_dir_id];
 
-                Some(paths)
-            }
-            true => {
-                let mut results = Vec::new();
-                let mut stack = vec![start_dir_id];
+            while let Some(current_dir_id) = stack.pop() {
+                if let Some(dir) = self.directory(current_dir_id) {
+                    let remaining = max_files.saturating_sub(results.len());
 
-                while let Some(current_dir_id) = stack.pop() {
-                    if let Some(dir) = self.directory(current_dir_id) {
-                        let remaining = max_files.saturating_sub(results.len());
+                    results.extend(
+                        dir.child_files()
+                            .iter()
+                            .filter_map(|&id| self.file(id))
+                            .map(|f| f.path().as_str().to_string())
+                            .take(remaining),
+                    );
 
-                        results.extend(
-                            dir.child_files()
-                                .iter()
-                                .filter_map(|&id| self.file(id))
-                                .map(|f| f.path().as_str().to_string())
-                                .take(remaining), 
-                        );
-
-                        if results.len() >= max_files {
-                            break;
-                        }
-
-                        stack.extend(dir.child_dirs().iter().copied());
+                    if results.len() >= max_files {
+                        break;
                     }
-                }
 
-                Some(results)
+                    stack.extend(dir.child_dirs().iter().copied());
+                }
             }
+
+            Some(results)
+        } else {
+            let paths = self
+                .directory(start_dir_id)?
+                .child_files()
+                .iter()
+                .filter_map(|&id| self.file(id))
+                .map(|f| f.path().as_str().to_string())
+                .take(max_files)
+                .collect();
+
+            Some(paths)
         }
     }
 

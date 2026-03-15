@@ -24,7 +24,7 @@ impl AxonFile<Read> {
     /// Primary transition: Use a parser to move from raw text to semantic symbols.
     pub fn outline_with<P: AxonParser>(self, parser: &P) -> AxonResult<AxonFile<Outlined>> {
         let output = crate::time_it!(
-            format!("Parsing {}", self.path.as_str()),
+            "Parsing {}", self.path.as_str();
             parser.parse(self.content(), self.source_type())?
         );
         Ok(AxonFile::transition(

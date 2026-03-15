@@ -64,13 +64,17 @@ impl AxonGraph {
 
     pub fn get_symbol_tree(&self, id: SymbolId) -> Vec<&Symbol> {
         let mut results = Vec::new();
+        self.collect_symbol_tree(id, &mut results);
+        results
+    }
+
+    fn collect_symbol_tree<'a>(&'a self, id: SymbolId, out: &mut Vec<&'a Symbol>) {
         if let Some(symbol) = self.symbols.get(&id) {
-            results.push(symbol);
-            for child_id in &symbol.children {
-                results.extend(self.get_symbol_tree(*child_id));
+            out.push(symbol);
+            for &child_id in &symbol.children {
+                self.collect_symbol_tree(child_id, out);
             }
         }
-        results
     }
 
     pub fn root_symbols_for(&self, id: FileId) -> Option<&Vec<SymbolId>> {

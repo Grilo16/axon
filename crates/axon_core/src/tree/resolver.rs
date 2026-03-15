@@ -3,15 +3,55 @@ use crate::path::RelativeAxonPath;
 use crate::spool::AxonSpool;
 use crate::tree::state::RegistryAccess;
 use crate::tree::{state::Analyzed, AxonTree};
-use std::collections::HashSet;
+use std::cell::RefCell;
+use std::collections::{HashMap, HashSet};
 
 pub struct ImportResolver<'a> {
     tree: &'a AxonTree<Analyzed>,
+    /// Cache: directory path -> project root prefix (avoids recomputing per resolve call)
+    project_root_cache: RefCell<HashMap<String, String>>,
 }
 
 impl<'a> ImportResolver<'a> {
     pub fn new(tree: &'a AxonTree<Analyzed>) -> Self {
-        Self { tree }
+        Self {
+            tree,
+            project_root_cache: RefCell::new(HashMap::new()),
+        }
+    }
+
+    /// Derives the monorepo project root from a directory path without allocating a Vec.
+    fn project_root_for(&self, dir_str: &str) -> String {
+        {
+            let cache = self.project_root_cache.borrow();
+            if let Some(cached) = cache.get(dir_str) {
+                return cached.clone();
+            }
+        }
+
+        let root = Self::compute_project_root(dir_str);
+
+        self.project_root_cache.borrow_mut().insert(dir_str.to_string(), root.clone());
+        root
+    }
+
+    fn compute_project_root(dir_str: &str) -> String {
+        let segments: Vec<&str> = dir_str.split('/').collect();
+
+        // If there's a "src" segment, everything before it is the project root
+        if let Some(src_idx) = segments.iter().position(|&s| s == "src") {
+            if src_idx > 0 {
+                return segments[..src_idx].join("/");
+            }
+            return String::new();
+        }
+
+        // Fallback: "apps/X" or "packages/X" → take first two segments
+        if segments.len() >= 2 && (segments[0] == "apps" || segments[0] == "packages") {
+            return format!("{}/{}", segments[0], segments[1]);
+        }
+
+        String::new()
     }
 
     pub fn trace_symbol(
@@ -103,16 +143,7 @@ impl<'a> ImportResolver<'a> {
             let tsconfig = &options.compiler_options;
             let current_dir_str = current_dir.as_str();
 
-            let project_root = {
-                let parts: Vec<&str> = current_dir_str.split('/').collect();
-                if let Some(src_idx) = parts.iter().position(|&p| p == "src") {
-                    parts[..src_idx].join("/") 
-                } else if parts.len() >= 2 && (parts[0] == "apps" || parts[0] == "packages") {
-                    parts[..2].join("/") 
-                } else {
-                    "".to_string()
-                }
-            };
+            let project_root = self.project_root_for(current_dir_str);
 
             for (alias, targets) in &tsconfig.paths {
                 if let Some(prefix) = alias.strip_suffix("/*") {
@@ -182,9 +213,12 @@ impl<'a> ImportResolver<'a> {
 
         // Expanded extension heuristic to map static assets correctly
         let extensions = [
-            "ts", "tsx", "js", "jsx", "mjs", "cjs", 
+            "ts", "tsx", "js", "jsx", "mjs", "cjs",
             "d.ts", "json", "css", "scss", "svg"
         ];
+
+        // Reusable buffer to avoid allocating a new String per extension probe
+        let mut buf = String::with_capacity(128);
 
         for candidate in candidates {
             let base_str = candidate.as_str();
@@ -195,15 +229,21 @@ impl<'a> ImportResolver<'a> {
             }
             // 2. Implicit Extensions
             for ext in &extensions {
-                let path_str = format!("{}.{}", base_str, ext);
-                if let Some(id) = self.tree.file_id_by_path(&path_str) {
+                buf.clear();
+                buf.push_str(base_str);
+                buf.push('.');
+                buf.push_str(ext);
+                if let Some(id) = self.tree.file_id_by_path(&buf) {
                     return Some(id);
                 }
             }
             // 3. Implicit Barrel Exports
             for ext in &extensions {
-                let path_str = format!("{}/index.{}", base_str, ext);
-                if let Some(id) = self.tree.file_id_by_path(&path_str) {
+                buf.clear();
+                buf.push_str(base_str);
+                buf.push_str("/index.");
+                buf.push_str(ext);
+                if let Some(id) = self.tree.file_id_by_path(&buf) {
                     return Some(id);
                 }
             }
