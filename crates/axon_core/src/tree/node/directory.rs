@@ -1,12 +1,14 @@
 use std::fmt;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{
     ids::{DirectoryId, FileId},
     path::RelativeAxonPath,
 };
 
 /// Directory node in the AxonTree.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AxonDirectory {
     id: DirectoryId,
     path: RelativeAxonPath,

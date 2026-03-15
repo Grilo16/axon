@@ -8,6 +8,7 @@ pub mod extractor;
 pub mod workspace;
 pub mod bundle;
 pub mod public;
+pub mod system;
 
 // 🌟 Accept the auth_layer as a parameter
 pub fn app_router(state: AppState, auth_layer: KeycloakAuthLayer<String>) -> Router {
@@ -51,6 +52,7 @@ pub fn app_router(state: AppState, auth_layer: KeycloakAuthLayer<String>) -> Rou
     let protected_routes = Router::new()
         .nest("/workspaces", ws_router)
         .nest("/bundles", bundle_router)
+        .route("/system/spool", get(system::get_spool_stats))
         .layer(auth_layer);
 
     Router::new()

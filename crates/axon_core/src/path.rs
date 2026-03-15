@@ -4,12 +4,12 @@ use std::{
     path::{Component, Path},
 };
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::error::{AxonError, AxonResult};
 
-#[derive(Clone, PartialEq, Eq, Hash, Serialize, TS)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, TS)]
 pub struct RelativeAxonPath(String);
 
 impl RelativeAxonPath {

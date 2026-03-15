@@ -3,6 +3,7 @@ use fuzzy_matcher::FuzzyMatcher;
 use uuid::Uuid;
 use chrono::Utc;
 use crate::api::prelude::*;
+use crate::api::extractor::VerifiedWorkspace;
 use crate::api::engine::resolve_active_tree;
 use axon_core::{
     domain::{bundle::{BundleOptions, BundleRecord}, workspace::{
@@ -44,14 +45,12 @@ pub async fn create_workspace(
     Ok(Json(record))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(workspace))]
 pub async fn get_workspace(
-    ctx: AuthContext,
-    Path(id): Path<String>,
+    // 🛡️ If this code runs, we mathematically guarantee the user owns this workspace!
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
 ) -> AxonResult<Json<WorkspaceRecord>> {
-    let record = ctx.state.workspace_repo.get_by_id_and_owner(&id, &ctx.user_id).await?
-        .ok_or_else(|| AxonError::NotFound { entity: "Workspace", id })?;
-    Ok(Json(record))
+    Ok(Json(workspace))
 }
 
 #[instrument(skip(ctx))]
@@ -70,41 +69,40 @@ pub async fn list_workspaces(
 #[instrument(skip(ctx, payload))]
 pub async fn update_workspace(
     ctx: AuthContext,
-    Path(id): Path<String>,
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
     Json(payload): Json<UpdateWorkspacePayload>,
 ) -> AxonResult<StatusCode> {
-    ctx.state.workspace_repo.update(&id, &ctx.user_id, payload).await?;
+    ctx.state.workspace_repo.update(&workspace.id, &ctx.user_id, payload).await?;
     Ok(StatusCode::OK)
 }
 
 #[instrument(skip(ctx))]
 pub async fn delete_workspace(
     ctx: AuthContext,
-    Path(id): Path<String>,
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
 ) -> AxonResult<StatusCode> {
-    ctx.state.workspace_repo.delete(&id, &ctx.user_id).await?;
+    ctx.state.workspace_repo.delete(&workspace.id, &ctx.user_id).await?;
     Ok(StatusCode::OK)
 }
 
 #[instrument(skip(ctx))]
 pub async fn get_all_file_paths(
     ctx: AuthContext,
-    Path(id): Path<String>,
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
     Query(query): Query<FileQuery>,
 ) -> AxonResult<Json<Vec<String>>> {
-    let tree = resolve_active_tree(&ctx.state, &id, &ctx.user_id).await?;
+    let tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
     Ok(Json(tree.get_all_file_paths(query.limit)))
 }
 
 #[instrument(skip(ctx))]
 pub async fn get_file_paths_by_dir(
     ctx: AuthContext,
-    Path(id): Path<String>,
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
     Query(query): Query<DirQuery>,
 ) -> AxonResult<Json<Vec<String>>> {
-    let tree = resolve_active_tree(&ctx.state, &id, &ctx.user_id).await?;
+    let tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
     
-    // 🛡️ Bypassing the compiler inference trap using explicit pattern matching
     let paths = match tree.get_file_paths_by_dir(&query.path, query.recursive, query.limit) {
         Some(p) => p,
         None => return Err(AxonError::NotFound { entity: "Directory", id: query.path.clone() }),
@@ -116,23 +114,22 @@ pub async fn get_file_paths_by_dir(
 #[instrument(skip(ctx))]
 pub async fn read_file(
     ctx: AuthContext,
-    Path(id): Path<String>,
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
     Query(query): Query<ReadFileReq>,
 ) -> AxonResult<Json<String>> {
-    let tree = resolve_active_tree(&ctx.state, &id, &ctx.user_id).await?;
+    let tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
     let spool = ctx.state.spool.clone(); 
-    let commit_hash = id.clone();
-    let content = tree.read_file_content(&spool, &commit_hash, &query.path)?;
+    let content = tree.read_file_content(&spool, &workspace.id, &query.path)?;
     Ok(Json(content))
 }
 
 #[instrument(skip(ctx))]
 pub async fn list_directory(
     ctx: AuthContext,
-    Path(id): Path<String>,
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
     Query(query): Query<ReadFileReq>,
 ) -> AxonResult<Json<Vec<ExplorerEntry>>> {
-    let tree = resolve_active_tree(&ctx.state, &id, &ctx.user_id).await?;
+    let tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
     let entries = TreeExplorer::list_directory(&tree, &query.path)?;
     Ok(Json(entries))
 }
@@ -140,19 +137,17 @@ pub async fn list_directory(
 #[instrument(skip(ctx))]
 pub async fn search_files(
     ctx: AuthContext,
-    Path(id): Path<String>,
+    VerifiedWorkspace(workspace): VerifiedWorkspace,
     Query(query): Query<SearchQuery>,
 ) -> AxonResult<Json<Vec<String>>> {
-    let tree = resolve_active_tree(&ctx.state, &id, &ctx.user_id).await?;
+    let tree = resolve_active_tree(&ctx.state, &workspace.id, &ctx.user_id).await?;
     let all_paths = tree.get_all_file_paths(None);
     
     let matcher = SkimMatcherV2::default();
     
     let mut scored_paths: Vec<(i64, String)> = all_paths
         .into_iter()
-        .filter_map(|path| {
-            matcher.fuzzy_match(&path, &query.value).map(|score| (score, path))
-        })
+        .filter_map(|path| matcher.fuzzy_match(&path, &query.value).map(|score| (score, path)))
         .collect();
 
     scored_paths.sort_by(|a, b| b.0.cmp(&a.0));

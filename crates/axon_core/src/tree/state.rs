@@ -4,6 +4,8 @@ pub mod loaded;
 pub mod analyzed;
 
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+
 use crate::{
     ids::{DirectoryId, FileId},
     path::RelativeAxonPath,
@@ -12,7 +14,7 @@ use crate::{
 use crate::tree::node::file::state::{Found, Read};
 
 /// A generic container for the tree structure.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TreeRegistry<F> {
     pub root_dir_id: DirectoryId,
     pub directories: Vec<AxonDirectory>,

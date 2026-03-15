@@ -2,17 +2,19 @@ pub mod state;
 pub mod symbol;
 
 use oxc_span::SourceType;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     ids::{DirectoryId, FileId},
     path::RelativeAxonPath,
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AxonFile<S> {
     pub(crate) id: FileId,
     pub(crate) path: RelativeAxonPath,
     pub(crate) parent: DirectoryId,
+    #[serde(skip)]
     pub(crate) source_type: SourceType,
     pub(crate) state: S,
 }
