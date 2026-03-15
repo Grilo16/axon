@@ -85,6 +85,9 @@ pub enum AxonError {
     #[error("authentication error: {0}")]
     Auth(String),
 
+    #[error("server busy: {0}")]
+    Busy(String),
+
     #[error("network error: {0}")]
     Network(String),
 
@@ -162,6 +165,7 @@ impl IntoResponse for AxonError {
                 (StatusCode::BAD_REQUEST, "Invalid text range provided".to_string())
             }
             AxonError::Auth(msg) => (StatusCode::UNAUTHORIZED, msg.clone()),
+            AxonError::Busy(msg) => (StatusCode::TOO_MANY_REQUESTS, msg.clone()),
             AxonError::Parse { .. } | AxonError::UnknownSourceType { .. } | AxonError::OutOfBounds { .. } => {
                 (StatusCode::BAD_REQUEST, "Invalid input".to_string())
             }

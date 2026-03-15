@@ -1,4 +1,5 @@
 use axum::{routing::{get, post}, Router};
+use axum::http::StatusCode;
 use axum_keycloak_auth::layer::KeycloakAuthLayer; // 🌟 Import the layer type
 use crate::state::AppState;
 
@@ -59,5 +60,6 @@ pub fn app_router(state: AppState, auth_layer: KeycloakAuthLayer<String>) -> Rou
     Router::new()
         .nest("/api/v1", protected_routes)
         .nest("/api/v1/public", public_router)
-        .with_state(state) 
+        .route("/health", get(|| async { StatusCode::OK }))
+        .with_state(state)
 }

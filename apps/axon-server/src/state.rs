@@ -6,7 +6,12 @@ use axon_core::{
 };
 use moka::future::Cache;
 use std::sync::Arc;
+use tokio::sync::Semaphore;
 use tracing::instrument;
+
+/// Number of git-clone + parse operations allowed to run concurrently.
+/// Set to 2 to match the 2 vCPU budget without starving async I/O.
+const MAX_CONCURRENT_SCANS: usize = 2;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -14,6 +19,9 @@ pub struct AppState {
     pub bundle_repo: Arc<dyn BundleRepository>,
     pub spool: Arc<AxonSpool>,
     pub admin_user_id: Option<String>,
+    /// Caps concurrent slow-path workspace loads (git clone + OXC parse).
+    /// Prevents 2 vCPU saturation — callers get 429 if both permits are taken.
+    pub scan_semaphore: Arc<Semaphore>,
     active_trees: Cache<String, Arc<AxonTree<Analyzed>>>,
 }
 
@@ -34,6 +42,7 @@ impl AppState {
             bundle_repo,
             spool,
             admin_user_id,
+            scan_semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_SCANS)),
             active_trees,
         }
     }

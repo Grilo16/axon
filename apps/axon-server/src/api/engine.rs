@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::path::PathBuf;
+use std::time::Duration;
 use axon_core::{
     parser::javascript::JsTsParser, tree::{AxonTree, node::file::state::Outlined, options::AxonScanOptions, source::OsSource, state::{Analyzed, TreeRegistry}}
 };
@@ -86,6 +87,14 @@ pub async fn resolve_active_tree(
         // ==========================================
         // 🐌 SLOW PATH: CLONE, PARSE, AND SPOOL
         // ==========================================
+        // Acquire a scan permit to cap concurrent CPU-heavy operations at 2 (one per vCPU).
+        // If both permits are taken, return 429 immediately rather than queuing indefinitely.
+        let _scan_permit = state.scan_semaphore
+            .try_acquire()
+            .map_err(|_| AxonError::Busy(
+                "Server is busy processing other workspaces. Please try again shortly.".into()
+            ))?;
+
         // Git clone is blocking IO — isolate in spawn_blocking.
         // load_all_sources and spool_to_disk are async — run on the async executor.
         let _ephemeral_dir;
@@ -99,7 +108,7 @@ pub async fn resolve_active_tree(
             tracing::info!("🔄 NVMe Cache miss. Lazily cloning GitHub workspace '{}'...", workspace_name);
 
             let root = project_root.clone();
-            let (temp_dir, temp_path) = tokio::task::spawn_blocking(move || -> AxonResult<_> {
+            let clone_task = tokio::task::spawn_blocking(move || -> AxonResult<_> {
                 let temp_dir = tempfile::Builder::new().prefix("axon_git_").tempdir()
                     .map_err(|e| AxonError::Backend(format!("Temp dir failed: {}", e)))?;
                 let path = temp_dir.path().to_path_buf();
@@ -113,9 +122,13 @@ pub async fn resolve_active_tree(
                     return Err(AxonError::Backend("Git clone failed. Is the repo public?".into()));
                 }
                 Ok((temp_dir, path))
-            })
-            .await
-            .map_err(|e| AxonError::Backend(format!("Git clone task failed: {e}")))??;
+            });
+
+            let (temp_dir, temp_path) = tokio::time::timeout(Duration::from_secs(120), clone_task)
+                .await
+                .map_err(|_| AxonError::Backend("Git clone timed out after 120s".into()))?
+                .map_err(|e| AxonError::Backend(format!("Git clone task failed: {e}")))?
+                ?;
 
             target_path = temp_path;
             _ephemeral_dir = Some(temp_dir);

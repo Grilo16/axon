@@ -82,6 +82,9 @@ impl Bootstrapper<DbReady> {
         // 🛡️ Initialize the NVMe Zero-Copy Spool
         let spool = Arc::new(axon_core::spool::AxonSpool::new("./axon_spool.db")?);
 
+        // Clone before AppState::new consumes the Arc
+        let spool_for_sweep = spool.clone();
+
         // Wire it into the AppState
         let state = AppState::new(workspace_repo, bundle_repo, spool, self.config.admin_user_id.clone());
 
@@ -102,6 +105,23 @@ impl Bootstrapper<DbReady> {
             .passthrough_mode(PassthroughMode::Block)
             .expected_audiences(vec![self.config.kc_client.0.clone()])
             .build();
+
+        // Spawn a background task to periodically sweep the spool LRU.
+        // enforce_lru() normally only runs on write_skeleton() (slow path), so read-heavy
+        // workloads would never trigger cleanup without this.
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(60 * 60)); // 1 hour
+            interval.tick().await; // skip the first immediate tick
+            loop {
+                interval.tick().await;
+                const MAX_SPOOL_BYTES: u64 = 50 * 1024 * 1024 * 1024;
+                const MAX_AGE_SECS: u64 = 86_400;
+                match spool_for_sweep.enforce_lru(MAX_SPOOL_BYTES, MAX_AGE_SECS) {
+                    Ok(()) => tracing::info!("🧹 Periodic spool sweep complete."),
+                    Err(e) => tracing::warn!("⚠️ Periodic spool sweep failed: {}", e),
+                }
+            }
+        });
 
         let app = app_router(state, auth_layer).layer(cors);
         let addr = format!("0.0.0.0:{}", self.config.port.0);

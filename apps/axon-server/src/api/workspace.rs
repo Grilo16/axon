@@ -82,6 +82,9 @@ pub async fn delete_workspace(
     VerifiedWorkspace(workspace): VerifiedWorkspace,
 ) -> AxonResult<StatusCode> {
     ctx.state.workspace_repo.delete(&workspace.id, &ctx.user_id).await?;
+    // Evict spool data and in-memory cache so redb doesn't accumulate orphaned chunks
+    let _ = ctx.state.spool.evict_commit(&workspace.id);
+    ctx.state.invalidate_tree(&workspace.id).await;
     Ok(StatusCode::OK)
 }
 
