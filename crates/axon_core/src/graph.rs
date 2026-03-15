@@ -64,17 +64,13 @@ impl AxonGraph {
 
     pub fn get_symbol_tree(&self, id: SymbolId) -> Vec<&Symbol> {
         let mut results = Vec::new();
-        self.collect_symbol_tree(id, &mut results);
-        results
-    }
-
-    fn collect_symbol_tree<'a>(&'a self, id: SymbolId, out: &mut Vec<&'a Symbol>) {
         if let Some(symbol) = self.symbols.get(&id) {
-            out.push(symbol);
-            for &child_id in &symbol.children {
-                self.collect_symbol_tree(child_id, out);
+            results.push(symbol);
+            for child_id in &symbol.children {
+                results.extend(self.get_symbol_tree(*child_id));
             }
         }
+        results
     }
 
     pub fn root_symbols_for(&self, id: FileId) -> Option<&Vec<SymbolId>> {
@@ -143,9 +139,10 @@ impl AxonGraph {
                 let imports = self.dependencies_of(file_id).map(map_ids_to_paths).unwrap_or_default();
                 let used_by = self.dependents_of(file_id).map(map_ids_to_paths).unwrap_or_default();
 
-                // Lazy load only the specific files required for the node view
+                // 🛡️ The Arc Fix: We explicitly clone the vector to drop the shared pointer bound
+                // so we can seamlessly serialize it to the UI view.
                 let symbols = tree.get_file_chunk(spool, commit_hash, file_id)
-                    .map(|chunk| chunk.symbols)
+                    .map(|chunk| chunk.symbols.clone())
                     .unwrap_or_default();
 
                 nodes.push(FileNodeView {

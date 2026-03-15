@@ -229,6 +229,7 @@ dependencies = [
  "futures",
  "ignore",
  "log",
+ "moka",
  "oxc_allocator",
  "oxc_ast",
  "oxc_parser",

@@ -37,9 +37,8 @@ impl<'a> AxonBundler<'a> {
             if let Some(file_id) = self.tree.file_id_by_path(path) {
                 let rules_for_file = grouped_rules.get(&file_id).map(|v| v.as_slice()).unwrap_or(&[]);
                 
-                // ⏱️ Wrap the O(N) sequential redaction process
                 let redacted_text = crate::time_it!(
-                    "Redacting {}", path;
+                    format!("Redacting {}", path),
                     self.redact_file(file_id, path, rules_for_file)?
                 );
                 
@@ -52,9 +51,6 @@ impl<'a> AxonBundler<'a> {
 
     fn group_rules_by_file(&self) -> HashMap<FileId, Vec<&RedactionRule>> {
         let mut grouped: HashMap<FileId, Vec<&RedactionRule>> = HashMap::new();
-
-        // Partition rules: file-specific rules can be resolved cheaply via path lookup,
-        // global rules require scanning all files (but we do it in one pass).
         let mut global_rules = Vec::new();
 
         for rule in &self.options.rules {
@@ -70,7 +66,6 @@ impl<'a> AxonBundler<'a> {
             }
         }
 
-        // Single pass: deserialize each file's chunk once, check all global rules against it.
         if !global_rules.is_empty() {
             for file in self.tree.files() {
                 if let Ok(chunk) = self.tree.get_file_chunk(self.spool, self.commit_hash, file.id()) {
@@ -102,7 +97,7 @@ impl<'a> AxonBundler<'a> {
         let chunk = self.tree.get_file_chunk(self.spool, self.commit_hash, file_id)?;
         let mut replacements = Vec::new();
 
-        for symbol in chunk.symbols {
+        for symbol in &chunk.symbols {
             let applicable_rule = rules.iter().find(|rule| match &rule.target {
                 TargetScope::SpecificSymbol { symbol_id: target_id, .. } => *target_id == symbol.id,
                 TargetScope::Global(kind) => *kind == symbol.kind,

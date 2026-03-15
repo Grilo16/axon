@@ -10,7 +10,7 @@ use crate::{
         state::{Analyzed, RegistryAccess}
     },
 };
-use rkyv::{rancor::Error as RkyvError, util::AlignedVec};
+use std::sync::Arc;
 
 impl AxonTree<Analyzed> {
     
@@ -18,44 +18,21 @@ impl AxonTree<Analyzed> {
     // 1. THE LAZY SPOOL FETCHERS
     // ==========================================
 
-    /// Fetches a specific file's AST chunk from the NVMe database and deserializes it into RAM.
+    /// Fetches a specific file's AST chunk, hitting the lightning-fast L1 cache first.
     pub fn get_file_chunk(
         &self,
         spool: &AxonSpool,
         commit_hash: &str,
         file_id: FileId,
-    ) -> AxonResult<FileChunk> {
+    ) -> AxonResult<Arc<FileChunk>> {
         let file = self.file(file_id).ok_or_else(|| AxonError::missing_file(file_id))?;
-        let path = file.path().as_str();
-
-        let chunk_opt = spool.with_chunk(commit_hash, path, |bytes| {
-            // 🛡️ HARDWARE ALIGNMENT FIX: 
-            // redb packs memory densely and does not guarantee 4-byte or 8-byte alignment.
-            // rkyv requires strict mathematical alignment to map bytes to CPU registers safely.
-            // We copy the raw slice into an AlignedVec to ensure the pointer is mathematically valid.
-            let mut aligned_buffer: AlignedVec<16> = AlignedVec::with_capacity(bytes.len());
-            aligned_buffer.extend_from_slice(bytes);
-
-            rkyv::from_bytes::<FileChunk, RkyvError>(&aligned_buffer)
-                .map_err(|e| AxonError::Backend(format!("Failed to deserialize chunk: {}", e)))
-        })?;
-
-        match chunk_opt {
-            Some(Ok(chunk)) => Ok(chunk),
-            Some(Err(e)) => Err(e),
-            None => Err(AxonError::Backend(format!("AST chunk missing in spool for {}", path))),
-        }
+        spool.get_cached_chunk(commit_hash, file.path().as_str())
     }
 
     // ==========================================
     // 2. DISK-BACKED SEMANTIC QUERIES
     // ==========================================
 
-    /// Global search for a symbol by name across the entire project.
-    ///
-    /// **WARNING**: This is O(N) — it deserializes every file's chunk from the spool.
-    /// If you need frequent symbol lookups, build a `HashMap<CompactString, Vec<(FileId, SymbolId)>>`
-    /// index during `spool_to_disk` instead.
     pub fn find_symbols_by_name(
         &self,
         spool: &AxonSpool,
@@ -66,9 +43,9 @@ impl AxonTree<Analyzed> {
         
         for file in self.files() {
             if let Ok(chunk) = self.get_file_chunk(spool, commit_hash, file.id()) {
-                for sym in chunk.symbols {
+                for sym in &chunk.symbols {
                     if sym.name.as_str() == name {
-                        results.push((file.id(), sym));
+                        results.push((file.id(), sym.clone()));
                     }
                 }
             }
@@ -86,7 +63,7 @@ impl AxonTree<Analyzed> {
         let mut deps = Vec::new();
         let resolver = ImportResolver::new(self);
 
-        for import in chunk.imports {
+        for import in &chunk.imports {
             if let Some(target_id) = resolver.resolve_path(file_id, import.raw_path.as_str()) {
                 deps.push(target_id);
             }
@@ -95,12 +72,8 @@ impl AxonTree<Analyzed> {
         Ok(deps)
     }
 
-    // NOTE: `dependents_of` (reverse dependency lookup) is intentionally NOT provided here.
-    // The naive implementation is O(N^2) — it would deserialize every file from the spool.
-    // Use `AxonGraph::dependents_of()` instead, which has an O(1) pre-built reverse index.
-
     // ==========================================
-    // 3. RAM-BACKED REGISTRY QUERIES (NO SPOOL REQUIRED)
+    // 3. RAM-BACKED REGISTRY QUERIES
     // ==========================================
 
     pub fn get_all_file_paths(&self, limit: Option<usize>) -> Vec<String> {
@@ -163,12 +136,11 @@ impl AxonTree<Analyzed> {
         }
     }
 
-    /// 🛡️ Resilient Read: Fetches the raw text content safely from the NVMe Spool.
     pub fn read_file_content(&self, spool: &AxonSpool, commit_hash: &str, target_path: &str) -> AxonResult<String> {
         let file_id = self.file_id_by_path(target_path)
             .ok_or_else(|| AxonError::NotFound { entity: "File", id: target_path.to_string() })?;
             
         let chunk = self.get_file_chunk(spool, commit_hash, file_id)?;
-        Ok(chunk.content)
+        Ok(chunk.content.clone())
     }
 }
