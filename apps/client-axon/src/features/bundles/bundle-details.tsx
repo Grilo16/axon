@@ -4,12 +4,12 @@ import { Flex, Text, Button } from "@shared/ui";
 import { customScrollbar } from "@shared/ui/theme/mixins";
 import type { RedactionRule } from "@shared/types/axon-core/bundler";
 import { useGraphModel } from "@features/axon-graph/hooks/use-graph-model";
-import { useActiveBundleQuery } from "../hooks/use-bundle-queries";
-import { useActiveBundleActions } from "../hooks/use-active-bundle-actions";
+import { useActiveBundleQuery } from "@core/bundles/hooks/use-bundle-queries";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
 
 const RulesScrollArea = styled(Flex)`
-  flex: 1;           /* 🌟 Fill available vertical space */
-  min-height: 0;     /* 🌟 Crucial: Allows it to shrink below content size */
+  flex: 1;           
+  min-height: 0;     
   overflow-y: auto;
   ${customScrollbar}
 `;

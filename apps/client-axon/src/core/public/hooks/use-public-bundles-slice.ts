@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@app/store";
+import { useAppDispatch, useAppSelector } from "@core/store";
 import {
   addPublicBundle,
   updatePublicBundle,
@@ -7,7 +7,7 @@ import {
   selectPublicBundlesByWorkspace,
   selectPublicBundleById
 } from "../public-bundles-slice";
-import { setBundle } from "@features/core/workspace/workspace-ui-slice";
+import { setBundle } from "@core/workspace/workspace-ui-slice";
 import type { BundleRecord } from "@shared/types/axon-core/bundle-api";
 
 const DEFAULT_OPTIONS = {

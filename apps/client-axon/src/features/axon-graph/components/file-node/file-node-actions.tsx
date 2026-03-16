@@ -7,7 +7,7 @@ import {
   Grid, Flex, Text, SplitButtonGroup, SplitButtonMain,
   SplitButtonChevron, PopoverMenu, MenuItem
 } from "@shared/ui";
-import { useActiveBundleQuery } from "@features/core/bundles/hooks/use-bundle-queries";
+import { useActiveBundleQuery } from "@core/bundles/hooks/use-bundle-queries";
 
 const ActionsGrid = styled(Grid)`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border.subtle};

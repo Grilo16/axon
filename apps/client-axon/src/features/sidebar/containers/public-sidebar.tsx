@@ -4,8 +4,8 @@ import { useAuth } from "react-oidc-context";
 import {
   useActiveWorkspaceId,
   useWorkspaceDispatchers,
-} from "@features/core/workspace/hooks/use-workspace-slice";
-import { useListPublicWorkspacesQuery } from "@features/public/api/public-api";
+} from "@core/workspace/hooks/use-workspace-slice";
+import { useListPublicWorkspacesQuery } from "@core/public/api/public-api";
 import { WorkspaceSidebar } from "../sidebar";
 import { SidebarIcon } from "../sidebar-icon";
 import { useTour } from "@app/providers";

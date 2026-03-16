@@ -7,8 +7,8 @@ import { customScrollbar } from "@shared/ui/theme/mixins";
 import type { Symbol } from "../../types";
 
 // 🌟 Import our smart hooks
-import { useActiveBundleQuery } from "@features/core/bundles/hooks/use-bundle-queries";
-import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
+import { useActiveBundleQuery } from "@core/bundles/hooks/use-bundle-queries";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
 
 const ScrollableSymbolList = styled(Flex)`
   flex: 1;

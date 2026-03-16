@@ -8,7 +8,7 @@ import { ExplorerSearchResults } from "./explorer-search-results";
 import { ExplorerNode } from "./explorer-node";
 import { useExplorerSearch } from "../hooks/use-explorer-search";
 import { useExplorerDirectory } from "../hooks/use-explorer-directory";
-import { useActiveWorkspaceId, useSelectedExplorerKey } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useActiveWorkspaceId, useSelectedExplorerKey } from "@core/workspace/hooks/use-workspace-slice";
 import type { ExplorerEntry } from "@shared/types/axon-core/explorer";
 
 const ScrollableArea = styled(Box)`

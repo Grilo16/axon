@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React from "react";
 import styled from "styled-components";
 import { FolderTree, Network, Code2, Boxes } from "lucide-react";
 import { Flex } from "@shared/ui";
-import { MobileTabContext, type MobileTab } from "@shared/hooks/use-mobile-tab";
+import { useMobileTab, type MobileTab } from "@shared/hooks/use-mobile-tab";
 
 interface MobileWorkspaceLayoutProps {
   explorer: React.ReactNode;
@@ -64,9 +64,9 @@ export const MobileWorkspaceLayout: React.FC<MobileWorkspaceLayoutProps> = ({
   graph,
   codeViewer,
 }) => {
-  const [activeTab, setActiveTab] = useState<MobileTab>("graph");
-
-  const tabCtx = useMemo(() => ({ activeTab, setActiveTab }), [activeTab]);
+  const tabCtx = useMobileTab();
+  const activeTab = tabCtx?.activeTab ?? "graph";
+  const setActiveTab = tabCtx?.setActiveTab;
 
   const panels: Record<MobileTab, React.ReactNode> = {
     explorer,
@@ -76,23 +76,21 @@ export const MobileWorkspaceLayout: React.FC<MobileWorkspaceLayoutProps> = ({
   };
 
   return (
-    <MobileTabContext.Provider value={tabCtx}>
-      <Flex $direction="column" $fill $bg="bg.main">
-        <TabPanel>{panels[activeTab]}</TabPanel>
+    <Flex $direction="column" $fill $bg="bg.main">
+      <TabPanel>{panels[activeTab]}</TabPanel>
 
-        <BottomTabBar>
-          {TABS.map(({ key, label, icon: Icon }) => (
-            <TabButton
-              key={key}
-              $active={activeTab === key}
-              onClick={() => setActiveTab(key)}
-            >
-              <Icon size={20} />
-              {label}
-            </TabButton>
-          ))}
-        </BottomTabBar>
-      </Flex>
-    </MobileTabContext.Provider>
+      <BottomTabBar>
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <TabButton
+            key={key}
+            $active={activeTab === key}
+            onClick={() => setActiveTab?.(key)}
+          >
+            <Icon size={20} />
+            {label}
+          </TabButton>
+        ))}
+      </BottomTabBar>
+    </Flex>
   );
 };

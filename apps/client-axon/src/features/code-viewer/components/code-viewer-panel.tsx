@@ -6,9 +6,9 @@ import { toast } from 'sonner';
 
 // UI Primitives
 import { Flex, Text, Button, Box, PanelSection, PanelHeader, Spinner } from '@shared/ui';
-import { useViewedFilePath, useViewMode, useWorkspaceDispatchers } from '@features/core/workspace/hooks/use-workspace-slice';
-import { useReadWorkspaceFileQuery } from '@features/core/workspace/hooks/use-workspace-queries';
-import { useActiveBundleQuery, useReadBundleContextQuery } from '@features/core/bundles/hooks/use-bundle-queries';
+import { useViewedFilePath, useViewMode, useWorkspaceDispatchers } from '@core/workspace/hooks/use-workspace-slice';
+import { useReadWorkspaceFileQuery } from '@core/workspace/hooks/use-workspace-queries';
+import { useActiveBundleQuery, useReadBundleContextQuery } from '@core/bundles/hooks/use-bundle-queries';
 
 const getLanguageFromPath = (path: string) => {
   const ext = path.split('.').pop()?.toLowerCase();

@@ -12,7 +12,7 @@ import {
   useViewedFilePath,
   useViewMode,
 } from "./use-workspace-slice";
-import { useReadPublicFileQuery, useSearchPublicFilesQuery } from "@features/public/api/public-api";
+import { useReadPublicFileQuery, useSearchPublicFilesQuery } from "@core/public/api/public-api";
 
 export const useActiveWorkspaceQuery = () => {
   const activeId = useActiveWorkspaceId();

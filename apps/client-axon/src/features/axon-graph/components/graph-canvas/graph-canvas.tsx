@@ -13,8 +13,8 @@ import { useGraphModel } from "../../hooks/use-graph-model";
 import { useGraphInteractions } from "../../hooks/use-graph-interactions";
 
 import { Box } from "@shared/ui";
-import { useHoveredPath, useSelectedPaths } from "@features/core/workspace/hooks/use-workspace-slice";
-import { useWorkspaceShortcuts } from "@features/core/workspace/use-workspace-shortcuts";
+import { useHoveredPath, useSelectedPaths } from "@core/workspace/hooks/use-workspace-slice";
+import { useWorkspaceShortcuts } from "@core/workspace/use-workspace-shortcuts";
 import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";
 import { GraphAutoFitter } from "../../utils/graph-auto-fitter";
 import { GraphRenderProvider } from "../../contexts/graph-render-context";

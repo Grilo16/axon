@@ -4,9 +4,9 @@ import { driver } from "driver.js";
 import { TourContext } from "./tour-context";
 import { DriverThemeOverrides } from "./tour-theme";
 import { getTourSteps, getMobileTourSteps } from "@shared/tour";
-import { useAppDispatch } from "@app/store";
-import { useActiveWorkspaceId, useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
-import { useBundleActions } from "@features/core/bundles/hooks/use-bundle-actions";
+import { useAppDispatch } from "@core/store";
+import { useActiveWorkspaceId, useWorkspaceDispatchers } from "@core/workspace/hooks/use-workspace-slice";
+import { useBundleActions } from "@core/bundles/hooks/use-bundle-actions";
 import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";
 import { useMobileTab } from "@shared/hooks/use-mobile-tab";
 
@@ -21,7 +21,6 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { resetExplorer } = useWorkspaceDispatchers();
   const mode = useResponsiveMode();
   const mobileTab = useMobileTab();
-
   const markTourAsSeen = useCallback(() => {
     localStorage.setItem("axon_tour_seen", "true");
     setHasSeenTour(true);

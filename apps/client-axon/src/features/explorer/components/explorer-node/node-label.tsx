@@ -1,7 +1,7 @@
 import {
   useFolderHasFilesInGraph,
   useIsNodeInGraph,
-} from "@features/core/workspace/hooks/use-workspace-slice";
+} from "@core/workspace/hooks/use-workspace-slice";
 import { Text } from "@shared/ui";
 
 export const NodeLabel = ({ path, name }: { path: string; name: string }) => {

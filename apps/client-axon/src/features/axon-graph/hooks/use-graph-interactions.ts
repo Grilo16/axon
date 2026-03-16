@@ -1,5 +1,5 @@
-import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
-import { useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
+import { useWorkspaceDispatchers } from "@core/workspace/hooks/use-workspace-slice";
 
 export const useGraphInteractions = () => {
   // Inherit the global Redux UI state interactions (hover, select, clear)

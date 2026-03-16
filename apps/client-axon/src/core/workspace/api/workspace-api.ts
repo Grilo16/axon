@@ -1,4 +1,4 @@
-import { axonApi } from "@app/api/axon-api";
+import { axonApi } from "@core/api/axon-api";
 import type {
   WorkspaceRecord,
   UpdateWorkspacePayload,

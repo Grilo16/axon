@@ -2,7 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { CanvasArea, Flex, PanelSection, ResizeHandle } from "@shared/ui";
-import { useViewMode } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useViewMode } from "@core/workspace/hooks/use-workspace-slice";
 import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";
 import { MobileWorkspaceLayout } from "./mobile-workspace-layout";
 

@@ -2,7 +2,7 @@ import React, { memo } from "react";
 import styled, { useTheme } from "styled-components";
 import { FileCode, Plus, Check } from "lucide-react";
 import { Flex, Text, Button } from "@shared/ui";
-import { useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useWorkspaceDispatchers } from "@core/workspace/hooks/use-workspace-slice";
 
 const SearchResultRow = styled(Flex)`
   padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.md}`};

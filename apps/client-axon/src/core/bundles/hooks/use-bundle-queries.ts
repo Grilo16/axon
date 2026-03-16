@@ -9,10 +9,10 @@ import {
   useActiveWorkspaceId,
   useActiveBundleId,
   useViewMode,
-} from "@features/core/workspace/hooks/use-workspace-slice";
-import { usePublicBundle, usePublicWorkspaceBundles } from "@features/public/hooks/use-public-bundles-slice";
-import { useGetPublicGeneratedContextQuery, useGetPublicGraphQuery } from "@features/public/api/public-api";
-import { useAppSelector } from "@app/store";
+} from "@core/workspace/hooks/use-workspace-slice";
+import { usePublicBundle, usePublicWorkspaceBundles } from "@core/public/hooks/use-public-bundles-slice";
+import { useGetPublicGeneratedContextQuery, useGetPublicGraphQuery } from "@core/public/api/public-api";
+import { useAppSelector } from "@core/store";
 import type { StatelessGraphReq } from "@shared/types/axon-core/public-api";
 import { useMemo } from "react";
 

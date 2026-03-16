@@ -1,12 +1,12 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
-import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
-import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
+import { useActiveWorkspaceId } from "@core/workspace/hooks/use-workspace-slice";
 
 // 🌟 2. Import both Private and Public lazy triggers
-import { useLazyGetFilePathsByDirQuery } from "@features/core/workspace/api/workspace-api";
-import { useLazyGetPublicFilePathsByDirQuery } from "@features/public/api/public-api";
+import { useLazyGetFilePathsByDirQuery } from "@core/workspace/api/workspace-api";
+import { useLazyGetPublicFilePathsByDirQuery } from "@core/public/api/public-api";
 
 export const useExplorerActions = () => {
   const activeWorkspaceId = useActiveWorkspaceId();

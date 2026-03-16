@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
 import { toast } from "sonner";
-import { useAppDispatch, useAppSelector } from "@app/store";
-import { setBundle } from "@features/core/workspace/workspace-ui-slice";
+import { useAppDispatch, useAppSelector } from "@core/store";
+import { setBundle } from "@core/workspace/workspace-ui-slice";
 import { createActionHandler } from "@shared/utils/rtx-actions";
 
 import {
@@ -13,7 +13,7 @@ import {
   type UpdateBundleReq,
 } from "../api/bundles-api";
 import type { CreateBundleReq } from "@shared/types/axon-core/bundle-api";
-import { usePublicBundleDispatchers } from "@features/public/hooks/use-public-bundles-slice";
+import { usePublicBundleDispatchers } from "@core/public/hooks/use-public-bundles-slice";
 
 export const useBundleActions = () => {
   const dispatch = useAppDispatch();

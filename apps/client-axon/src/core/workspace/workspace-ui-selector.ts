@@ -1,7 +1,7 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@app/store";
-import { bundleApi } from "@features/core/bundles/api/bundles-api";
-import { publicApi } from "@features/public/api/public-api";
+import type { RootState } from "@core/store";
+import { bundleApi } from "@core/bundles/api/bundles-api";
+import { publicApi } from "@core/public/api/public-api";
 import { selectActiveBundleId, type HoverRelationship } from "./workspace-ui-slice";
 
 // 1. Safely extract the Public Graph Payload from the local slice

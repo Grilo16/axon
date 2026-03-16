@@ -12,8 +12,8 @@ import {
 import storage from "redux-persist/lib/storage";
 
 import { axonApi } from "../api/axon-api";
-import workspaceUiReducer from "@features/core/workspace/workspace-ui-slice";
-import publicBundlesReducer from "@features/public/public-bundles-slice";
+import workspaceUiReducer from "@core/workspace/workspace-ui-slice";
+import publicBundlesReducer from "@core/public/public-bundles-slice";
 import { listenerMiddleware } from "./listener-middleware";
 
 const rootReducer = combineReducers({

@@ -3,10 +3,10 @@ import { Trash2, RotateCcw } from "lucide-react";
 import { useStore, Panel } from "@xyflow/react";
 
 import { Flex, Card, Text, Button } from "@shared/ui";
-import { useActiveBundleQuery } from "@features/core/bundles/hooks/use-bundle-queries";
-import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
-import { useWorkspaceActions } from "@features/core/workspace/hooks/use-workspace-actions";
-import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useActiveBundleQuery } from "@core/bundles/hooks/use-bundle-queries";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
+import { useWorkspaceActions } from "@core/workspace/hooks/use-workspace-actions";
+import { useActiveWorkspaceId } from "@core/workspace/hooks/use-workspace-slice";
 
 export const GraphToolbar: React.FC = () => {
   const visibleNodeCount = useStore((s) => s.nodeLookup.size);

@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAppSelector } from "@app/store";
+import { useAppSelector } from "@core/store";
 import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
 import { selectPrivateGraphPathsSet } from "../workspace-ui-selector";
 import { useActiveBundleId } from "./use-workspace-selectors";

@@ -1,4 +1,4 @@
-import type { RootState } from "@app/store";
+import type { RootState } from "@core/store";
 import {
   createSelector,
   createSlice,
@@ -6,7 +6,7 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 import { workspaceApi } from "./api/workspace-api";
-import { publicApi } from "@features/public/api/public-api";
+import { publicApi } from "@core/public/api/public-api";
 
 export type ViewMode = "none" | "file" | "bundle-context";
 export type HoverRelationship =

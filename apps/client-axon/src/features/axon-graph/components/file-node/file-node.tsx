@@ -8,7 +8,7 @@ import { FileNodeActions } from "./file-node-actions";
 import { FileNodeSymbols } from "./file-node-symbols";
 
 import { Flex, Text } from "@shared/ui";
-import { useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useWorkspaceDispatchers } from "@core/workspace/hooks/use-workspace-slice";
 import { useGraphRender } from "@features/axon-graph/contexts/graph-render-context";
 import { useZoom } from "@features/axon-graph/contexts/zoom-context";
 import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";

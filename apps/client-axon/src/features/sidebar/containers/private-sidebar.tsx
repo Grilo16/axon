@@ -3,9 +3,9 @@ import { LogOut } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "react-oidc-context";
 
-import { WorkspaceLoader } from "@features/core/workspace";
-import { useActiveWorkspaceId, useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
-import { useAllWorkspacesQuery } from "@features/core/workspace/hooks/use-workspace-queries";
+import { WorkspaceLoader } from "@core/workspace";
+import { useActiveWorkspaceId, useWorkspaceDispatchers } from "@core/workspace/hooks/use-workspace-slice";
+import { useAllWorkspacesQuery } from "@core/workspace/hooks/use-workspace-queries";
 import { WorkspaceSidebar } from "../sidebar";
 import { SidebarIcon } from "../sidebar-icon";
 

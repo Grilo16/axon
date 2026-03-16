@@ -1,7 +1,7 @@
 import { createListenerMiddleware, type TypedStartListening } from "@reduxjs/toolkit";
 import type { RootState, AppDispatch } from "./store";
-import { setWorkspace, setBundle } from "@features/core/workspace/workspace-ui-slice";
-import { bundleApi } from "@features/core/bundles/api/bundles-api";
+import { setWorkspace, setBundle } from "@core/workspace/workspace-ui-slice";
+import { bundleApi } from "@core/bundles/api/bundles-api";
 
 // 1. Create the base middleware
 export const listenerMiddleware = createListenerMiddleware();

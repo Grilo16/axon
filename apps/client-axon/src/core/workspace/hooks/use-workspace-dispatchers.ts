@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useAppDispatch } from "@app/store";
+import { useAppDispatch } from "@core/store";
 import {
   setWorkspace,
   setBundle,

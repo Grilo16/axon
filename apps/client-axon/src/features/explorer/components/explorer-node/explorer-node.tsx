@@ -13,7 +13,7 @@ import {
   useNodeHoverRelationship, 
   useIsNodeSelected, 
   useWorkspaceDispatchers 
-} from "@features/core/workspace/hooks/use-workspace-slice";
+} from "@core/workspace/hooks/use-workspace-slice";
 
 interface ExplorerNodeProps {
   path: string;

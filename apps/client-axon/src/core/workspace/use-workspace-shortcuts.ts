@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
 import { useSelectedPaths, useWorkspaceDispatchers } from "./hooks/use-workspace-slice";
 
 export const useWorkspaceShortcuts = () => {

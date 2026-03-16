@@ -3,13 +3,11 @@ import { Plus, Check, X, Edit2, Trash2, EyeOff, Eye } from "lucide-react";
 import { Flex, Button, Input, Select, Box } from "@shared/ui";
 import { useTheme } from "styled-components";
 
-import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
-import { useBundleActions } from "../hooks/use-bundle-actions";
-import {
-  useActiveBundleQuery,
-  useActiveWorkspaceBundlesQuery,
-} from "../hooks/use-bundle-queries";
-import { useActiveBundleActions } from "../hooks/use-active-bundle-actions";
+import { useActiveWorkspaceId } from "@core/workspace/hooks/use-workspace-slice";
+import { useActiveBundleQuery, useActiveWorkspaceBundlesQuery } from "@core/bundles/hooks/use-bundle-queries";
+import { useBundleActions } from "@core/bundles/hooks/use-bundle-actions";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
+
 
 export const BundleSelector = () => {
   const theme = useTheme();

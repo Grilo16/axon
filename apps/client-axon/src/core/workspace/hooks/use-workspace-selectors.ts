@@ -1,4 +1,4 @@
-import { useAppSelector } from "@app/store";
+import { useAppSelector } from "@core/store";
 import {
   selectActiveWorkspaceId,
   selectActiveBundleId,

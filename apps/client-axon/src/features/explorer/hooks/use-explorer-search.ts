@@ -2,10 +2,10 @@ import { useDeferredValue } from "react";
 import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
 import { toast } from "sonner";
 
-import { useAppSelector } from "@app/store";
-import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
-import { selectPrivateGraphPathsSet, selectPublicGraphPathsSet } from "@features/core/workspace/workspace-ui-selector";
-import { useActiveWorkspaceSearchFilesQuery } from "@features/core/workspace/hooks/use-workspace-queries";
+import { useAppSelector } from "@core/store";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
+import { selectPrivateGraphPathsSet, selectPublicGraphPathsSet } from "@core/workspace/workspace-ui-selector";
+import { useActiveWorkspaceSearchFilesQuery } from "@core/workspace/hooks/use-workspace-queries";
 
 export const useExplorerSearch = (searchQuery: string) => {
   

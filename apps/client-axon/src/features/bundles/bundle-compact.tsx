@@ -1,7 +1,7 @@
 import { Copy } from "lucide-react";
 import { Flex, Text, Button } from "@shared/ui";
-import { useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
-import { useActiveBundleQuery } from "../hooks/use-bundle-queries";
+import { useWorkspaceDispatchers } from "@core/workspace/hooks/use-workspace-slice";
+import { useActiveBundleQuery } from "@core/bundles/hooks/use-bundle-queries";
 
 export const BundleCompact = () => {
   const { openBundleViewer } = useWorkspaceDispatchers();

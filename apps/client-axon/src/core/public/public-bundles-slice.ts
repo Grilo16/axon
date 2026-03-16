@@ -1,5 +1,5 @@
 import { createEntityAdapter, createSlice, createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@app/store";
+import type { RootState } from "@core/store";
 import type { BundleRecord } from "@shared/types/axon-core/bundle-api";
 
 // 🌟 Use your actual types! 

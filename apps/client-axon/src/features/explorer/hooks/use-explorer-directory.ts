@@ -1,9 +1,9 @@
 import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
 import { useSwitchboardQuery } from "@shared/hooks/use-switchboard-query";
-import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useActiveWorkspaceId } from "@core/workspace/hooks/use-workspace-slice";
 
-import { useListDirectoryQuery } from "@features/core/workspace/api/workspace-api";
-import { useListPublicDirectoryQuery } from "@features/public/api/public-api";
+import { useListDirectoryQuery } from "@core/workspace/api/workspace-api";
+import { useListPublicDirectoryQuery } from "@core/public/api/public-api";
 
 export const useExplorerDirectory = (path: string, isFolder: boolean = false, isOpen: boolean) => {
   const activeWorkspaceId = useActiveWorkspaceId();

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Position } from "@xyflow/react";
 
-import { useActiveBundleId } from "@features/core/workspace/hooks/use-workspace-slice";
-import { useActiveBundleGraphQuery } from "@features/core/bundles/hooks/use-bundle-queries";
+import { useActiveBundleId } from "@core/workspace/hooks/use-workspace-slice";
+import { useActiveBundleGraphQuery } from "@core/bundles/hooks/use-bundle-queries";
 import { useGraphLayout } from "./use-graph-layout";
 
 import type { AppNode, AppEdge, FocusFileNodeData } from "../types";
