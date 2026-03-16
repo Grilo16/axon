@@ -23,10 +23,6 @@ export const useGraphInteractions = () => {
       // Safely fire only the mutations that actually have data
       if (toAdd.length > 0) bundleActions.addTargetFiles(toAdd);
       if (toRemove.length > 0) bundleActions.removeTargetFiles(toRemove);
-    },
-
-    triggerLayout: (direction: "TB" | "LR") => {
-      console.log(`[Graph] Triggering layout calculation: ${direction}`);
     }
   };
 };

@@ -10,6 +10,8 @@ export const theme = {
       surfaceActive: '#2a2a2a',
       overlay: 'rgba(18, 18, 18, 0.85)',
       elevated: '#1a1a1a',
+      deep: '#111111',
+      badge: '#374151',
     },
     border: {
       subtle: '#2b2b2b',
@@ -28,6 +30,7 @@ export const theme = {
         main: '#2563eb',
         hover: '#1d4ed8',
         light: '#60a5fa',
+        accent: '#3b82f6',
         alpha: 'rgba(37, 99, 235, 0.12)',
       },
       danger: {
@@ -93,6 +96,19 @@ export const theme = {
     modal: 100,
     toast: 1000,
   },
+  breakpoints: {
+    sm: '640px',
+    md: '768px',
+    lg: '1024px',
+    xl: '1280px',
+  },
+} as const;
+
+export const media = {
+  sm: `@media (min-width: ${theme.breakpoints.sm})`,
+  md: `@media (min-width: ${theme.breakpoints.md})`,
+  lg: `@media (min-width: ${theme.breakpoints.lg})`,
+  xl: `@media (min-width: ${theme.breakpoints.xl})`,
 } as const;
 
 // Strongly type the styled-components theme

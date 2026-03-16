@@ -3,10 +3,12 @@ import React, { useCallback, useState } from "react";
 import { driver } from "driver.js";
 import { TourContext } from "./tour-context";
 import { DriverThemeOverrides } from "./tour-theme";
-import { getTourSteps } from "@shared/tour"; // Make sure this path is correct!
+import { getTourSteps, getMobileTourSteps } from "@shared/tour";
 import { useAppDispatch } from "@app/store";
 import { useActiveWorkspaceId, useWorkspaceDispatchers } from "@features/core/workspace/hooks/use-workspace-slice";
 import { useBundleActions } from "@features/core/bundles/hooks/use-bundle-actions";
+import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";
+import { useMobileTab } from "@shared/hooks/use-mobile-tab";
 
 export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [hasSeenTour, setHasSeenTour] = useState<boolean>(() => {
@@ -17,6 +19,8 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const workspaceId = useActiveWorkspaceId();
   const { createBundle, deleteBundle } = useBundleActions();
   const { resetExplorer } = useWorkspaceDispatchers();
+  const mode = useResponsiveMode();
+  const mobileTab = useMobileTab();
 
   const markTourAsSeen = useCallback(() => {
     localStorage.setItem("axon_tour_seen", "true");
@@ -64,7 +68,10 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 5. The React Buffer (Wait for Redux/UI to sync)
       setTimeout(() => {
-        const steps = getTourSteps(driverObj, dispatch);
+        const isMobile = mode === "mobile";
+        const steps = isMobile && mobileTab
+          ? getMobileTourSteps(driverObj, dispatch, mobileTab.setActiveTab)
+          : getTourSteps(driverObj, dispatch);
         driverObj.setConfig({ ...driverObj.getConfig(), steps });
         driverObj.drive();
       }, 100);
@@ -72,7 +79,7 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error("[Tour] Failed to start:", error);
     }
-  }, [workspaceId, resetExplorer, createBundle, deleteBundle, markTourAsSeen, dispatch]);
+  }, [workspaceId, resetExplorer, createBundle, deleteBundle, markTourAsSeen, dispatch, mode, mobileTab]);
 
   return (
     <TourContext.Provider value={{ startTour, hasSeenTour, markTourAsSeen }}>

@@ -11,7 +11,7 @@ export const createActionHandler = <TArg, TResult>(
       }
       
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (options?.errorMessage) {
         console.error(`❌ Error: ${options.errorMessage}`, error);
       }

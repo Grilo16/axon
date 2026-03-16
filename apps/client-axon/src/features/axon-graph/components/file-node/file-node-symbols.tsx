@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import styled from "styled-components";
+import styled, { useTheme } from "styled-components";
 import { EyeOff, Trash2 } from "lucide-react";
 
 import { Flex, Text, Button } from "@shared/ui";
@@ -33,6 +33,7 @@ type Props = {
 };
 
 export const FileNodeSymbols = memo(({ symbols, filePath }: Props) => {
+  const theme = useTheme();
   const { activeBundle } = useActiveBundleQuery();
   const { toggleSymbolRedaction } = useActiveBundleActions();
 
@@ -99,7 +100,7 @@ export const FileNodeSymbols = memo(({ symbols, filePath }: Props) => {
                 $variant="icon"
                 title={isHidden ? "Restore Implementation" : "Hide Implementation"}
                 onClick={() => toggleSymbolRedaction(filePath, sym.id, "hideImplementation")}
-                style={{ color: isHidden ? '#facc15' : undefined, background: isHidden ? '#374151' : undefined }}
+                style={{ color: isHidden ? theme.colors.palette.warning.main : undefined, background: isHidden ? theme.colors.bg.badge : undefined }}
               >
                 <EyeOff size={12} />
               </Button>
@@ -108,7 +109,7 @@ export const FileNodeSymbols = memo(({ symbols, filePath }: Props) => {
                 $variant="icon"
                 title={isRemoved ? "Restore Symbol" : "Remove Symbol Entirely"}
                 onClick={() => toggleSymbolRedaction(filePath, sym.id, "removeEntirely")}
-                style={{ color: isRemoved ? '#f87171' : undefined, background: isRemoved ? '#374151' : undefined }}
+                style={{ color: isRemoved ? theme.colors.palette.danger.hover : undefined, background: isRemoved ? theme.colors.bg.badge : undefined }}
               >
                 <Trash2 size={12} />
               </Button>

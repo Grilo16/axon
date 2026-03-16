@@ -1,13 +1,14 @@
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@app/store";
-import { 
-  addPublicBundle, 
-  updatePublicBundle, 
+import {
+  addPublicBundle,
+  updatePublicBundle,
   removePublicBundle,
   selectPublicBundlesByWorkspace,
   selectPublicBundleById
 } from "../public-bundles-slice";
 import { setBundle } from "@features/core/workspace/workspace-ui-slice";
+import type { BundleRecord } from "@shared/types/axon-core/bundle-api";
 
 const DEFAULT_OPTIONS = {
   targetFiles: [],
@@ -31,7 +32,7 @@ export const usePublicBundleDispatchers = () => {
     return newBundle.id; 
   }, [dispatch]);
 
-  const updateBundle = useCallback((id: string, changes: any) => {
+  const updateBundle = useCallback((id: string, changes: Partial<BundleRecord>) => {
     dispatch(updatePublicBundle({
       id,
       changes: {

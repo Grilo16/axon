@@ -1,27 +1,21 @@
-import { useAuth } from "react-oidc-context";
+import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
+import { useSwitchboardQuery } from "@shared/hooks/use-switchboard-query";
 import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
 
-import { useListDirectoryQuery } from "@features/core/workspace/api/workspace-api"; 
-import { useListPublicDirectoryQuery } from "@features/public/api/public-api"; 
+import { useListDirectoryQuery } from "@features/core/workspace/api/workspace-api";
+import { useListPublicDirectoryQuery } from "@features/public/api/public-api";
 
 export const useExplorerDirectory = (path: string, isFolder: boolean = false, isOpen: boolean) => {
   const activeWorkspaceId = useActiveWorkspaceId();
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
 
-  // 1. Private Query (Skips if anonymous)
-  const privateQuery = useListDirectoryQuery(
-    { id: activeWorkspaceId!, query: { path } },
-    { skip: !isOpen || !isFolder || !activeWorkspaceId || !isAuthenticated }
-  );
+  const commonSkip = !isOpen || !isFolder || !activeWorkspaceId;
+  const payload = { id: activeWorkspaceId!, query: { path } };
 
-  // 2. Public Query (Skips if authenticated)
-  const publicQuery = useListPublicDirectoryQuery(
-    { id: activeWorkspaceId!, query: { path } },
-    { skip: !isOpen || !isFolder || !activeWorkspaceId || isAuthenticated }
-  );
+  const privateQuery = useListDirectoryQuery(payload, { skip: commonSkip || !isAuthenticated });
+  const publicQuery = useListPublicDirectoryQuery(payload, { skip: commonSkip || isAuthenticated });
 
-  // 3. The Switchboard
-  const activeQuery = isAuthenticated ? privateQuery : publicQuery;
+  const activeQuery = useSwitchboardQuery(privateQuery, publicQuery);
 
   return {
     children: activeQuery.data ?? [],

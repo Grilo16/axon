@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { useAuth } from "react-oidc-context";
+import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
 import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
 import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
 
@@ -10,7 +10,7 @@ import { useLazyGetPublicFilePathsByDirQuery } from "@features/public/api/public
 
 export const useExplorerActions = () => {
   const activeWorkspaceId = useActiveWorkspaceId();
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const { toggleTargetFile, addTargetFiles, removeTargetFiles } = useActiveBundleActions();
 
   const [triggerPrivate, privateMeta] = useLazyGetFilePathsByDirQuery();

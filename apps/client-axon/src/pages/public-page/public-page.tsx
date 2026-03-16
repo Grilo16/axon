@@ -7,9 +7,8 @@ import { BundleSelector } from "@features/core/bundles/components/bundle-selecto
 import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
 import { FileExplorer } from "@features/explorer";
 import { useListPublicWorkspacesQuery } from "@features/public/api/public-api";
-import { Flex } from "@shared/ui";
+import { Flex, Spinner } from "@shared/ui";
 import { WorkspaceLayout } from "@shared/ui/layouts/workspace-layout";
-import { Loader2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useAuth } from "react-oidc-context";
 import { Navigate } from "react-router-dom";
@@ -70,7 +69,7 @@ export default function PublicSandboxPage() {
   if (isLoading) {
     return (
       <Flex $fill $align="center" $justify="center" $bg="bg.main">
-        <Loader2 size={32} className="animate-spin" color="#60a5fa" />
+        <Spinner size={32} />
       </Flex>
     );
   }
@@ -82,7 +81,7 @@ export default function PublicSandboxPage() {
   if (isWorkspacesLoading || isGhostWorkspace) {
     return (
       <Flex $fill $align="center" $justify="center" $bg="bg.main">
-        <Loader2 size={32} className="animate-spin" color="#60a5fa" />
+        <Spinner size={32} />
       </Flex>
     );
   }

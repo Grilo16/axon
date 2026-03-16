@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAuth } from "react-oidc-context";
+import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
 import { toast } from "sonner";
 import { useAppDispatch, useAppSelector } from "@app/store";
 import { setBundle } from "@features/core/workspace/workspace-ui-slice";
@@ -17,7 +17,7 @@ import { usePublicBundleDispatchers } from "@features/public/hooks/use-public-bu
 
 export const useBundleActions = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
 
   // 🌟 The Sandbox Dispatchers
   const sandboxActions = usePublicBundleDispatchers();
@@ -64,7 +64,11 @@ export const useBundleActions = () => {
           if (isAuthenticated) {
             return createActionHandler(updateMut)(payload);
           } else {
-            sandboxActions.updateBundle(payload.id, payload.payload);
+            const { name, options } = payload.payload;
+            sandboxActions.updateBundle(payload.id, {
+              ...(name !== null && { name }),
+              ...(options !== null && { options }),
+            });
             return;
           }
         },

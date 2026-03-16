@@ -1,10 +1,11 @@
 import { useMemo } from 'react';
+import { useTheme } from 'styled-components';
 import Editor from '@monaco-editor/react';
-import { X, FileCode, Package, Loader2, Copy, Download } from 'lucide-react';
+import { X, FileCode, Package, Copy, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 // UI Primitives
-import { Flex, Text, Button, Box, PanelSection, PanelHeader } from '@shared/ui';
+import { Flex, Text, Button, Box, PanelSection, PanelHeader, Spinner } from '@shared/ui';
 import { useViewedFilePath, useViewMode, useWorkspaceDispatchers } from '@features/core/workspace/hooks/use-workspace-slice';
 import { useReadWorkspaceFileQuery } from '@features/core/workspace/hooks/use-workspace-queries';
 import { useActiveBundleQuery, useReadBundleContextQuery } from '@features/core/bundles/hooks/use-bundle-queries';
@@ -26,6 +27,7 @@ const getLanguageFromPath = (path: string) => {
 };
 
 export const CodeViewerPanel = () => {
+  const theme = useTheme();
   const { closeViewer } = useWorkspaceDispatchers()
   const viewedFilePath = useViewedFilePath()
   const {activeBundle} = useActiveBundleQuery()
@@ -77,7 +79,7 @@ export const CodeViewerPanel = () => {
           {isBundle ? (
             <Package size={16} color="#c084fc" /> 
           ) : (
-            <FileCode size={16} color="#60a5fa" />
+            <FileCode size={16} color={theme.colors.palette.primary.light} />
           )}
           <Text $size="sm" $weight="semibold" $truncate title={title}>
             {title || "No file selected"}
@@ -110,7 +112,7 @@ export const CodeViewerPanel = () => {
             $justify="center" 
             style={{ position: 'absolute', zIndex: 10, background: 'rgba(18, 18, 18, 0.7)' }}
           >
-            <Loader2 className="animate-spin" size={32} color="#3b82f6" />
+            <Spinner size={32} />
           </Flex>
         )}
 

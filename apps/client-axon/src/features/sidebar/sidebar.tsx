@@ -1,14 +1,15 @@
 import { Flex, Box, Text } from "@shared/ui";
+import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";
 import { SidebarIcon } from "./sidebar-icon";
 
 export function getInitials(name: string): string {
   const clean = (name ?? "").trim();
   if (!clean) return "WS";
-  
+
   const parts = clean.split(/[\s\-_./]+/).filter(Boolean);
   if (!parts.length) return clean.slice(0, 2).toUpperCase();
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  
+
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
@@ -21,7 +22,7 @@ interface WorkspaceSidebarProps {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
   onSelectWorkspace: (id: string) => void;
-  bottomActions?: React.ReactNode; 
+  bottomActions?: React.ReactNode;
 }
 
 export const WorkspaceSidebar = ({
@@ -30,12 +31,15 @@ export const WorkspaceSidebar = ({
   onSelectWorkspace,
   bottomActions,
 }: WorkspaceSidebarProps) => {
+  const mode = useResponsiveMode();
+  const isMobile = mode === "mobile";
+
   return (
     <Flex
-      $direction="column"
+      $direction={isMobile ? "row" : "column"}
       $align="center"
-      $gap="md" 
-      $fill
+      $gap={isMobile ? "sm" : "md"}
+      $fill={!isMobile}
     >
       {workspaces.map((ws) => (
         <SidebarIcon
@@ -47,12 +51,14 @@ export const WorkspaceSidebar = ({
         />
       ))}
 
-      <Box style={{ flex: 1 }} />
+      {!isMobile && <Box style={{ flex: 1 }} />}
+      {isMobile && <Box style={{ flex: 1 }} />}
 
-      {/* 🌟 Render the injected actions at the bottom */}
       {bottomActions && (
         <>
-          <Box $bg="border.subtle" style={{ width: 32, height: 2, borderRadius: 1, marginBottom: 8 }} />
+          {!isMobile && (
+            <Box $bg="border.subtle" style={{ width: 32, height: 2, borderRadius: 1, marginBottom: 8 }} />
+          )}
           {bottomActions}
         </>
       )}

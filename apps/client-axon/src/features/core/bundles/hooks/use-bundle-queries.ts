@@ -1,4 +1,4 @@
-import { useAuth } from "react-oidc-context";
+import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
 import {
   useGetBundleQuery,
   useGetWorkspaceBundlesQuery,
@@ -17,42 +17,36 @@ import type { StatelessGraphReq } from "@shared/types/axon-core/public-api";
 import { useMemo } from "react";
 
 export const useActiveWorkspaceBundlesQuery = () => {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const activeWorkspaceId = useActiveWorkspaceId();
 
-  // 1. Private Network Query (Skips if anonymous)
   const privateQuery = useGetWorkspaceBundlesQuery(
      { id: activeWorkspaceId!, query: { limit: null, offset: null } },
     { skip: !isAuthenticated || !activeWorkspaceId }
   );
 
-  // 2. Public Local Query (Runs instantly against Redux)
   const publicQuery = usePublicWorkspaceBundles(activeWorkspaceId);
 
-  // 3. The Switchboard Router
   const bundles = isAuthenticated ? privateQuery.data : publicQuery.bundles;
   const isLoading = isAuthenticated ? privateQuery.isLoading : publicQuery.isLoading;
 
   return {
-    allBundles: bundles ?? [], 
+    allBundles: bundles ?? [],
     isLoading,
   };
 };
 
 export const useActiveBundleQuery = () => {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const activeBundleId = useActiveBundleId();
 
-  // 1. Private Network Query (Skips if anonymous)
   const privateQuery = useGetBundleQuery(
     activeBundleId!,
     { skip: !isAuthenticated || !activeBundleId }
   );
 
-  // 2. Public Local Query (Runs instantly against Redux)
   const publicQuery = usePublicBundle(activeBundleId);
 
-  // 3. The Switchboard Router
   const activeBundle = isAuthenticated ? privateQuery.data : publicQuery.bundle;
   const isLoading = isAuthenticated ? privateQuery.isLoading : publicQuery.isLoading;
 
@@ -62,9 +56,8 @@ export const useActiveBundleQuery = () => {
   };
 };
 
-// 🌟 Inside useActiveBundleGraphQuery
 export const useActiveBundleGraphQuery = () => {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const activeBundleId = useActiveBundleId();
   
   const publicBundle = useAppSelector((state) => 
@@ -106,7 +99,7 @@ export const useActiveBundleGraphQuery = () => {
 };
 
 export const useReadBundleContextQuery = (contextName: string) => {
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const activeBundleId = useActiveBundleId();
   const viewMode = useViewMode();
   const isBundle = viewMode === "bundle-context";

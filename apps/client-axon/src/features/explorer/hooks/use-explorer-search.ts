@@ -1,5 +1,5 @@
 import { useDeferredValue } from "react";
-import { useAuth } from "react-oidc-context";
+import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
 import { toast } from "sonner";
 
 import { useAppSelector } from "@app/store";
@@ -12,7 +12,7 @@ export const useExplorerSearch = (searchQuery: string) => {
   // 1. Action Hooks
   const { toggleTargetFile, addTargetFiles, removeTargetFiles } = useActiveBundleActions();
   
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const privatePathsSet = useAppSelector(selectPrivateGraphPathsSet);
   const publicPathsSet = useAppSelector(selectPublicGraphPathsSet);
   const activePathsSet = isAuthenticated ? privatePathsSet : publicPathsSet;

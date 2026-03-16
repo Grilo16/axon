@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import { Flex } from "@shared/ui";
+import type { ExplorerEntry } from "@shared/types/axon-core/explorer";
 
 import { NodeContainer } from "./node-container";
 import { NodeCaret } from "./node-caret";
@@ -97,7 +98,7 @@ export const ExplorerNode = memo(
 
         {isOpen && children.length > 0 && (
           <Flex $direction="column">
-            {children.map((child: any) => (
+            {children.map((child: ExplorerEntry) => (
               <ExplorerNode
                 key={child.data.path}
                 path={child.data.path}

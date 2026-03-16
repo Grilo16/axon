@@ -9,6 +9,7 @@ import { ExplorerNode } from "./explorer-node";
 import { useExplorerSearch } from "../hooks/use-explorer-search";
 import { useExplorerDirectory } from "../hooks/use-explorer-directory";
 import { useActiveWorkspaceId, useSelectedExplorerKey } from "@features/core/workspace/hooks/use-workspace-slice";
+import type { ExplorerEntry } from "@shared/types/axon-core/explorer";
 
 const ScrollableArea = styled(Box)`
   overflow-y: auto;
@@ -44,7 +45,7 @@ export const FileExplorer = () => {
         ) : (
           children.length > 0 && (
             <Flex $direction="column">
-              {children.map((child: any) => (
+              {children.map((child: ExplorerEntry) => (
                 
                 <ExplorerNode
                   key={child.data.path}

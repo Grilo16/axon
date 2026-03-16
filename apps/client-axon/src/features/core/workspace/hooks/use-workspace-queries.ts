@@ -1,4 +1,5 @@
-import { useAuth } from "react-oidc-context";
+import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
+import { useSwitchboardQuery } from "@shared/hooks/use-switchboard-query";
 import {
   useGetWorkspaceQuery,
   useListWorkspacesQuery,
@@ -43,45 +44,32 @@ export const useReadWorkspaceFileQuery = () => {
   const activeId = useActiveWorkspaceId();
   const viewedFilePath = useViewedFilePath();
   const viewMode = useViewMode();
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const isFile = viewMode === "file";
 
-  const privateQuery = useReadFileQuery(
-     { id: activeId!, query: { path: viewedFilePath! } },
-    { skip: !activeId || !viewedFilePath || !isFile || !isAuthenticated},
-  );
+  const commonSkip = !activeId || !viewedFilePath || !isFile;
+  const payload = { id: activeId!, query: { path: viewedFilePath! } };
 
-  const publicQuery = useReadPublicFileQuery(
-     { id: activeId!, query: { path: viewedFilePath! } },
-    { skip: !activeId || !viewedFilePath || !isFile || isAuthenticated },
-  );
+  const privateQuery = useReadFileQuery(payload, { skip: commonSkip || !isAuthenticated });
+  const publicQuery = useReadPublicFileQuery(payload, { skip: commonSkip || isAuthenticated });
 
-  return isAuthenticated ? privateQuery : publicQuery
+  return useSwitchboardQuery(privateQuery, publicQuery);
 };
 
 export const useActiveWorkspaceSearchFilesQuery = (value: string) => {
   const id = useActiveWorkspaceId();
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
 
   const safeQuery = value || "";
   const isQuerySubstantial = safeQuery.trim().length >= 2;
-  const payload = {
-    id: id!,
-    query: {
-      limit: null,
-      value,
-    },
-  };
+  const payload = { id: id!, query: { limit: null, value } };
 
-  const privateQuery = useSearchFilesQuery(payload, {
-    skip: !id || !isQuerySubstantial || !isAuthenticated,
-  });
+  const commonSkip = !id || !isQuerySubstantial;
 
-  const publicQuery = useSearchPublicFilesQuery(payload, {
-    skip: !id || !isQuerySubstantial || isAuthenticated,
-  });
+  const privateQuery = useSearchFilesQuery(payload, { skip: commonSkip || !isAuthenticated });
+  const publicQuery = useSearchPublicFilesQuery(payload, { skip: commonSkip || isAuthenticated });
 
-  const { data, ...result } = isAuthenticated ? privateQuery : publicQuery;
+  const { data, ...result } = useSwitchboardQuery(privateQuery, publicQuery);
 
   return {
     results: data ?? [],
