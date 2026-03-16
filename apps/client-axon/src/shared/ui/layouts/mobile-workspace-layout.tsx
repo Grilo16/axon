@@ -20,14 +20,19 @@ interface MobileWorkspaceLayoutProps {
 const TabPanel = styled.div<{ $visible: boolean }>`
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   width: 100%;
+  height: 100%;
   display: ${({ $visible }) => ($visible ? "flex" : "none")};
   flex-direction: column;
 `;
 
 const BottomTabBar = styled.nav`
   display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   align-items: center;
   justify-content: space-around;
   height: 56px;
@@ -77,7 +82,7 @@ export const MobileWorkspaceLayout: React.FC<MobileWorkspaceLayoutProps> = ({
   const setActiveTab = tabCtx?.setActiveTab;
 
   return (
-    <Flex $direction="column" $fill $bg="bg.main">
+    <Flex $direction="column" $bg="bg.main" style={{width: "100%", height: "100%"}}>
       <TabPanel $visible={activeTab === "explorer"}>{explorer}</TabPanel>
       <TabPanel $visible={activeTab === "graph"}>{graph}</TabPanel>
       <TabPanel $visible={activeTab === "code"}>{codeViewer}</TabPanel>

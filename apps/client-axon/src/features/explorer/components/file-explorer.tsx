@@ -12,8 +12,11 @@ import { useActiveWorkspaceId, useSelectedExplorerKey } from "@core/workspace/ho
 import type { ExplorerEntry } from "@shared/types/axon-core/explorer";
 
 const ScrollableArea = styled(Box)`
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  min-height: 0;
+  max-height: auto;
   ${customScrollbar}
 `;
 
@@ -26,7 +29,7 @@ export const FileExplorer = () => {
   const { results, activePathsSet, addAllToGraph, removeAllFromGraph, toggleTarget } = useExplorerSearch(searchQuery);
 
   return (
-    <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface" key={`${activeWorkspaceId}-${key}`} style={{ minHeight: 0 }}>
+    <Flex id="tour-file-explorer" $direction="column" $fill $bg="bg.surface" key={`${activeWorkspaceId}-${key}`} style={{ minHeight: 0, height: "calc(100dvh - 107px)"}}>
       <ExplorerSearchBar 
         searchQuery={searchQuery} 
         setSearchQuery={setSearchQuery} 
@@ -35,7 +38,7 @@ export const FileExplorer = () => {
         resultCount={results.length}
       />
 
-      <ScrollableArea $fill>
+      <ScrollableArea >
        {searchQuery ? (
           <ExplorerSearchResults 
             results={results} 
@@ -44,7 +47,7 @@ export const FileExplorer = () => {
           />
         ) : (
           children.length > 0 && (
-            <Flex $direction="column">
+            <Flex $direction="column" >
               {children.map((child: ExplorerEntry) => (
                 
                 <ExplorerNode

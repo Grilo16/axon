@@ -7,8 +7,9 @@ import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";
 const MobileShell = styled.div`
   display: flex;
   flex-direction: column;
-  width: 100vw;
+  width: 100%;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.bg.main};
 `;
