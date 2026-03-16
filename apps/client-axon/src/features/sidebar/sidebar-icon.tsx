@@ -154,9 +154,9 @@ const ActivePill = styled.div`
 
   @media (max-width: 640px) {
     left: auto;
-    bottom: -8px;
-    width: 20px;
-    height: 4px;
+    bottom: -6px;
+    width: 16px;
+    height: 3px;
   }
 `;
 

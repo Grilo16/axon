@@ -4,18 +4,6 @@ import styled from "styled-components";
 import { AppMain, AppShell, AppSidebar } from "@shared/ui";
 import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";
 
-const MobileTopBar = styled.div`
-  display: flex;
-  align-items: center;
-  overflow-x: auto;
-  height: 48px;
-  flex-shrink: 0;
-  padding: 0 ${({ theme }) => theme.spacing.sm};
-  gap: ${({ theme }) => theme.spacing.sm};
-  background-color: ${({ theme }) => theme.colors.bg.surface};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border.subtle};
-`;
-
 const MobileShell = styled.div`
   display: flex;
   flex-direction: column;
@@ -25,13 +13,27 @@ const MobileShell = styled.div`
   background-color: ${({ theme }) => theme.colors.bg.main};
 `;
 
+const MobileTopBar = styled.div`
+  display: flex;
+  align-items: center;
+  height: 48px;
+  flex-shrink: 0;
+  padding: 0 ${({ theme }) => theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.xs};
+  background-color: ${({ theme }) => theme.colors.bg.surface};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border.subtle};
+  overflow: hidden;
+`;
+
 export const AxonLayoutShell = ({ sidebar }: { sidebar?: React.ReactNode }) => {
   const mode = useResponsiveMode();
 
   if (mode === "mobile") {
     return (
       <MobileShell>
-        <MobileTopBar>{sidebar}</MobileTopBar>
+        <MobileTopBar id="tour-sidebar-workspaces">
+          {sidebar}
+        </MobileTopBar>
         <AppMain>
           <Outlet />
         </AppMain>

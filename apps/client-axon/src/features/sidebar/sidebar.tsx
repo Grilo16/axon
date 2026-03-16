@@ -34,13 +34,30 @@ export const WorkspaceSidebar = ({
   const mode = useResponsiveMode();
   const isMobile = mode === "mobile";
 
+  if (isMobile) {
+    // Mobile: actions on the left, spacer, workspaces on the right
+    return (
+      <Flex $direction="row" $align="center" $gap="xs" style={{ width: "100%" }}>
+        {workspaces.map((ws) => (
+          <SidebarIcon
+          key={ws.id}
+          icon={<Text $size="sm" $weight="bold">{getInitials(ws.name)}</Text>}
+          title={ws.name}
+          $active={ws.id === activeWorkspaceId}
+          onClick={() => onSelectWorkspace(ws.id)}
+          />
+        ))}
+
+        <Box style={{ flex: 1 }} />
+
+        {bottomActions}
+      </Flex>
+    );
+  }
+
+  // Desktop: vertical column, workspaces on top, actions on bottom
   return (
-    <Flex
-      $direction={isMobile ? "row" : "column"}
-      $align="center"
-      $gap={isMobile ? "sm" : "md"}
-      $fill={!isMobile}
-    >
+    <Flex $direction="column" $align="center" $gap="md" $fill>
       {workspaces.map((ws) => (
         <SidebarIcon
           key={ws.id}
@@ -51,14 +68,11 @@ export const WorkspaceSidebar = ({
         />
       ))}
 
-      {!isMobile && <Box style={{ flex: 1 }} />}
-      {isMobile && <Box style={{ flex: 1 }} />}
+      <Box style={{ flex: 1 }} />
 
       {bottomActions && (
         <>
-          {!isMobile && (
-            <Box $bg="border.subtle" style={{ width: 32, height: 2, borderRadius: 1, marginBottom: 8 }} />
-          )}
+          <Box $bg="border.subtle" style={{ width: 32, height: 2, borderRadius: 1, marginBottom: 8 }} />
           {bottomActions}
         </>
       )}

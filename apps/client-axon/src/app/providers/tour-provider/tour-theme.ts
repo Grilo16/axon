@@ -89,7 +89,6 @@ export const DriverThemeOverrides = createGlobalStyle`
     opacity: 1 !important;
   }
 
-  /* 🌟 Make the specific Eye button pulse and glow! */
   .driver-active-element .tour-symbol-hide-btn {
     box-shadow: 0 0 0 2px ${({ theme }) => theme.colors.palette.primary.main}, 
                 0 0 15px ${({ theme }) => theme.colors.palette.primary.main} !important;
@@ -104,4 +103,8 @@ export const DriverThemeOverrides = createGlobalStyle`
     overflow: visible !important;
   }
 
+body.axon-tour-active .react-flow__pane,
+  body.axon-tour-active .react-flow__nodes {
+    overflow: visible !important;
+  }
 `;

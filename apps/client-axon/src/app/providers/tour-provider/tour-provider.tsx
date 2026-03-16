@@ -14,37 +14,47 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasSeenTour, setHasSeenTour] = useState<boolean>(() => {
     return localStorage.getItem("axon_tour_seen") === "true";
   });
-  
+
   const dispatch = useAppDispatch();
   const workspaceId = useActiveWorkspaceId();
   const { createBundle, deleteBundle } = useBundleActions();
   const { resetExplorer } = useWorkspaceDispatchers();
   const mode = useResponsiveMode();
   const mobileTab = useMobileTab();
+
   const markTourAsSeen = useCallback(() => {
     localStorage.setItem("axon_tour_seen", "true");
     setHasSeenTour(true);
   }, []);
-  
+
   const startTour = useCallback(async () => {
     if (!workspaceId) return;
 
+    const isMobile = mode === "mobile";
+
     try {
-      // 1. Fire the explorer nuke
+      // 1. Reset the explorer tree and start fresh
       resetExplorer();
 
-      // 2. Await the creation and extract the ID directly (NO .unwrap() here!)
+      // 2. Create a dedicated tour bundle
       const result = await createBundle.handle({
-        workspaceId, 
-        name: "Interactive Tour 🚀", 
+        workspaceId,
+        name: "Interactive Tour 🚀",
         options: { hideBarrelExports: false, rules: [], targetFiles: [] }
       });
 
       const newBundleId = result?.id;
       if (!newBundleId) throw new Error("Failed to create tour bundle");
 
+      // 3. On mobile, start on the graph tab (step 0 is a centered popover,
+      //    step 1's onNextClick will switch to explorer when user clicks "Let's Go")
+      if (isMobile && mobileTab) {
+        mobileTab.setActiveTab("graph");
+      }
+
       document.body.classList.add("axon-tour-active");
-      // 3. Configure the Driver
+
+      // 4. Configure driver.js
       const driverObj = driver({
         stagePadding: 4,
         showProgress: true,
@@ -59,15 +69,20 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
             driverObj.destroy();
             markTourAsSeen();
             document.body.classList.remove("axon-tour-active");
-            // 4. Destroy the bundle (NO .unwrap() here either!)
+
+            // Reset to graph tab on mobile after tour ends
+            if (isMobile && mobileTab) {
+              mobileTab.setActiveTab("graph");
+            }
+
+            // Clean up the tour bundle
             deleteBundle.handle({ id: `${newBundleId}`, workspaceId }).catch(console.error);
           }
         },
       });
 
-      // 5. The React Buffer (Wait for Redux/UI to sync)
+      // 5. Brief delay to let Redux/UI sync, then start
       setTimeout(() => {
-        const isMobile = mode === "mobile";
         const steps = isMobile && mobileTab
           ? getMobileTourSteps(driverObj, dispatch, mobileTab.setActiveTab)
           : getTourSteps(driverObj, dispatch);

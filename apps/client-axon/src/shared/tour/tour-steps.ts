@@ -3,6 +3,10 @@ import { viewFile } from "@core/workspace/workspace-ui-slice";
 import type { DriveStep, Driver } from "driver.js";
 import type { MobileTab } from "@shared/hooks/use-mobile-tab";
 
+/**
+ * Wait for an element to appear in the DOM.
+ * Resolves with the element, or null on timeout.
+ */
 const waitForElement = (selector: string, timeoutMs = 5000): Promise<Element | null> => {
   return new Promise((resolve) => {
     const existing = document.querySelector(selector);
@@ -25,6 +29,9 @@ const waitForElement = (selector: string, timeoutMs = 5000): Promise<Element | n
   });
 };
 
+/** Wait one animation frame (lets React finish a re-render). */
+const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()));
+
 interface TourOptions {
   driverObj: Driver;
   dispatch: AppDispatch;
@@ -32,13 +39,14 @@ interface TourOptions {
   switchTab?: (tab: MobileTab) => void;
 }
 
-/** Switch tab and wait for an element to appear in the DOM */
+/** Switch tab, wait for React to re-render, then wait for an element. */
 const switchAndWait = async (
   switchTab: ((tab: MobileTab) => void) | undefined,
   tab: MobileTab,
   selector: string,
 ) => {
   switchTab?.(tab);
+  await nextFrame();
   await waitForElement(selector);
 };
 
@@ -54,7 +62,7 @@ export const getMobileTourSteps = (
 
 /**
  * Which mobile tab each step requires.
- * null = no element (centered popover) or element is always visible (sidebar).
+ * null = no element (centered popover) or element is always visible.
  */
 const STEP_TABS: (MobileTab | null)[] = [
   null,       // 0: welcome
@@ -63,7 +71,7 @@ const STEP_TABS: (MobileTab | null)[] = [
   "graph",    // 3: graph basics
   "graph",    // 4: node expansion
   "graph",    // 4.5: barrel note
-  "graph",    // 5: hide barrels
+  "bundler",    // 5: hide barrels
   "graph",    // 5.5: barrel result
   "graph",    // 6: open file (node lives on graph)
   "code",     // 7: code viewer
@@ -72,23 +80,23 @@ const STEP_TABS: (MobileTab | null)[] = [
   "graph",    // 10: redaction engine (symbol row is on graph)
   "code",     // 11: redacted result
   "bundler",  // 12: bundles
-  null,       // 13: CTA (sidebar always visible)
+  null,       // 13: CTA (top bar always visible)
 ];
 
 const buildTourSteps = ({ driverObj, dispatch, isMobile, switchTab }: TourOptions): DriveStep[] => {
 
   /**
-   * Helper: switch to nextTab, wait for the element, then advance.
-   * Used in `onNextClick` for steps where the built-in "Next" button
-   * crosses mobile tabs.
+   * Switch to the next tab, wait for React to re-render, then advance.
+   * Used in `onNextClick` for steps where the "Next" button crosses tabs.
    */
-  const mobileNextClick = (nextTab: MobileTab, nextSelector: string) => {
+  const mobileNextClick = (nextTab: MobileTab) => {
     if (!isMobile) {
       driverObj.moveNext();
       return;
     }
     switchTab?.(nextTab);
-    waitForElement(nextSelector).then(() => driverObj.moveNext());
+    // Give React one frame to make the panel visible before driver reads dimensions
+    setTimeout(() => driverObj.moveNext(), 100);
   };
 
   const steps: DriveStep[] = [
@@ -100,7 +108,7 @@ const buildTourSteps = ({ driverObj, dispatch, isMobile, switchTab }: TourOption
         align: "center",
         showButtons: ["next", "close"],
         nextBtnText: "Let's Go!!",
-        onNextClick: () => mobileNextClick("explorer", "#tour-explorer-demo-folder"),
+        onNextClick: () => mobileNextClick("explorer"),
       },
     },
 
@@ -141,7 +149,11 @@ const buildTourSteps = ({ driverObj, dispatch, isMobile, switchTab }: TourOption
         if (!addButton) return;
         const advanceTour = async () => {
           addButton.removeEventListener("click", advanceTour);
-          if (isMobile) await switchAndWait(switchTab, "graph", "#tour-graph-canvas");
+          await waitForElement('[data-id="axon-tutorial/src/app.tsx"]', 10000);
+          if (isMobile) {
+            switchTab?.("graph");
+            await nextFrame();
+          }
           driverObj.moveNext();
         };
         addButton.addEventListener("click", advanceTour);
@@ -277,8 +289,7 @@ const buildTourSteps = ({ driverObj, dispatch, isMobile, switchTab }: TourOption
         side: "left",
         align: "center",
         showButtons: ["next", "close"],
-        // Next step is on bundler tab
-        onNextClick: () => mobileNextClick("bundler", "#tour-generate-context-btn"),
+        onNextClick: () => mobileNextClick("bundler"),
       },
     },
 
@@ -316,8 +327,7 @@ const buildTourSteps = ({ driverObj, dispatch, isMobile, switchTab }: TourOption
         side: "left",
         align: "center",
         showButtons: ["next", "close"],
-        // Next step is on graph tab
-        onNextClick: () => mobileNextClick("graph", ".tour-symbol-row-first"),
+        onNextClick: () => mobileNextClick("graph"),
       },
     },
 
@@ -355,8 +365,7 @@ const buildTourSteps = ({ driverObj, dispatch, isMobile, switchTab }: TourOption
         side: "left",
         align: "center",
         showButtons: ["next", "close"],
-        // Next step is on bundler tab
-        onNextClick: () => mobileNextClick("bundler", "#tour-bundle-selector"),
+        onNextClick: () => mobileNextClick("bundler"),
       },
     },
 
@@ -378,7 +387,7 @@ const buildTourSteps = ({ driverObj, dispatch, isMobile, switchTab }: TourOption
       popover: {
         title: "You're a Pro",
         description: "Feel free to explore the rest of this Demo workspace. But the real magic happens with your own code. Sign in to sync your GitHub repositories and supercharge your workflow!",
-        side: "right",
+        side: isMobile ? "bottom" : "right",
         align: "start",
         showButtons: ["close", "next"],
         doneBtnText: "Start Building",
@@ -386,35 +395,42 @@ const buildTourSteps = ({ driverObj, dispatch, isMobile, switchTab }: TourOption
     },
   ];
 
+  if (!isMobile) return steps;
+
   // On mobile, wrap each step with a safety-net retry mechanism.
-  // If driver.js can't find an element (because the tab switch was async),
-  // switch to the correct tab and retry the step after a short delay.
-  if (isMobile) {
-    return steps.map((step, index) => {
-      const requiredTab = STEP_TABS[index];
-      if (!requiredTab || !step.element) return step;
+  // Because all panels stay mounted (hidden with display:none), elements
+  // exist in the DOM but may have zero dimensions until the tab is visible.
+  // The wrapper switches tabs in onHighlightStarted, and retries the step
+  // if driver.js couldn't properly highlight the element.
+  return steps.map((step, index) => {
+    const requiredTab = STEP_TABS[index];
+    if (!requiredTab || !step.element) return step;
 
-      const originalOnHighlighted = step.onHighlighted;
-      let hasRetried = false;
+    const originalOnHighlighted = step.onHighlighted;
+    let hasRetried = false;
 
-      return {
-        ...step,
-        onHighlightStarted: () => {
-          switchTab?.(requiredTab);
-          hasRetried = false;
-        },
-        onHighlighted: (...args: Parameters<NonNullable<DriveStep["onHighlighted"]>>) => {
-          const [el] = args;
-          if (!el && !hasRetried) {
-            hasRetried = true;
-            setTimeout(() => driverObj.moveTo(index), 150);
-            return;
-          }
-          originalOnHighlighted?.(...args);
-        },
-      };
-    });
-  }
+    return {
+      ...step,
+      onHighlightStarted: () => {
+        switchTab?.(requiredTab);
+        hasRetried = false;
+      },
+      onHighlighted: (...args: Parameters<NonNullable<DriveStep["onHighlighted"]>>) => {
+        const [el] = args;
+        // Check the element is actually visible (non-zero rect).
+        // With all panels mounted, querySelector finds hidden elements too,
+        // but they have zero dimensions until the tab is shown.
+        const rect = el?.getBoundingClientRect();
+        const isVisible = rect && rect.width > 0 && rect.height > 0;
 
-  return steps;
+        if (!isVisible && !hasRetried) {
+          hasRetried = true;
+          // Give React time to re-render after tab switch, then retry
+          setTimeout(() => driverObj.moveTo(index), 200);
+          return;
+        }
+        originalOnHighlighted?.(...args);
+      },
+    };
+  });
 };

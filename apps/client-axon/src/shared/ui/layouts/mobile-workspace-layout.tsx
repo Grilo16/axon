@@ -11,11 +11,19 @@ interface MobileWorkspaceLayoutProps {
   codeViewer: React.ReactNode;
 }
 
-const TabPanel = styled.div`
+/**
+ * Each panel stays mounted but only the active one is visible.
+ * This lets React Flow keep rendering graph nodes in the background,
+ * which is critical for the tour (file-add happens on explorer tab,
+ * but graph nodes must exist in the DOM for waitForElement).
+ */
+const TabPanel = styled.div<{ $visible: boolean }>`
   flex: 1;
   min-height: 0;
   overflow: auto;
   width: 100%;
+  display: ${({ $visible }) => ($visible ? "flex" : "none")};
+  flex-direction: column;
 `;
 
 const BottomTabBar = styled.nav`
@@ -68,16 +76,12 @@ export const MobileWorkspaceLayout: React.FC<MobileWorkspaceLayoutProps> = ({
   const activeTab = tabCtx?.activeTab ?? "graph";
   const setActiveTab = tabCtx?.setActiveTab;
 
-  const panels: Record<MobileTab, React.ReactNode> = {
-    explorer,
-    graph,
-    code: codeViewer,
-    bundler,
-  };
-
   return (
     <Flex $direction="column" $fill $bg="bg.main">
-      <TabPanel>{panels[activeTab]}</TabPanel>
+      <TabPanel $visible={activeTab === "explorer"}>{explorer}</TabPanel>
+      <TabPanel $visible={activeTab === "graph"}>{graph}</TabPanel>
+      <TabPanel $visible={activeTab === "code"}>{codeViewer}</TabPanel>
+      <TabPanel $visible={activeTab === "bundler"}>{bundler}</TabPanel>
 
       <BottomTabBar>
         {TABS.map(({ key, label, icon: Icon }) => (
