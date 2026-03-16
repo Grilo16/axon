@@ -1,16 +1,16 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { useAuth } from "react-oidc-context";
-import { useActiveBundleActions } from "@features/core/bundles/hooks/use-active-bundle-actions";
-import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useIsAuthenticated } from "@shared/hooks/use-auth-mode";
+import { useActiveBundleActions } from "@core/bundles/hooks/use-active-bundle-actions";
+import { useActiveWorkspaceId } from "@core/workspace/hooks/use-workspace-slice";
 
 // 🌟 2. Import both Private and Public lazy triggers
-import { useLazyGetFilePathsByDirQuery } from "@features/core/workspace/api/workspace-api";
-import { useLazyGetPublicFilePathsByDirQuery } from "@features/public/api/public-api";
+import { useLazyGetFilePathsByDirQuery } from "@core/workspace/api/workspace-api";
+import { useLazyGetPublicFilePathsByDirQuery } from "@core/public/api/public-api";
 
 export const useExplorerActions = () => {
   const activeWorkspaceId = useActiveWorkspaceId();
-  const { isAuthenticated } = useAuth();
+  const isAuthenticated = useIsAuthenticated();
   const { toggleTargetFile, addTargetFiles, removeTargetFiles } = useActiveBundleActions();
 
   const [triggerPrivate, privateMeta] = useLazyGetFilePathsByDirQuery();

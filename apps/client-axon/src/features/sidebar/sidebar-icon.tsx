@@ -11,11 +11,16 @@ const StyledIconWrapper = styled.button<{ $active?: boolean; $isDanger?: boolean
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px; /* Slightly bumped from 42px for better touch/click targets */
+  width: 44px;
   height: 44px;
   padding: 0;
   border: none;
   flex-shrink: 0;
+
+  @media (max-width: 640px) {
+    width: 36px;
+    height: 36px;
+  }
   
   border-radius: ${({ theme, $active }) => ($active ? theme.radii.xl : theme.radii.round)};
   transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
@@ -135,19 +140,23 @@ const StyledIconWrapper = styled.button<{ $active?: boolean; $isDanger?: boolean
 
 const ActivePill = styled.div`
   position: absolute;
-  /* Push to the left edge of the sidebar. Adjust this based on your Sidebar padding */
-  left: -14px; 
+  left: -14px;
   width: 4px;
   height: 20px;
   background-color: ${({ theme }) => theme.colors.text.primary};
   border-radius: 4px;
-  
-  /* Snappy entry animation for the pill */
   animation: popIn 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 
   @keyframes popIn {
     from { opacity: 0; transform: scaleY(0.2); }
     to { opacity: 1; transform: scaleY(1); }
+  }
+
+  @media (max-width: 640px) {
+    left: auto;
+    bottom: -6px;
+    width: 16px;
+    height: 3px;
   }
 `;
 

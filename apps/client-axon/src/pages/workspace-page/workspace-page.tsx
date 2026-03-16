@@ -1,16 +1,15 @@
 import { GraphCanvas } from "@features/axon-graph/components/graph-canvas/graph-canvas";
 import { CodeViewerPanel } from "@features/code-viewer/components/code-viewer-panel";
 
-import { BundleCompact } from "@features/core/bundles/components/bundle-compact";
-import { BundleSelector } from "@features/core/bundles/components/bundle-selector";
-import { BundleDetails } from "@features/core/bundles/components/bundle-details";
+import { BundleCompact } from "@features/bundles/bundle-compact";
+import { BundleSelector } from "@features/bundles/bundle-selector";
+import { BundleDetails } from "@features/bundles/bundle-details";
 
 import { FileExplorer } from "@features/explorer/components/file-explorer";
 import { WorkspaceLayout } from "@shared/ui/layouts/workspace-layout";
-import { useAllWorkspacesQuery } from "@features/core/workspace/hooks/use-workspace-queries";
-import { useActiveWorkspaceId } from "@features/core/workspace/hooks/use-workspace-slice";
-import { Flex } from "@shared/ui";
-import { Loader2 } from "lucide-react";
+import { useAllWorkspacesQuery } from "@core/workspace/hooks/use-workspace-queries";
+import { useActiveWorkspaceId } from "@core/workspace/hooks/use-workspace-slice";
+import { Flex, Spinner } from "@shared/ui";
 
 export const WorkspacePage = () => {
 const { workspaces, isLoading } = useAllWorkspacesQuery();
@@ -20,7 +19,7 @@ const isGhostWorkspace = workspaces && activeWorkspaceId && !workspaces.some(w =
   if (isLoading || isGhostWorkspace) {
     return (
       <Flex $fill $align="center" $justify="center" $bg="bg.main">
-        <Loader2 size={32} className="animate-spin" color="#60a5fa" />
+        <Spinner size={32} />
       </Flex>
     );
   }

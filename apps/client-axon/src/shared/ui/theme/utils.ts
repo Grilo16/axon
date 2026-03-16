@@ -5,12 +5,12 @@ export const resolveColor = (path: ColorProp | undefined, theme: AppTheme) => {
   if (!path) return undefined;
   if (path === 'inherit') return 'inherit';
   const keys = path.split('.');
-  let current: any = theme.colors;
+  let current: Record<string, unknown> = theme.colors as Record<string, unknown>;
   for (const key of keys) {
-    if (current[key] === undefined) return path; 
-    current = current[key];
+    if (current[key] === undefined) return path;
+    current = current[key] as Record<string, unknown>;
   }
-  return current as string;
+  return current as unknown as string;
 };
 
 /**

@@ -2,13 +2,15 @@ import React from "react";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { BrowserRouter } from "react-router-dom";
-import { store, persistor } from "../store/store";
+import { store, persistor } from "@core/store/store";
 import { AxonThemeProvider } from "./axon-theme-provider";
 import { TauriAuthProvider } from "./tauri-auth-provider";
 import { KeycloakAuthProvider } from "./keycloak-auth-provider";
 import { IS_TAURI } from "../constants";
 import { ToastProvider } from "./toast-provider";
 import { TourProvider } from "./tour-provider";
+import { MobileTabProvider } from "@shared/hooks/use-mobile-tab";
+import { ResponsiveProvider } from "@shared/hooks/use-responsive-mode";
 
 interface AppProvidersProps {
   children: React.ReactNode;
@@ -23,10 +25,14 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
         <BrowserRouter>
           <AuthWrapper>
             <AxonThemeProvider>
-              <TourProvider>
-                {children}
-                <ToastProvider />
-              </TourProvider>
+              <ResponsiveProvider>
+                <MobileTabProvider>
+                  <TourProvider>
+                    {children}
+                    <ToastProvider />
+                  </TourProvider>
+                </MobileTabProvider>
+              </ResponsiveProvider>
             </AxonThemeProvider>
           </AuthWrapper>
         </BrowserRouter>

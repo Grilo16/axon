@@ -1,7 +1,7 @@
 import React from "react";
-import { AuthContext } from "react-oidc-context";
+import { AuthContext, type AuthContextProps } from "react-oidc-context";
 
-const mockTauriAuthValue: any = {
+const mockTauriAuthValue = {
   isAuthenticated: true,
   isLoading: false,
   activeNavigator: undefined,
@@ -12,7 +12,7 @@ const mockTauriAuthValue: any = {
   signinRedirect: async () => {},
   signoutRedirect: async () => {},
   removeUser: async () => {},
-};
+} as unknown as AuthContextProps;
 
 export const TauriAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (

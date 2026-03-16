@@ -1,7 +1,7 @@
 import styled, { useTheme } from "styled-components";
 import { Plus, Check, Minus, Loader2 } from "lucide-react";
 import { Button } from "@shared/ui";
-import { useFolderHasFilesInGraph, useIsNodeInGraph } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useFolderHasFilesInGraph, useIsNodeInGraph } from "@core/workspace/hooks/use-workspace-slice";
 import { useExplorerActions } from "@features/explorer/hooks/use-explorer-actions";
 
 const ActionButton = styled(Button)`

@@ -1,7 +1,19 @@
 import React from "react";
+import styled from "styled-components";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { CanvasArea, Flex, PanelSection, ResizeHandle } from "@shared/ui";
-import { useViewMode } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useViewMode } from "@core/workspace/hooks/use-workspace-slice";
+import { useResponsiveMode } from "@shared/hooks/use-responsive-mode";
+import { MobileWorkspaceLayout } from "./mobile-workspace-layout";
+
+const BundlerPanel = styled(PanelSection)`
+  border-top: 1px solid ${({ theme }) => theme.colors.border.default};
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+`;
 
 interface WorkspaceSidebarLayoutProps {
   explorer: React.ReactNode;
@@ -22,21 +34,9 @@ export const WorkspaceSidebarLayout: React.FC<WorkspaceSidebarLayoutProps> = ({
         <ResizeHandle $orientation="horizontal" />
       </Separator>
       <Panel defaultSize={"40%"} minSize={"30%"}>
-        <PanelSection
-          $bg="bg.surface"
-          $p="lg"
-          $gap="md"
-          style={{
-            borderTop: "1px solid #333",
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            minHeight: 0,
-            overflowY: "auto",
-          }}
-        >
+        <BundlerPanel $bg="bg.surface" $p="lg" $gap="md">
           {bundler}
-        </PanelSection>
+        </BundlerPanel>
       </Panel>
     </Group>
   );
@@ -50,7 +50,17 @@ interface WorkspaceLayoutProps {
   codeViewer: React.ReactNode;
 }
 
-export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
+export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = (props) => {
+  const mode = useResponsiveMode();
+
+  if (mode === "mobile") {
+    return <MobileWorkspaceLayout {...props} />;
+  }
+
+  return <DesktopWorkspaceLayout {...props} />;
+};
+
+const DesktopWorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   bundler,
   explorer,
   graph,

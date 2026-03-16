@@ -28,4 +28,11 @@ export const NodeContainer = styled(Flex)<{
       pointer-events: auto;
     }
   }
+
+  @media (max-width: 640px) {
+    min-height: 44px;
+    align-items: center;
+    padding-top: ${({ theme }) => theme.spacing.sm};
+    padding-bottom: ${({ theme }) => theme.spacing.sm};
+  }
 `;

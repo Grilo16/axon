@@ -1,7 +1,7 @@
 import { useTheme } from "styled-components";
 import { Folder, FolderOpen, FileCode } from "lucide-react";
 import { Flex } from "@shared/ui";
-import { useIsNodeInGraph } from "@features/core/workspace/hooks/use-workspace-slice";
+import { useIsNodeInGraph } from "@core/workspace/hooks/use-workspace-slice";
 
 export const NodeIcon = ({
   path,

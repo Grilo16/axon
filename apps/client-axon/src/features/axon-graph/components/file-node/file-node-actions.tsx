@@ -1,12 +1,17 @@
 import { memo, useState, type MouseEvent as ReactMouseEvent } from "react";
+import styled from "styled-components";
 import { MinusCircle, PlusCircle, ChevronDown, Plus } from "lucide-react";
 import { useGraphInteractions } from "../../hooks/use-graph-interactions";
 
-import { 
-  Grid, Flex, Text, SplitButtonGroup, SplitButtonMain, 
-  SplitButtonChevron, PopoverMenu, MenuItem 
+import {
+  Grid, Flex, Text, SplitButtonGroup, SplitButtonMain,
+  SplitButtonChevron, PopoverMenu, MenuItem
 } from "@shared/ui";
-import { useActiveBundleQuery } from "@features/core/bundles/hooks/use-bundle-queries";
+import { useActiveBundleQuery } from "@core/bundles/hooks/use-bundle-queries";
+
+const ActionsGrid = styled(Grid)`
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border.subtle};
+`;
 
 function stopPropagationOnly(evt: ReactMouseEvent) {
   evt.stopPropagation();
@@ -44,7 +49,7 @@ export const FileNodeActions = memo(({filePath, imports, usedBy }: Props) => {
   const inactiveUsedBy = usedBy.filter((ub) => !activePaths.includes(ub));
 
   return (
-    <Grid className="nodrag nowheel" $columns="1fr 1fr" $gap="sm" $p="sm" style={{ borderBottom: '1px solid #2b2b2b' }}>
+    <ActionsGrid className="nodrag nowheel" $columns="1fr 1fr" $gap="sm" $p="sm">
       
       {/* OUTGOING (Imports) */}
       <Flex 
@@ -111,7 +116,7 @@ export const FileNodeActions = memo(({filePath, imports, usedBy }: Props) => {
         )}
       </Flex>
 
-    </Grid>
+    </ActionsGrid>
   );
 });
 
