@@ -9,7 +9,7 @@ const ResponsiveContext = createContext<ResponsiveMode>("desktop");
 export const useResponsiveMode = () => useContext(ResponsiveContext);
 
 export const ResponsiveProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const isTablet = useMediaQuery(`(min-width: ${theme.breakpoints.sm})`);
+  const isTablet = useMediaQuery(`(min-width: ${theme.breakpoints.md})`);
   const isDesktop = useMediaQuery(`(min-width: ${theme.breakpoints.lg})`);
 
   const mode: ResponsiveMode = isDesktop ? "desktop" : isTablet ? "tablet" : "mobile";
