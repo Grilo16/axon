@@ -7,7 +7,8 @@ import styled from "styled-components";
 export const AppShell = styled.div`
   display: flex;
   width: 100vw;
-  height: 100vh;
+  height: 100vh; 
+  height: 100dvh;
   overflow: hidden;
   background-color: ${({ theme }) => theme.colors.bg.main};
 `;
