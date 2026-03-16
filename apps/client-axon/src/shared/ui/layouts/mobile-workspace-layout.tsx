@@ -23,6 +23,7 @@ const TabPanel = styled.div<{ $visible: boolean }>`
   overflow: hidden;
   width: 100%;
   height: 100%;
+  max-height: calc(100% - 57px);
   display: ${({ $visible }) => ($visible ? "flex" : "none")};
   flex-direction: column;
 `;
