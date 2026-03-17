@@ -24,6 +24,7 @@ fn validate_project_source(path: &str) -> AxonResult<()> {
     ))
 }
 
+#[instrument(skip(state), err)]
 pub async fn resolve_active_tree(
     state: &AppState,
     workspace_id: &str,

@@ -38,6 +38,7 @@ pub fn validate_bundle_options(options: &BundleOptions) -> AxonResult<()> {
 // ==========================================
 
 #[tauri::command]
+#[instrument(skip(state, payload), err)]
 pub async fn create_bundle(
     state: State<'_, AppState>,
     payload: CreateBundleReq
@@ -58,6 +59,7 @@ pub async fn create_bundle(
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn clone_bundle(state: State<'_, AppState>, id: String, payload: CloneBundleReq) -> AxonResult<BundleRecord> {
     let new_id = Uuid::new_v4().to_string();
     let cloned_record = state.bundle_repo.duplicate(&id, &new_id, payload.new_name).await?;
@@ -65,12 +67,14 @@ pub async fn clone_bundle(state: State<'_, AppState>, id: String, payload: Clone
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn get_bundle(state: State<'_, AppState>, id: String) -> AxonResult<BundleRecord> {
     state.bundle_repo.get_by_id(&id).await?
         .ok_or_else(|| AxonError::NotFound { entity: "Bundle", id: id.clone() })
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn get_workspace_bundles(state: State<'_, AppState>, id: String, query: ListBundlesQuery) -> AxonResult<Vec<BundleRecord>> {
     let limit = query.limit.unwrap_or(50);
     let offset = query.offset.unwrap_or(0);
@@ -78,6 +82,7 @@ pub async fn get_workspace_bundles(state: State<'_, AppState>, id: String, query
 }
 
 #[tauri::command]
+#[instrument(skip(state, payload), err)]
 pub async fn update_bundle(state: State<'_, AppState>, id: String, payload: UpdateBundlePayload) -> AxonResult<()> {
     if let Some(ref options) = payload.options {
         validate_bundle_options(options)?;
@@ -86,11 +91,11 @@ pub async fn update_bundle(state: State<'_, AppState>, id: String, payload: Upda
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn delete_bundle(state: State<'_, AppState>, id: String) -> AxonResult<bool> {
     let bundle = state.bundle_repo.get_by_id(&id).await?
         .ok_or_else(|| AxonError::NotFound { entity: "Bundle", id: id.clone() })?;
 
-    // Delete first, then ensure at least one bundle exists (prevents TOCTOU race)
     let result = state.bundle_repo.delete(&id).await?;
 
     let remaining = state.bundle_repo.get_by_workspace_id(&bundle.workspace_id, 1, 0).await?;
@@ -115,9 +120,9 @@ pub async fn delete_bundle(state: State<'_, AppState>, id: String) -> AxonResult
 // ==========================================
 
 #[tauri::command]
-#[instrument(skip(state))]
+#[instrument(skip(state), err)]
 pub async fn get_bundle_graph(state: State<'_, AppState>, id: String) -> AxonResult<AxonGraphView> {
-    info!("📊 Generating graph for desktop bundle: {}", id);
+    info!(bundle_id = %id, "generating graph");
 
     let bundle = state.bundle_repo.get_by_id(&id).await?
         .ok_or_else(|| AxonError::NotFound { entity: "Bundle", id: id.clone() })?;
@@ -136,9 +141,9 @@ pub async fn get_bundle_graph(state: State<'_, AppState>, id: String) -> AxonRes
 }
 
 #[tauri::command]
-#[instrument(skip(state))]
+#[instrument(skip(state), err)]
 pub async fn generate_bundle(state: State<'_, AppState>, id: String) -> AxonResult<HashMap<String, String>> {
-    info!("📦 Generating bundle for desktop: {}", id);
+    info!(bundle_id = %id, "generating bundle");
 
     let bundle = state.bundle_repo.get_by_id(&id).await?
         .ok_or_else(|| AxonError::NotFound { entity: "Bundle", id: id.clone() })?;

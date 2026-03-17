@@ -1,3 +1,4 @@
+use tracing::instrument;
 use crate::error::{AxonError, AxonResult};
 use crate::tree::state::RegistryAccess;
 use crate::tree::{state::Analyzed, AxonTree};
@@ -45,6 +46,7 @@ pub struct TreeExplorer;
 
 impl TreeExplorer {
     /// Reads directory structure from RAM, but fetches file size natively from the OS metadata cache.
+    #[instrument(skip(tree), err)]
     pub fn list_directory(tree: &AxonTree<Analyzed>, target_path: &str) -> AxonResult<Vec<ExplorerEntry>> {
         
         let dir_id = tree

@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use ignore::WalkBuilder;
-use log::{debug, warn};
+use tracing::{debug, warn};
 use oxc_span::SourceType;
 
+use tracing::instrument;
 use crate::error::{AxonError, AxonResult};
-use crate::tree::state::{Empty, Scanned, TreeRegistry}; 
+use crate::tree::state::{Empty, Scanned, TreeRegistry};
 use crate::{
     ids::{DirectoryId, FileId},
     path::RelativeAxonPath,
@@ -33,6 +34,7 @@ impl AxonTree<Empty> {
     }
 
     /// Transition: Walk the OS and build the initial Scanned state.
+    #[instrument(skip(self), fields(root = %self.core.root.display()), err)]
     pub fn scan_os(self) -> AxonResult<AxonTree<Scanned>> {
         debug!("Scanning project root: {}", self.core.root.display());
         

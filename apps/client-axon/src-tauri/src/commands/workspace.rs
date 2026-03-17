@@ -3,7 +3,7 @@ use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use std::{path::PathBuf, sync::Arc};
 use tauri::State;
-use tracing::info;
+use tracing::{info, instrument};
 use uuid::Uuid;
 
 use crate::state::AppState;
@@ -39,6 +39,7 @@ fn validate_user_path(path: &str) -> AxonResult<()> {
 // ==========================================
 
 #[tauri::command]
+#[instrument(skip(state, payload), err)]
 pub async fn create_workspace(
     state: State<'_, AppState>,
     payload: CreateWorkspaceReq,
@@ -67,16 +68,19 @@ pub async fn create_workspace(
     };
     state.bundle_repo.create(default_bundle).await?;
 
+    info!(workspace_id = %record.id, "workspace created");
     Ok(record)
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn get_workspace(state: State<'_, AppState>, id: String) -> AxonResult<WorkspaceRecord> {
     state.workspace_repo.get_by_id_and_owner(&id, LOCAL_OWNER).await?
         .ok_or_else(|| AxonError::NotFound { entity: "Workspace", id: id.clone() })
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn list_workspaces(
     state: State<'_, AppState>,
     query: ListWorkspacesQuery,
@@ -87,40 +91,40 @@ pub async fn list_workspaces(
 }
 
 #[tauri::command]
+#[instrument(skip(state, payload), err)]
 pub async fn update_workspace(state: State<'_, AppState>, id: String, payload: UpdateWorkspacePayload) -> AxonResult<()> {
     state.workspace_repo.update(&id, LOCAL_OWNER, payload).await
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn touch_workspace(state: State<'_, AppState>, id: String) -> AxonResult<()> {
     state.workspace_repo.touch(&id, LOCAL_OWNER).await
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn delete_workspace(state: State<'_, AppState>, id: String) -> AxonResult<bool> {
-    // Evict cached tree and spool data when a workspace is deleted
     state.active_trees.remove(&id).await;
     let _ = state.spool.evict_commit(&id);
     state.workspace_repo.delete(&id, LOCAL_OWNER).await
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn rescan_workspace(state: State<'_, AppState>, id: String) -> AxonResult<()> {
     let workspace = state.workspace_repo.get_by_id_and_owner(&id, LOCAL_OWNER).await?
         .ok_or_else(|| AxonError::NotFound { entity: "Workspace", id: id.clone() })?;
 
-    info!("🔄 Triggered rescan for workspace: {}", workspace.name);
+    info!(workspace = %workspace.name, "rescan triggered");
 
-    // 1. Evict spool data (AST chunks + skeleton + metadata)
     let evicted = state.spool.evict_commit(&id)?;
-    info!("🗑️ Evicted {} chunks from spool for workspace '{}'", evicted, workspace.name);
+    info!(evicted_chunks = evicted, workspace = %workspace.name, "spool evicted");
 
-    // 2. Evict in-memory tree cache
     state.active_trees.remove(&id).await;
 
-    // 3. Eagerly re-scan so the user gets fresh data immediately
     let _tree = resolve_active_tree(&state, &id).await?;
-    info!("✅ Rescan complete for workspace '{}'", workspace.name);
+    info!(workspace = %workspace.name, "rescan complete");
 
     Ok(())
 }
@@ -129,15 +133,14 @@ pub async fn rescan_workspace(state: State<'_, AppState>, id: String) -> AxonRes
 // 2. ACTIVE TREE ENGINE (Lazy Loading)
 // ==========================================
 
+#[instrument(skip(state), err)]
 pub async fn resolve_active_tree(
     state: &AppState,
     workspace_id: &str,
 ) -> AxonResult<Arc<AxonTree<Analyzed>>> {
-    // 1. Verify existence in DB
     let workspace = state.workspace_repo.get_by_id_and_owner(workspace_id, LOCAL_OWNER).await?
         .ok_or_else(|| AxonError::NotFound { entity: "Workspace", id: workspace_id.to_string() })?;
 
-    // 2. Return from RAM if loaded
     if let Some(tree) = state.active_trees.get(workspace_id).await {
         return Ok(tree);
     }
@@ -159,8 +162,8 @@ pub async fn resolve_active_tree(
             if let Ok(Some(skeleton_bytes)) = spool.get_skeleton(&commit_hash) {
                 if let Ok(registry) = postcard::from_bytes::<TreeRegistry<Outlined>>(&skeleton_bytes) {
                     tracing::info!(
-                        "⚡ Skeleton hit: Loaded workspace '{}' from spool in ~2ms.",
-                        workspace_name
+                        workspace = %workspace_name,
+                        "skeleton hit: loaded from spool"
                     );
 
                     let target_path = PathBuf::from(&project_root);
@@ -194,7 +197,7 @@ pub async fn resolve_active_tree(
     let target_path;
 
     if project_root.starts_with("http") {
-        info!("🌐 Lazily cloning GitHub workspace '{}'...", workspace_name);
+        info!(workspace = %workspace_name, "cloning remote workspace");
 
         let root = project_root.clone();
         let (temp_dir, temp_path) = tokio::task::spawn_blocking(move || -> AxonResult<_> {
@@ -219,7 +222,7 @@ pub async fn resolve_active_tree(
         target_path = temp_path;
         _ephemeral_dir = Some(temp_dir);
     } else {
-        info!("📂 Loading local workspace '{}' directly from disk...", workspace_name);
+        info!(workspace = %workspace_name, "loading local workspace");
         target_path = PathBuf::from(&project_root);
         _ephemeral_dir = None;
     }
@@ -228,19 +231,17 @@ pub async fn resolve_active_tree(
     let parser = Arc::new(JsTsParser);
     let source_manager = OsSource::new(target_path.clone());
 
-    // Async pipeline: scan (fast sync) → load (async IO) → spool (async + rayon internally)
     let loaded_tree = AxonTree::new(target_path, options)?
         .scan_os()?
         .load_all_sources(&source_manager).await?;
 
     let analyzed_tree = loaded_tree.spool_to_disk(parser, spool.clone(), commit_hash.clone()).await?;
 
-    // Persist skeleton for instant future loads
     let skeleton_bytes = postcard::to_stdvec(&analyzed_tree.state.0)
         .map_err(|e| AxonError::Backend(format!("Failed to serialize skeleton: {e}")))?;
 
     spool.write_skeleton(&commit_hash, &skeleton_bytes)?;
-    info!("💾 Saved '{}' skeleton to spool. Future loads will be near-instant.", workspace_name);
+    info!(workspace = %workspace_name, "skeleton saved to spool");
 
     let shared = Arc::new(analyzed_tree);
     state.active_trees.insert(workspace_id.to_string(), shared.clone()).await;
@@ -252,12 +253,14 @@ pub async fn resolve_active_tree(
 // ==========================================
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn get_all_file_paths(state: State<'_, AppState>, id: String, query: FileQuery) -> AxonResult<Vec<String>> {
     let tree = resolve_active_tree(&state, &id).await?;
     Ok(tree.get_all_file_paths(query.limit))
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn get_file_paths_by_dir(state: State<'_, AppState>, id: String, query: DirQuery) -> AxonResult<Vec<String>> {
     validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&state, &id).await?;
@@ -266,6 +269,7 @@ pub async fn get_file_paths_by_dir(state: State<'_, AppState>, id: String, query
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn read_file(state: State<'_, AppState>, id: String, query: ReadFileReq) -> AxonResult<String> {
     validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&state, &id).await?;
@@ -275,6 +279,7 @@ pub async fn read_file(state: State<'_, AppState>, id: String, query: ReadFileRe
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn list_directory(state: State<'_, AppState>, id: String, query: ReadFileReq) -> AxonResult<Vec<ExplorerEntry>> {
     validate_user_path(&query.path)?;
     let tree = resolve_active_tree(&state, &id).await?;
@@ -282,6 +287,7 @@ pub async fn list_directory(state: State<'_, AppState>, id: String, query: ReadF
 }
 
 #[tauri::command]
+#[instrument(skip(state), err)]
 pub async fn search_files(
     state: State<'_, AppState>,
     id: String,
@@ -298,7 +304,6 @@ pub async fn search_files(
         .filter_map(|path| matcher.fuzzy_match(&path, &query.value).map(|score| (score, path)))
         .collect();
 
-    // Partial sort: only order the top `limit` elements instead of sorting everything.
     if scored_paths.len() > limit {
         scored_paths.select_nth_unstable_by(limit, |a, b| b.0.cmp(&a.0));
         scored_paths.truncate(limit);

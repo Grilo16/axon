@@ -1,10 +1,12 @@
+#![allow(unused_imports)]
+
 pub use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     Json,
 };
 pub use axum_keycloak_auth::decode::KeycloakToken;
-pub use tracing::{info, instrument};
+pub use tracing::{debug, error, info, instrument, warn};
 
 pub use crate::state::AppState;
 pub use crate::api::extractor::AuthContext;

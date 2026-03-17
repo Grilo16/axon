@@ -18,6 +18,7 @@ dist/
 
 # Axon Specific
 .playground
+.claude
 z_notes
 
 Caddyfile

@@ -14,7 +14,7 @@ use axon_core::{
     graph::AxonGraph,
 };
 
-#[instrument(skip(ctx, payload))]
+#[instrument(skip(ctx, payload), err)]
 pub async fn create_bundle(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -36,7 +36,7 @@ pub async fn create_bundle(
     Ok(Json(record))
 }
 
-#[instrument(skip(bundle))]
+#[instrument(skip(bundle), err)]
 pub async fn get_bundle(
     // 🛡️ If this executes, they own the bundle AND its parent workspace.
     VerifiedBundle(bundle): VerifiedBundle,
@@ -44,7 +44,7 @@ pub async fn get_bundle(
     Ok(Json(bundle))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn get_workspace_bundles(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -61,7 +61,7 @@ pub async fn get_workspace_bundles(
     Ok(Json(records))
 }
 
-#[instrument(skip(ctx, payload))]
+#[instrument(skip(ctx, payload), err)]
 pub async fn update_bundle(
     ctx: AuthContext,
     VerifiedBundle(bundle): VerifiedBundle,
@@ -75,7 +75,7 @@ pub async fn update_bundle(
     Ok(StatusCode::OK)
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn delete_bundle(
     ctx: AuthContext,
     VerifiedBundle(bundle): VerifiedBundle
@@ -106,7 +106,7 @@ pub async fn delete_bundle(
     Ok(StatusCode::OK)
 }
 
-#[instrument(skip(ctx, payload))]
+#[instrument(skip(ctx, payload), err)]
 pub async fn clone_bundle(
     ctx: AuthContext,
     VerifiedBundle(bundle): VerifiedBundle,
@@ -122,7 +122,7 @@ pub async fn clone_bundle(
     Ok(Json(cloned_record))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn get_bundle_graph(
     ctx: AuthContext,
     VerifiedBundle(bundle): VerifiedBundle,
@@ -149,7 +149,7 @@ pub async fn get_bundle_graph(
     Ok(Json(serde_json::to_value(view)?))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn generate_bundle_handler(
     ctx: AuthContext,
     VerifiedBundle(bundle): VerifiedBundle,

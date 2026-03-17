@@ -27,7 +27,7 @@ pub fn validate_bundle_options(options: &BundleOptions) -> AxonResult<()> {
     Ok(())
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(state), err)]
 pub async fn list_public_workspaces(
     State(state): State<AppState>,
 ) -> AxonResult<Json<Vec<WorkspaceRecord>>> {
@@ -35,7 +35,7 @@ pub async fn list_public_workspaces(
     Ok(Json(records))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(state), err)]
 pub async fn get_all_file_paths(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -45,7 +45,7 @@ pub async fn get_all_file_paths(
     Ok(Json(tree.get_all_file_paths(query.limit)))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(state), err)]
 pub async fn get_file_paths_by_dir(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -62,7 +62,7 @@ pub async fn get_file_paths_by_dir(
     Ok(Json(paths))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(state), err)]
 pub async fn read_file(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -76,7 +76,7 @@ pub async fn read_file(
     Ok(Json(content))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(state), err)]
 pub async fn list_directory(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -88,7 +88,7 @@ pub async fn list_directory(
     Ok(Json(entries))
 }
 
-#[instrument(skip(payload))]
+#[instrument(skip(payload), err)]
 pub async fn validate_public_options(
     Json(payload): Json<BundleOptions>,
 ) -> AxonResult<StatusCode> {
@@ -96,7 +96,7 @@ pub async fn validate_public_options(
     Ok(StatusCode::OK)
 }
 
-#[instrument(skip(state, payload))]
+#[instrument(skip(state, payload), err)]
 pub async fn generate_public_graph(
     State(state): State<AppState>,
     Json(payload): Json<StatelessGraphReq>,
@@ -116,7 +116,7 @@ pub async fn generate_public_graph(
     Ok(Json(serde_json::to_value(view)?))
 }
 
-#[instrument(skip(state, payload))]
+#[instrument(skip(state, payload), err)]
 pub async fn generate_public_code(
     State(state): State<AppState>,
     Json(payload): Json<StatelessGraphReq>,
@@ -137,7 +137,7 @@ pub async fn generate_public_code(
     Ok(Json(generated))
 }
 
-#[instrument(skip(state))]
+#[instrument(skip(state), err)]
 pub async fn search_public_files(
     State(state): State<AppState>,
     Path(id): Path<String>,

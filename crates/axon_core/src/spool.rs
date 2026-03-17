@@ -4,6 +4,7 @@ use moka::sync::Cache;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
+use tracing::instrument;
 use crate::error::{AxonError, AxonResult};
 use crate::ir::FileChunk;
 
@@ -56,6 +57,7 @@ pub struct AxonSpool {
 }
 
 impl AxonSpool {
+    #[instrument(skip(path), fields(path = %path.as_ref().display()), err)]
     pub fn new(path: impl AsRef<Path>) -> AxonResult<Self> {
         let db_path = path.as_ref().to_path_buf();
         let db = Database::create(&db_path).db("Failed to initialize redb spool")?;
@@ -101,6 +103,7 @@ impl AxonSpool {
     // SKELETON I/O (Bypasses Git Clone)
     // ==========================================
 
+    #[instrument(skip(self, skeleton_bytes), fields(size_bytes = skeleton_bytes.len()), err)]
     pub fn write_skeleton(&self, commit_hash: &str, skeleton_bytes: &[u8]) -> AxonResult<()> {
         // 1. Write the new skeleton and update metadata
         let write_txn = self.db.begin_write().db("Failed to begin skeleton write txn")?;
@@ -119,6 +122,7 @@ impl AxonSpool {
         Ok(())
     }
 
+    #[instrument(skip(self), err)]
     pub fn get_skeleton(&self, commit_hash: &str) -> AxonResult<Option<Vec<u8>>> {
         let read_txn = self.db.begin_read().db("Failed to begin skeleton read txn")?;
         let table = read_txn.open_table(SKELETON_TABLE).db("Failed to open Skeleton table")?;
@@ -139,6 +143,7 @@ impl AxonSpool {
     // MEAT I/O (AST Chunks)
     // ==========================================
 
+    #[instrument(skip(self, chunks), fields(batch_size = chunks.len()), err)]
     pub fn write_batch(&self, chunks: &[(&str, &str, &[u8])]) -> AxonResult<()> {
         let write_txn = self.db.begin_write().db("Failed to begin batch write transaction")?;
         {
@@ -152,6 +157,7 @@ impl AxonSpool {
         Ok(())
     }
 
+    #[instrument(level = "trace", skip(self), err)]
     pub fn get_cached_chunk(&self, commit_hash: &str, file_path: &str) -> AxonResult<Arc<FileChunk>> {
         let key = (commit_hash.to_string(), file_path.to_string());
 
@@ -190,6 +196,7 @@ impl AxonSpool {
     // GARBAGE COLLECTION & TELEMETRY
     // ==========================================
 
+    #[instrument(skip(self), err)]
     pub fn evict_commit(&self, target_commit: &str) -> AxonResult<usize> {
         let write_txn = self.db.begin_write().db("Failed to begin eviction transaction")?;
 
@@ -235,6 +242,7 @@ impl AxonSpool {
     }
 
     /// Enforces the 50GB physical size limit and 24-hour TTL constraint.
+    #[instrument(skip(self), err)]
     pub fn enforce_lru(&self, max_bytes: u64, max_age_secs: u64) -> AxonResult<()> {
         let physical_size = std::fs::metadata(&self.db_path)
             .map(|m| m.len())
@@ -283,6 +291,7 @@ impl AxonSpool {
     }
 
     /// X-Ray Vision: Exposes exact Spool memory states.
+    #[instrument(skip(self), err)]
     pub fn get_stats(&self) -> AxonResult<SpoolStats> {
         let physical_size_bytes = std::fs::metadata(&self.db_path)
             .map(|m| m.len())

@@ -1,6 +1,8 @@
 use axum::{routing::{get, post}, Router};
 use axum::http::StatusCode;
-use axum_keycloak_auth::layer::KeycloakAuthLayer; // 🌟 Import the layer type
+use axum_keycloak_auth::layer::KeycloakAuthLayer;
+use tower_http::trace::TraceLayer;
+use tracing::Span;
 use crate::state::AppState;
 
 pub mod prelude;
@@ -11,9 +13,8 @@ pub mod bundle;
 pub mod public;
 pub mod system;
 
-// 🌟 Accept the auth_layer as a parameter
 pub fn app_router(state: AppState, auth_layer: KeycloakAuthLayer<String>) -> Router {
-    
+
     // 1. SECURE WORKSPACE ROUTER
     let ws_router = Router::new()
         .route("/", get(workspace::list_workspaces).post(workspace::create_workspace))
@@ -46,20 +47,57 @@ pub fn app_router(state: AppState, auth_layer: KeycloakAuthLayer<String>) -> Rou
         .route("/bundles/graph", post(public::generate_public_graph))
         .route("/bundles/generate", post(public::generate_public_code));
 
-    // ==========================================
     // 4. MASTER ASSEMBLY & BOUNDARIES
-    // ==========================================
-    
-    // Group the private routes together and apply the Keycloak bouncer ONLY to them
     let protected_routes = Router::new()
         .nest("/workspaces", ws_router)
         .nest("/bundles", bundle_router)
         .route("/system/spool", get(system::get_spool_stats))
         .layer(auth_layer);
 
+    // 5. HTTP TRACING MIDDLEWARE
+    // Automatically logs every request/response lifecycle with method, URI, status, and latency.
+    let trace_layer = TraceLayer::new_for_http()
+        .make_span_with(|request: &axum::http::Request<_>| {
+            tracing::info_span!(
+                "http_request",
+                method = %request.method(),
+                uri = %request.uri(),
+                status = tracing::field::Empty,
+                latency_ms = tracing::field::Empty,
+            )
+        })
+        .on_request(|_request: &axum::http::Request<_>, _span: &Span| {
+            tracing::debug!("request started");
+        })
+        .on_response(
+            |response: &axum::http::Response<_>,
+             latency: std::time::Duration,
+             span: &Span| {
+                span.record("status", response.status().as_u16());
+                span.record("latency_ms", latency.as_millis() as u64);
+                tracing::info!(
+                    status = response.status().as_u16(),
+                    latency_ms = latency.as_millis() as u64,
+                    "response sent"
+                );
+            },
+        )
+        .on_failure(
+            |error: tower_http::classify::ServerErrorsFailureClass,
+             latency: std::time::Duration,
+             _span: &Span| {
+                tracing::error!(
+                    error = %error,
+                    latency_ms = latency.as_millis() as u64,
+                    "request failed"
+                );
+            },
+        );
+
     Router::new()
         .nest("/api/v1", protected_routes)
         .nest("/api/v1/public", public_router)
         .route("/health", get(|| async { StatusCode::OK }))
+        .layer(trace_layer)
         .with_state(state)
 }

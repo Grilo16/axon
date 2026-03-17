@@ -1,4 +1,5 @@
 use futures::stream::{StreamExt, TryStreamExt};
+use tracing::instrument;
 use crate::{
     error::{AxonError, AxonResult},
     tree::{
@@ -10,6 +11,7 @@ use crate::{
 
 impl AxonTree<Scanned> {
     /// Transition: Hydrate all file sources using the provided backend (OS, GitHub, etc).
+    #[instrument(skip(self, source), fields(file_count = self.state.0.files.len()), err)]
     pub async fn load_all_sources(self, source: &dyn AxonSource) -> AxonResult<AxonTree<Loaded>> {
         let registry = self.state.0;
 

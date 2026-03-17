@@ -6,6 +6,8 @@ use crate::tree::{state::Analyzed, AxonTree};
 use crate::spool::AxonSpool;
 use std::collections::{HashMap, HashSet};
 
+use tracing::{debug, instrument};
+
 use super::AxonGraph;
 
 pub struct GraphBuilder<'a> {
@@ -33,10 +35,18 @@ impl<'a> GraphBuilder<'a> {
         }
     }
 
+    #[instrument(skip(self), fields(file_count = self.tree.files().len()))]
     pub fn build(mut self) -> AxonGraph {
         for file in self.tree.files() {
             self.process_file(file.id());
         }
+
+        debug!(
+            forward_edges = self.forward.len(),
+            reverse_edges = self.reverse.len(),
+            symbols = self.symbols.len(),
+            "graph construction complete"
+        );
 
         AxonGraph {
             forward: self.forward,

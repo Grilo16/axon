@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 
+use tracing::instrument;
 use crate::{
     bundler::rules::{RedactionRule, RedactionType, TargetScope},
     domain::bundle::BundleOptions,
-    error::{AxonResult},
+    error::AxonResult,
     ids::FileId,
     spool::AxonSpool,
     tree::{state::Analyzed, state::RegistryAccess, AxonTree},
@@ -29,6 +30,7 @@ impl<'a> AxonBundler<'a> {
         Self { tree, spool, commit_hash, options }
     }
 
+    #[instrument(skip(self), fields(target_files = self.options.target_files.len(), rules = self.options.rules.len()), err)]
     pub fn generate_bundle(&self) -> AxonResult<HashMap<String, String>> {
         let mut output = HashMap::new();
         let grouped_rules = self.group_rules_by_file();

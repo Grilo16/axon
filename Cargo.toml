@@ -31,7 +31,6 @@ fuzzy-matcher = "0.3.7"
 
 # Third Party
 thiserror = "1.0"
-log = "0.4"
 ignore = "0.4"
 async-trait = "0.1"
 futures = "0.3"

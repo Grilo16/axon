@@ -2,6 +2,7 @@ use std::sync::Arc;
 use rayon::prelude::*;
 use rkyv::rancor::Error as RkyvError;
 
+use tracing::instrument;
 use crate::{
     error::{AxonError, AxonResult},
     ids::FileId,
@@ -22,6 +23,7 @@ impl Loaded {
 }
 
 impl AxonTree<Loaded> {
+    #[instrument(skip(self, parser, spool), err)]
     pub async fn spool_to_disk<P: AxonParser + Sync + Send + 'static>(
         self,
         parser: Arc<P>,

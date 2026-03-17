@@ -11,7 +11,7 @@ use axon_core::{
     }}, explorer::{ExplorerEntry, TreeExplorer}
 };
 
-#[instrument(skip(ctx, payload))]
+#[instrument(skip(ctx, payload), err)]
 pub async fn create_workspace(
     ctx: AuthContext, 
     Json(payload): Json<CreateWorkspaceReq>,
@@ -45,7 +45,7 @@ pub async fn create_workspace(
     Ok(Json(record))
 }
 
-#[instrument(skip(workspace))]
+#[instrument(skip(workspace), err)]
 pub async fn get_workspace(
     // 🛡️ If this code runs, we mathematically guarantee the user owns this workspace!
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -53,7 +53,7 @@ pub async fn get_workspace(
     Ok(Json(workspace))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn list_workspaces(
     ctx: AuthContext,
     Query(query): Query<ListWorkspacesQuery>,
@@ -66,7 +66,7 @@ pub async fn list_workspaces(
     Ok(Json(records))
 }
 
-#[instrument(skip(ctx, payload))]
+#[instrument(skip(ctx, payload), err)]
 pub async fn update_workspace(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -76,7 +76,7 @@ pub async fn update_workspace(
     Ok(StatusCode::OK)
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn delete_workspace(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -88,7 +88,7 @@ pub async fn delete_workspace(
     Ok(StatusCode::OK)
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn rescan_workspace(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -109,7 +109,7 @@ pub async fn rescan_workspace(
     Ok(StatusCode::OK)
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn get_all_file_paths(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -119,7 +119,7 @@ pub async fn get_all_file_paths(
     Ok(Json(tree.get_all_file_paths(query.limit)))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn get_file_paths_by_dir(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -136,7 +136,7 @@ pub async fn get_file_paths_by_dir(
     Ok(Json(paths))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn read_file(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -149,7 +149,7 @@ pub async fn read_file(
     Ok(Json(content))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn list_directory(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
@@ -161,7 +161,7 @@ pub async fn list_directory(
     Ok(Json(entries))
 }
 
-#[instrument(skip(ctx))]
+#[instrument(skip(ctx), err)]
 pub async fn search_files(
     ctx: AuthContext,
     VerifiedWorkspace(workspace): VerifiedWorkspace,
