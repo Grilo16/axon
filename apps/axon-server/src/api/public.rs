@@ -168,3 +168,58 @@ pub async fn search_public_files(
 
     Ok(Json(final_paths))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axon_core::bundler::rules::{RedactionRule, RedactionType, TargetScope};
+
+    fn make_rule(file: &str) -> RedactionRule {
+        RedactionRule {
+            target: TargetScope::EntireFile(file.to_string()),
+            action: RedactionType::RemoveEntirely,
+        }
+    }
+
+    #[test]
+    fn empty_rules_is_valid() {
+        let options = BundleOptions::default();
+        assert!(validate_bundle_options(&options).is_ok());
+    }
+
+    #[test]
+    fn distinct_rules_accepted() {
+        let options = BundleOptions {
+            rules: vec![make_rule("a.ts"), make_rule("b.ts")],
+            target_files: vec![],
+            hide_barrel_exports: false,
+        };
+        assert!(validate_bundle_options(&options).is_ok());
+    }
+
+    #[test]
+    fn duplicate_rules_rejected() {
+        let options = BundleOptions {
+            rules: vec![make_rule("a.ts"), make_rule("a.ts")],
+            target_files: vec![],
+            hide_barrel_exports: false,
+        };
+        let err = validate_bundle_options(&options).unwrap_err();
+        match err {
+            AxonError::Parse { message, .. } => {
+                assert!(message.contains("Duplicate"), "Expected duplicate message, got: {message}");
+            }
+            other => panic!("Expected Parse error, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn three_rules_with_one_duplicate_rejected() {
+        let options = BundleOptions {
+            rules: vec![make_rule("a.ts"), make_rule("b.ts"), make_rule("a.ts")],
+            target_files: vec![],
+            hide_barrel_exports: false,
+        };
+        assert!(validate_bundle_options(&options).is_err());
+    }
+}

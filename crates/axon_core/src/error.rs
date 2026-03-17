@@ -188,3 +188,200 @@ impl IntoResponse for AxonError {
         (status, body).into_response()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::response::IntoResponse;
+    use http_body_util::BodyExt;
+
+    /// Extract the HTTP status code from an AxonError's response.
+    async fn status_of(err: AxonError) -> StatusCode {
+        err.into_response().status()
+    }
+
+    /// Extract the JSON body from an AxonError's response.
+    async fn body_of(err: AxonError) -> serde_json::Value {
+        let response = err.into_response();
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        serde_json::from_slice(&bytes).unwrap()
+    }
+
+    // ==========================================
+    // IntoResponse: Status Code Mapping
+    // ==========================================
+
+    #[tokio::test]
+    async fn not_found_returns_404() {
+        let err = AxonError::NotFound { entity: "Workspace", id: "abc".into() };
+        assert_eq!(status_of(err).await, StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn auth_returns_401() {
+        let err = AxonError::Auth("forbidden".into());
+        assert_eq!(status_of(err).await, StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn busy_returns_429() {
+        let err = AxonError::Busy("try later".into());
+        assert_eq!(status_of(err).await, StatusCode::TOO_MANY_REQUESTS);
+    }
+
+    #[tokio::test]
+    async fn invalid_range_returns_400() {
+        let err = AxonError::InvalidRange { start: 10, end: 5 };
+        assert_eq!(status_of(err).await, StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn parse_error_returns_400() {
+        let err = AxonError::Parse { path: "file.ts".into(), message: "bad".into() };
+        assert_eq!(status_of(err).await, StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn out_of_bounds_returns_400() {
+        let err = AxonError::OutOfBounds { offset: 999 };
+        assert_eq!(status_of(err).await, StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn database_returns_500() {
+        let err = AxonError::Database("connection refused".into());
+        assert_eq!(status_of(err).await, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn config_returns_500() {
+        let err = AxonError::Config("missing env".into());
+        assert_eq!(status_of(err).await, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[tokio::test]
+    async fn backend_returns_500() {
+        let err = AxonError::Backend("something broke".into());
+        assert_eq!(status_of(err).await, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    // ==========================================
+    // IntoResponse: JSON Body Structure
+    // ==========================================
+
+    #[tokio::test]
+    async fn not_found_body_contains_entity_and_id() {
+        let err = AxonError::NotFound { entity: "Bundle", id: "xyz-123".into() };
+        let body = body_of(err).await;
+
+        let msg = body["error"]["message"].as_str().unwrap();
+        assert!(msg.contains("Bundle"), "expected 'Bundle' in message, got: {msg}");
+        assert!(msg.contains("xyz-123"), "expected 'xyz-123' in message, got: {msg}");
+        assert_eq!(body["error"]["code"], 404);
+    }
+
+    #[tokio::test]
+    async fn database_error_does_not_leak_internals() {
+        let err = AxonError::Database("password=secret host=prod.db".into());
+        let body = body_of(err).await;
+
+        let msg = body["error"]["message"].as_str().unwrap();
+        assert!(!msg.contains("password"), "DB error leaked sensitive info: {msg}");
+        assert!(!msg.contains("prod.db"), "DB error leaked host info: {msg}");
+        assert_eq!(msg, "Internal infrastructure error");
+    }
+
+    #[tokio::test]
+    async fn auth_body_preserves_message() {
+        let err = AxonError::Auth("Token expired".into());
+        let body = body_of(err).await;
+        assert_eq!(body["error"]["message"], "Token expired");
+        assert_eq!(body["error"]["code"], 401);
+    }
+
+    // ==========================================
+    // Helper Constructors
+    // ==========================================
+
+    #[test]
+    fn is_not_found_returns_true_for_not_found_variant() {
+        let err = AxonError::NotFound { entity: "File", id: "1".into() };
+        assert!(err.is_not_found());
+    }
+
+    #[test]
+    fn is_not_found_returns_true_for_root_not_found() {
+        let err = AxonError::RootNotFound(PathBuf::from("/missing"));
+        assert!(err.is_not_found());
+    }
+
+    #[test]
+    fn is_not_found_returns_false_for_other_variants() {
+        let err = AxonError::Auth("nope".into());
+        assert!(!err.is_not_found());
+    }
+
+    #[test]
+    fn missing_file_constructs_not_found_with_file_entity() {
+        let err = AxonError::missing_file(FileId::new(42));
+        match err {
+            AxonError::NotFound { entity, .. } => assert_eq!(entity, "File"),
+            other => panic!("expected NotFound, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn missing_dir_constructs_not_found_with_directory_entity() {
+        let err = AxonError::missing_dir(DirectoryId::new(7));
+        match err {
+            AxonError::NotFound { entity, .. } => assert_eq!(entity, "Directory"),
+            other => panic!("expected NotFound, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn missing_symbol_constructs_not_found_with_symbol_entity() {
+        let err = AxonError::missing_symbol(SymbolId::new(0));
+        match err {
+            AxonError::NotFound { entity, .. } => assert_eq!(entity, "Symbol"),
+            other => panic!("expected NotFound, got: {:?}", other),
+        }
+    }
+
+    // ==========================================
+    // From Implementations
+    // ==========================================
+
+    #[test]
+    fn io_error_converts_to_backend() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "file gone");
+        let axon_err: AxonError = io_err.into();
+        assert!(matches!(axon_err, AxonError::Backend(msg) if msg.contains("file gone")));
+    }
+
+    #[test]
+    fn serde_error_converts_to_json() {
+        let serde_err = serde_json::from_str::<serde_json::Value>("not json").unwrap_err();
+        let axon_err: AxonError = serde_err.into();
+        assert!(matches!(axon_err, AxonError::Json(_)));
+    }
+
+    // ==========================================
+    // thiserror Display
+    // ==========================================
+
+    #[test]
+    fn display_not_found_includes_entity_and_id() {
+        let err = AxonError::NotFound { entity: "Workspace", id: "w-1".into() };
+        let msg = err.to_string();
+        assert!(msg.contains("Workspace"), "Display missing entity: {msg}");
+        assert!(msg.contains("w-1"), "Display missing id: {msg}");
+    }
+
+    #[test]
+    fn display_invalid_range_includes_bounds() {
+        let err = AxonError::InvalidRange { start: 100, end: 50 };
+        let msg = err.to_string();
+        assert!(msg.contains("100") && msg.contains("50"), "Display missing bounds: {msg}");
+    }
+}

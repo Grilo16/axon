@@ -35,3 +35,7 @@ compact_str.workspace = true
 redb.workspace = true
 rayon.workspace = true
 moka.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true }
+http-body-util = "0.1"
